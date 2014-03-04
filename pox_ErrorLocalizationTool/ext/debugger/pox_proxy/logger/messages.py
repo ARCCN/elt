@@ -1,4 +1,4 @@
-from ..message_server import Message
+from ..message_server import Message, ClosingMessage
 from ..interaction import instantiate
 from ..network_error import NetworkError
 

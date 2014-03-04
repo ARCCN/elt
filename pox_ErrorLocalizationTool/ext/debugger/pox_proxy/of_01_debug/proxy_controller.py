@@ -1,13 +1,12 @@
 from pox.lib.revent import EventMixin
 
 from ..database import DatabaseClient
-from ..competition_errors import *
 from ..debuggers import FlowTableController, FakeDebugger
 from ..logger import LogClient
 from ..util import profile
 
 
-class ProxyController(EventMixin):
+class ProxyController:
 
     """
     Main class for debugging CompetitionErrors and error localization.
@@ -15,15 +14,8 @@ class ProxyController(EventMixin):
     Responsible for storing flowmods in Database.
     """
 
-    _eventMixin_events = set([
-        FlowMasked,
-        FlowDeleted,
-        FlowModified,
-        FlowUndefined
-    ])
-
     def __init__(self, **kw):
-        EventMixin.__init__(self)
+        #EventMixin.__init__(self)
         self.db = DatabaseClient(mode='w')
         self.log = LogClient(name="ProxyController")
         self.debuggers = {}

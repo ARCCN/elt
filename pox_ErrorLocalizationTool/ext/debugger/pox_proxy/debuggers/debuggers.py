@@ -2,8 +2,7 @@ import random
 
 from pox.lib.revent import EventMixin
 
-from ..competition_errors import *
-
+from .competition_errors import *
 from .flow_table import TaggedFlowTable
 
 

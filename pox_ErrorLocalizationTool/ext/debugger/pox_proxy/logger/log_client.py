@@ -1,7 +1,6 @@
 import socket
 import time
 
-from ..competition_errors import *
 from ..message_server import ClosingMessage
 from ..interaction import Instantiator, ConnectionFactory
 from ..util import app_logging

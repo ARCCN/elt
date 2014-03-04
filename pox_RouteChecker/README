@@ -1,0 +1,12 @@
+    This is a debug_proxy + db_checker tool. Depends on POX controller v0.0.0. Can be modified to work with later versions.
+    Debug_proxy sits on Openflow channel to modify all FlowMods to mirror all the packets to controller as PacketIns. It also catches all such PacketIns and stores information about them to Database. (Traffic)
+    DB_Checker uses the information in Database to process user's queries about specific packets. It takes a part or all the header of packet and a point in network as input and outputs whether all the packets of this flow have visited this point on their way through network. If not, it tries to localize points in network where the packets turned off their successful paths to this point. It is also able to draw graphs of packet's routes by header and aggregate route (need ./graphs directory). It outputs graphs in specific format ready to be processed by standard utilities. 
+    This tool needs a Database to be prematurely created. It connects as 'user@localhost' to database 'Traffic' with password '1234'.
+    Several useful scripts in addition.
+    make_graph.sh
+    draw_all.sh
+    checker.sh
+    checker_start.sh
+    proxy_start.sh
+    
+    

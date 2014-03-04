@@ -1,0 +1,92 @@
+Maxim Perevedentsev, max.pereved@gmail.com
+Application Research Center for Computer Networks (ARCCN)
+
+-------------------------------------------------------------------------------
+
+Error Localization Tool for POX controller (POX_ELT).
+
+-------------------------------------------------------------------------------
+
+Contains:
+
+-------------------------------------------------------------------------------
+
+Main modules:
+
+1.  Database (client and server).
+    Stores FlowMod information and call stack.
+    Retrieves call stack by FlowMod.
+
+2.  Logger (client and server).
+    Receives error messages with FlowMods.
+    Queries Database about call stack.
+    Saves errors to log file.
+
+3.  FlowTable.
+    Checks for existence of Table Competition Errors on flowmods.
+    Tracks the actual state of switch tables by FlowRemoved.
+
+4.  ProxyController.
+    Grabs flowmods. Stores to FlowTable and sends to Database and Logger.
+
+-------------------------------------------------------------------------------
+
+Utility:
+
+1. Debuggers.
+   Simple error generators (as logger usage sample).
+
+2. Interaction.
+   Provides client-server connections.
+   Uses JSON pickling to encode common OpenFlow structures.
+   Main hack is Instantiator. Instead of sending package.class names
+   we send only class names and let clients instantiate class by name
+   from specific package.
+
+3. MessageServer.
+   Base asyncronious server using Interaction. Used in Database and Logger.
+
+4. of_01_debug.
+   Wrapper of openflow.of_01 for using ProxyController.
+
+-------------------------------------------------------------------------------
+
+Prerequisites:
+
+Language:
+    Python 2.7+
+
+Packages:
+    MySQLdb-python
+    POX
+
+Others:
+    We need a MySQL Database.
+
+    By default, we try to connect as:
+    user=       'user'
+    domain=     'localhost'
+    password=   '1234'
+    table_name= 'POX_proxy'
+
+    You can change it in pox_proxy.database module.
+
+-------------------------------------------------------------------------------
+
+Usage:
+
+1.  Start Database server:
+    python -m ext.debugger.utility.start_db_server
+
+2.  Start Logger server (has Database client, needs Database server running):
+    python -m ext.debugger.utility.start_log_server
+
+3.  Run controller with ProxyController (needs Database and Logger servers):
+    We put a proxy on Connection so our module should be loaded first.
+    ./pox.py ext.debugger.pox_proxy.of_01_debug <...>
+
+4.  Safely stop servers:
+    python -m ext.debugger.utility.stop_log_server
+    python -m ext.debugger.utility.stop_db_server
+
+Or you can just run ./start_scenario.sh.

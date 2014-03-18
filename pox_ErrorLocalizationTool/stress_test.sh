@@ -22,12 +22,12 @@ terminal='no'
 deb='ext.debugger.pox_proxy.of_01_debug'
 #echo $$ > stress_test.pid
 touch stress_test.log
-for size in 8;
+for size in 16;
 do
     echo "*******" >> stress_test.log
     echo $size >> stress_test.log
     echo "*******" >> stress_test.log
-    for len in 3;
+    for len in 1;
     do
         echo ------- >> stress_test.log
         echo $len >> stress_test.log
@@ -43,7 +43,7 @@ do
                 run_term $terminal "./pox.py forwarding.l2_learning"
                 echo 'No debug'
             else
-                run_term $terminal "./pox.py $deb --mult=$i forwarding.l2_learning forwarding.l3_learning"
+                run_term $terminal "./pox.py $deb --flow_table_controller=flow_table_config.cfg --fake_debugger=$i forwarding.l2_learning"
                 echo 'debug'
             fi
             pox_pid=$!

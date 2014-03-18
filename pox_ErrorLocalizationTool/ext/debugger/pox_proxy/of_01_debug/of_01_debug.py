@@ -7,9 +7,15 @@ loading standard openflow.of_01
 """
 import inspect
 import time
+import sys
+import socket
+from errno import ECONNRESET
+import exceptions
 
-from pox.openflow.of_01 import *
+from pox.openflow.of_01 import (unpackers, Connection, of, core, handlers,
+                                wrap_socket, log, OpenFlow_01_Task, Select)
 import pox.core
+import pox.openflow.debug
 
 from ..util import profile
 
@@ -42,8 +48,7 @@ class ProxiedConnection (Connection):
             if data.match.is_exact:
                 data.priority = 65535
             self.save_info(data)
-            # TODO: FIX!!!
-            # data.flags |= of.OFPFF_SEND_FLOW_REM
+            # HINT: Debuggers can modify the message
         super(ProxiedConnection, self).send(data)
 
     def read(self):

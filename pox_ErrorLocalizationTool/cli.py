@@ -1,4 +1,4 @@
-from ext.debugger.pox_proxy.cli import *
+from ext.debugger.pox_proxy.database.cli import *
 
 if __name__ == '__main__':
     cli = CLI()

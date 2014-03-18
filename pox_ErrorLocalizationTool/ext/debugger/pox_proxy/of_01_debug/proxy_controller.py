@@ -17,14 +17,19 @@ class ProxyController:
     def __init__(self, **kw):
         #EventMixin.__init__(self)
         self.db = DatabaseClient(mode='w')
-        self.log = LogClient(name="ProxyController")
+        #self.log = LogClient(name="ProxyController")
         self.debuggers = {}
-        self.debuggers[FlowTableController(self)] = LogClient(name="Proxy.FlowTable")
-        mult = float(kw.get("mult", 0.1))
-        self.debuggers[FakeDebugger(self, mult=mult)] = LogClient(name="Proxy.FakeDeb")
+        if "flow_table_controller" in kw:
+            self.debuggers[FlowTableController(
+                self, kw["flow_table_controller"]
+                )] = LogClient(name="Proxy.FlowTable")
+        if "fake_debugger" in kw:
+            self.debuggers[FakeDebugger(
+                self, mult=kw["fake_debugger"]
+                )] = LogClient(name="Proxy.FakeDeb")
         #core.register("flow_mod_proxy", self)
         self.flowmods = 0
-       # self.f = open('ProxyController.stats', 'w')
+        # self.f = open('ProxyController.stats', 'w')
 
     def close(self):
         #self.f.close()
@@ -47,7 +52,7 @@ class ProxyController:
             self.db.reconnect()
 
         for d in self.debuggers.keys():
-            d.process_flow_mod(dpid, flow_mod)
+            d.process_flow_mod(dpid, flow_mod, code_entries[0][0])
 
     def process_flow_removed(self, dpid, flow_rem):
         for d in self.debuggers:

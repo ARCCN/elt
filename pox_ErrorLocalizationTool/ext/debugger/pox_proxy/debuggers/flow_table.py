@@ -29,36 +29,34 @@ def ip_to_key(addr):
 
 class TableEntryTag(object):
 
-    def __init__(self, local_id=None, flowmod_id=None):
-        self.local_id = local_id
-        self.flowmod_id = flowmod_id
+    def __init__(self, apps=None):
+        self.history = []
+        self.apps = set()
+        self.add_history(apps)
+            
+    def add_history(self, apps):
+        if apps is not None:
+            self.history.append(apps)
+            self.apps.update(apps)
 
 
 class TaggedTableEntry(TableEntry):
 
-    """
-    Each table entry contains tag (local_id, flowmod_id).
-    local_id        id for using inside a session.
-                    Local pointer to assign flowmod_id later.
-    flowmod_id      id for using between sessions.
-                    The pointer in database.
-    """
-
     def __init__(self, priority=of.OFP_DEFAULT_PRIORITY, cookie=0,
                  idle_timeout=0, hard_timeout=0, flags=0, match=None,
-                 actions=[], buffer_id=None, now=None, local_id=None,
-                 flowmod_id=None, command=None, dpid=None):
+                 actions=[], buffer_id=None, now=None, apps=None, 
+                 command=None, dpid=None):
         if match is None:
             match = of.ofp_match()
         TableEntry.__init__(self, priority, cookie, idle_timeout, hard_timeout,
                             flags, match, actions, buffer_id, now)
-        self.tag = TableEntryTag(local_id, flowmod_id)
+        self.tag = TableEntryTag(apps)
         self.command = command
         self.dpid = dpid
         self.entry_name = "ofp_flow_mod"
 
     @staticmethod
-    def from_flow_mod_tag(flow_mod, dpid, local_id=None, flowmod_id=None):
+    def from_flow_mod_tag(flow_mod, dpid, apps=None):
         """Create new Entry with given ids."""
         priority = flow_mod.priority
         cookie = flow_mod.cookie
@@ -69,8 +67,7 @@ class TaggedTableEntry(TableEntry):
         command = flow_mod.command
         return TaggedTableEntry(priority, cookie, flow_mod.idle_timeout,
                                 flow_mod.hard_timeout, flags, match, actions,
-                                buffer_id, local_id=local_id,
-                                flowmod_id=flowmod_id, command=command, 
+                                buffer_id, apps=apps, command=command, 
                                 dpid=dpid)
 
     @staticmethod
@@ -152,8 +149,6 @@ class TaggedFlowTable(FlowTable):
         FlowTable.__init__(self)
         self.nexus = nexus
         self._table = set()
-        # Used by controller to select Table by local_id.
-        self.local_ids = {}
         self.dpid = dpid
         self.fields = {}
         for f in self.dict_field_names:
@@ -208,7 +203,7 @@ class TaggedFlowTable(FlowTable):
                                           raise_error=False)
 
     #@profile
-    def process_flow_mod(self, flow_mod, local_id=None, flowmod_id=None):
+    def process_flow_mod(self, flow_mod, apps):
         """
         Process a flow mod sent to the switch
         @return a tuple (added|modified|removed, [list of affected entries])
@@ -234,25 +229,32 @@ class TaggedFlowTable(FlowTable):
                 "flow_mod outport checking not implemented")
 
         current = TaggedTableEntry.from_flow_mod_tag(flow_mod, self.dpid,
-                                                     local_id, flowmod_id)
+                                                     apps)
         current.entry_name = "ofp_flow_mod"
         result = None
         if flow_mod.command == of.OFPFC_ADD:
-            result = self.add_entry_error_checking(current, check_overlap)
+            result = self.add_entry_error_checking(current,
+                                                   check_overlap)
         elif (flow_mod.command == of.OFPFC_MODIFY or
               flow_mod.command == of.OFPFC_MODIFY_STRICT):
             is_strict = (flow_mod.command == of.OFPFC_MODIFY_STRICT)
             result = self.modify_error_checking(current,
-                                              is_strict, check_overlap)
+                                                is_strict, check_overlap)
         elif (flow_mod.command == of.OFPFC_DELETE or
               flow_mod.command == of.OFPFC_DELETE_STRICT):
             is_strict = (flow_mod.command == of.OFPFC_DELETE_STRICT)
-            result = self.delete_error_checking(current, is_strict)
+            result = self.delete_error_checking(current, 
+                                                is_strict)
         else:
             raise AttributeError("Command not yet implemented: %s" %
                                  flow_mod.command)
         current.entry_name = "rule"
         return result
+
+    def is_app_error(self, tag1, tag2):
+        return (len(tag1.apps) != 1 or 
+                len(tag2.apps) != 1 or
+                tag1.apps != tag2.apps)
 
     def add_entry_error_checking(self, current, check_overlap):
         """ Add entry to table raising CompetitionErrors if necessary."""
@@ -265,6 +267,8 @@ class TaggedFlowTable(FlowTable):
         # 0.01ms
         exact = self.select_matching_entries(overlapping, current.match,
                                              current.priority, strict=True)
+        if len(exact) > 1:
+            raise Exception("More than one rule with such match/priority")
         # Openflow-overlapping with CHECK_OVERLAP -> early exit, no events.
         if check_overlap and len(exact) > 0:
             return ("added", [])
@@ -277,16 +281,19 @@ class TaggedFlowTable(FlowTable):
         # exactly matching -> modified
         modified[current] = set()
         for entry in exact:
-            for a1, a2 in zip(current.actions, entry.actions):
-                if a1 != a2:
-                    print a1.max_len, a2.max_len
-                    modified[current].add(entry)
-                    break
+            if self.is_app_error(current.tag, entry.tag):
+                for a1, a2 in zip(current.actions, entry.actions):
+                    if a1 != a2:
+                        print a1.max_len, a2.max_len
+                        modified[current].add(entry)
+                        break
         overlapping -= exact
 
         masked[current] = set()
         undefined[current] = set()
         for entry in overlapping:
+            if not self.is_app_error(current.tag, entry.tag):
+                continue
             # overlapping with lower effective priority -> masked
             # TODO: In OF 1.1+, exact matching no longer matters.
             if (entry.priority < current.priority or
@@ -310,6 +317,9 @@ class TaggedFlowTable(FlowTable):
         self.raise_competition(masked, None, modified, undefined)
         #print 'added', len(self._table)
         # 0.15ms
+        if len(exact) > 0:
+            entry.tag.add_history(current.tag.apps)
+            current.tag = entry.tag
         return self.add_entry_simple(current)
 
     def modify_error_checking(self, current, is_strict=False,
@@ -324,9 +334,9 @@ class TaggedFlowTable(FlowTable):
                                                    inner=True, outer=False)
         for entry in overlapping:
             if entry.priority == current.priority:
-                flow_modified[current].add(copy.deepcopy(entry))
-                self.remove_local_id(entry.tag.local_id)
-                entry.tag = copy.deepcopy(current.tag)
+                if self.is_app_error(current.tag, entry.tag):
+                    flow_modified[current].add(copy.deepcopy(entry))
+                entry.tag.add_history(current.tag.apps)
                 entry.actions = current.actions
                 modified.append(entry)
 
@@ -334,9 +344,7 @@ class TaggedFlowTable(FlowTable):
             # if no matching entry is found, modify acts as add
             return self.add_entry_error_checking(current, check_overlap)
         else:
-            self.add_local_id(current.tag.local_id, modified)
             self.raise_competition(modified=flow_modified)
-            print 'modified'
             return ("modified", modified)
 
     def delete_error_checking(self, current, is_strict=False,
@@ -348,19 +356,19 @@ class TaggedFlowTable(FlowTable):
         else:
             overlapping = self.overlapping_entries(current.match,
                                                    inner=True, outer=False)
+        deleted = set()
         for entry in overlapping:
             if entry.priority == current.priority:
                 removed.append(entry)
+                if self.is_app_error(current.tag, entry.tag):
+                    deleted.add(entry)
         #print 'Removed', len(removed),'/', len(self._table)
         if raise_error:
-            print 'Raising'
-            deleted = {current: set(removed)}
-            self.raise_competition(deleted=deleted)
+            self.raise_competition(deleted={current : deleted})
         return self.remove_entries_simple(removed)
 
     def add_entry_simple(self, current):
         """ Add entry and set indexes."""
-        self.add_local_id(current.tag.local_id)
         for f in self.dict_field_names:
             attr = getattr(current.match, f)
             if attr not in self.fields[f]:
@@ -384,8 +392,6 @@ class TaggedFlowTable(FlowTable):
 
     def remove_entries_simple(self, removed):
         """ Remove entries and clear indexes."""
-        for entry in removed:
-            self.remove_local_id(entry.tag.local_id)
 
         for f in self.dict_field_names:
             for current in removed:
@@ -492,7 +498,7 @@ class TaggedFlowTable(FlowTable):
                     events.append(e)
         for e in events:
             self.nexus.handle_CompetitionError(e)
-
+'''
     def assign_flowmod_id(self, local_id, flowmod_id):
         """ Set flowmod_id by local_id. """
         for entry in self._table:
@@ -510,3 +516,4 @@ class TaggedFlowTable(FlowTable):
             self.local_ids[local_id] -= count
         if self.local_ids[local_id] <= 0:
             del self.local_ids[local_id]
+'''

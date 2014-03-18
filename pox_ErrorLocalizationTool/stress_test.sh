@@ -43,7 +43,7 @@ do
                 run_term $terminal "./pox.py forwarding.l2_learning"
                 echo 'No debug'
             else
-                run_term $terminal "./pox.py $deb --flow_table_controller=flow_table_config.cfg --fake_debugger=$i forwarding.l2_learning"
+                run_term $terminal "./pox.py $deb --flow_table_controller=flow_table_config.cfg --fake_debugger=$i forwarding.l2_learning forwarding.l3_learning"
                 echo 'debug'
             fi
             pox_pid=$!

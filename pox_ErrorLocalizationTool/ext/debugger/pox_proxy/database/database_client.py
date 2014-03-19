@@ -23,15 +23,16 @@ class DatabaseClient:
     Connects to Database. Supports flowmod addition and retrieving.
     Supports sync/async queries.
     """
-    def __init__(self, port=PORT, mode='w'):
+    def __init__(self, port=PORT, mode='w', connect=True):
         self.query = ""
         self.port = port
         self.connection_factory = ConnectionFactory(
                     instantiator = Instantiator(
                         module="ext.debugger.pox_proxy.database.messages"))
         self.connection = None
-        while self.reconnect() is False:
-            time.sleep(0.1)
+        if connect:
+            while self.reconnect() is False:
+                time.sleep(0.1)
         if mode.find('w') != -1:
             self.writing = True
         else:

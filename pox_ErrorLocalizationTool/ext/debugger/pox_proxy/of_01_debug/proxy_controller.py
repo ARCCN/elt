@@ -23,10 +23,12 @@ class ProxyController:
             self.debuggers[FlowTableController(
                 self, kw["flow_table_controller"]
                 )] = LogClient(name="Proxy.FlowTable")
+            print "Flow Table Controller is up!", kw["flow_table_controller"]
         if "fake_debugger" in kw:
             self.debuggers[FakeDebugger(
                 self, mult=kw["fake_debugger"]
                 )] = LogClient(name="Proxy.FakeDeb")
+            print "Fake Debugger is up!", kw["fake_debugger"]
         #core.register("flow_mod_proxy", self)
         self.flowmods = 0
         # self.f = open('ProxyController.stats', 'w')

@@ -181,7 +181,7 @@ def create_topo(type="single"):
 
 topos = {'line': (lambda(h) : LineTopo (5, h))}
 
-if __name__ == '__main__':
+def main():
     setLogLevel( 'info' )
     topo = 'single,32'
     args = sys.argv[1:]
@@ -190,3 +190,6 @@ if __name__ == '__main__':
         if k == "--topo":
             topo = v
     multiping( topo, chunksize=4, seconds=1200 )
+
+if __name__ == '__main__':
+    main()

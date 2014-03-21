@@ -1,0 +1,20 @@
+strict digraph  {
+	Input [color=green,
+		style=filled];
+	Output [color=blue,
+		style=filled];
+	Input -> 1	 [label=2,
+		len=2];
+	1 -> 2	 [label=1,
+		len=2];
+	1 -> Check	 [label=1,
+		len=2];
+	2 -> Check	 [label=1,
+		len=2];
+	Check -> 2	 [label=1,
+		len=2];
+	Check -> drop [label=1,
+		len=2];
+	2 -> Output	 [label=1,
+		len=2];
+}

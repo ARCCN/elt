@@ -1,0 +1,23 @@
+strict graph  {
+	Input1 [color=green,
+		style=filled];
+	Input2 [color=green,
+		style=filled];
+	Input3 [color=green,
+		style=filled];
+	Check [color=red,
+		style=filled];
+	Input1 -- 1	 [len=2, style=bold];
+	Input1 -- 3	 [len=2];
+	1 -- 2	 [len=2, style=bold];
+	2 -- 11 [len=2];
+	2 -- 12 [len=2];
+	Check -- 2	 [len=2, style=bold];
+	Check -- 8 [len=2, style=bold];
+	8 -- 9 	[len=2];
+	8 -- Input3	[len=2, style=bold];
+	4 -- Check	 [len=2, style=bold];
+	Input2 -- 4	 [len=2, style=bold];
+	6 -- 4	 [len=2];
+	Input2 -- 5	 [len=2];
+}

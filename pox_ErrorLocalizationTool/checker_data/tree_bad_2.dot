@@ -1,0 +1,18 @@
+strict digraph  {
+	Input1 [color=green,
+		style=filled];
+	Input2 [color=green,
+		style=filled];
+	Input1 -> Check	 [label=1,
+		len=2, style=dotted];
+	Check -> 1	 [label=1,
+		len=2, style=dotted];
+	1 -> Check	 [label=1,
+		len=2, style=dotted];
+	Input2 -> 1	 [label=1,
+		len=2, style=dashed];
+	Check -> drop1	 [label=1,
+		len=2, style=dotted];
+	1 -> drop2 [label=1,
+		len=2, style=dashed];
+}

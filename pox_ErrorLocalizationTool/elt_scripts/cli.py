@@ -1,4 +1,4 @@
-from ext.debugger.pox_proxy.database.cli import main
+from ext.debugger.pox_proxy import db_cli
 from subprocess import Popen
 import sys
 import code
@@ -15,7 +15,7 @@ timer = None
 debug_sample = [
         "ext.debugger.pox_proxy.of_01_debug",
         "--fake_debugger=0.1",
-        "--flow_table_controller=flow_table_config.cfg",
+        "--flow_table_controller=config/flow_table_config.cfg",
         "forwarding.l2_learning",
         "forwarding.l3_learning"
         ]
@@ -75,7 +75,7 @@ def start(p):
     return p
 
 def db_console():
-    main()
+    db_cli()
     sys.ps1 = "POX_ELT>"
     sys.ps2 = "..."
 

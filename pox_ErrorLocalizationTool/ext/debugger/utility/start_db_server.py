@@ -1,4 +1,4 @@
-from ext.debugger.pox_proxy.database import DatabaseServer
+from ext.debugger.pox_proxy import DatabaseServer
 import time
 
 server = DatabaseServer()

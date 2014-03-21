@@ -23,7 +23,7 @@ import exceptions
 from errno import EAGAIN, ECONNRESET
 import time
 
-from ext.debugger.debug_proxy.debug_proxy import ProxyTask
+from ext.debugger.debug_proxy import ProxyTask
 import pox.lib.recoco as recoco
 
 scheduler = None
@@ -43,7 +43,7 @@ def process_args():
   if "target_port" not in curargs:
     curargs["target_port"] = 6632
 
-    
+
 
 def main():
   process_args()

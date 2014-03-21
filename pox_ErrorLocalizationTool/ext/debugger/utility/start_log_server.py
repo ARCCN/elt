@@ -1,4 +1,4 @@
-from ext.debugger.pox_proxy.logger import LogServer
+from ext.debugger.pox_proxy import LogServer
 import time
 
 server = LogServer()

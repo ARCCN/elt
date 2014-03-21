@@ -1,7 +1,9 @@
 import code
 import sys
 
-from ..database import *
+from .database_client import DatabaseClient
+from .database import Database
+
 
 
 class CLI:
@@ -58,7 +60,7 @@ class CLI:
         h += "\tdb_client.close()       Stop DB server.\n"
         print h
 
-def main():
+def db_cli():
     cli = CLI()
     sys.ps1 = 'DB>'
     sys.ps2 = '...'

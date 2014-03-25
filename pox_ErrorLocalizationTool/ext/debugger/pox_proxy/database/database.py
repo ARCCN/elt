@@ -478,7 +478,7 @@ class Database:
         query = "SELECT * FROM FlowMatch WHERE ID = %d" % match_ID
         cur = self.con.cursor(mdb.cursors.DictCursor)
         cur.execute(query)
-        return self.create_match(cur.fetchall())
+        return self.create_match(cur.fetchall()[0])
 
     def create_match(self, d):
         m = of.ofp_match()

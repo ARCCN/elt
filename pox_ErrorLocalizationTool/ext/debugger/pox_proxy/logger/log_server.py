@@ -74,7 +74,7 @@ class LogServer(PythonMessageServer):
             pass
         if self.single_queue:
             self.check_iter += 1
-            if self.check_iter % 1000 == 0:
+            if self.check_iter % 10000 == 0:
                 log.info('Received %-8d Queue %-8d Pending %-8d' % (
                     self.received, len(self.queue), len(self.pending)))
             pool = (len(self.queue) if len(self.queue) < BUFFER_SIZE

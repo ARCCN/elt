@@ -32,7 +32,7 @@ do
         echo ------- >> stress_test.log
         echo $len >> stress_test.log
         echo ------- >> stress_test.log
-        for i in 0.1;
+        for i in 0.0;
         do
             run_term $terminal 'python -m ext.debugger.utility.start_db_server'
             db_pid=$!

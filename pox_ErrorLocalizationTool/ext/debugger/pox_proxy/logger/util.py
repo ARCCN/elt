@@ -70,7 +70,7 @@ class MessageInfo():
             for i, qid in enumerate(self.qids):
                 self.indices_to_qids[self.indices[i]] = qid
         return filled
-                
+
     def get_info_and_code(self, index_pair):
         qid = self.indices_to_qids[index_pair]
         return (self.infos[qid], self.code[qid])
@@ -112,16 +112,16 @@ class MessageInfo():
             text += part + c
         text += self.parts[-1]
         return text
-    
+
     def get_data(self):
         res = []
         for qid in self.qids:
             res.append((self.infos[qid], self.code[qid]))
         return res
-    
+
     def get_query_count(self, qid):
         return self.query_count[qid]
-    
+
     def inc_query_count(self, qid):
         self.query_count[qid] += 1
 

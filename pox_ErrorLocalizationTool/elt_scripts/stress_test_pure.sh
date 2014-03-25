@@ -18,21 +18,21 @@ function run_term {
     fi
 }
 
-terminal='xterm'
+terminal='no'
 deb='ext.debugger.pox_proxy.of_01_debug'
 #echo $$ > stress_test.pid
 touch stress_test.log
-for size in 16;
+for size in 8 16 32 64;
 do
     echo "*******" >> stress_test.log
     echo $size >> stress_test.log
     echo "*******" >> stress_test.log
-    for len in 3;
+    for len in 1 2 3 4 5;
     do
         echo ------- >> stress_test.log
         echo $len >> stress_test.log
         echo ------- >> stress_test.log
-        for i in 0.1;
+        for i in no 0.0 0.1 0.5;
         do
             run_term $terminal 'python -m ext.debugger.utility.start_db_server'
             db_pid=$!
@@ -43,7 +43,7 @@ do
                 run_term $terminal "./pox.py forwarding.l2_learning"
                 echo 'No debug'
             else
-                run_term $terminal "./pox.py $deb --flow_table_controller=config/flow_table_config.cfg --fake_debugger=$i forwarding.l2_learning ext.debugger.controllers.interrupter"
+                run_term $terminal "./pox.py $deb forwarding.l2_learning"
                 echo 'debug'
             fi
             pox_pid=$!

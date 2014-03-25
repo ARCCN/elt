@@ -15,7 +15,7 @@ def instantiate_fm_or_rule(d):
         return r
     else:
         return None
-        
+
 
 class ofp_flow_mod(of.ofp_flow_mod):
     """
@@ -53,11 +53,11 @@ class ofp_flow_mod(of.ofp_flow_mod):
         d = self.__dict__.copy()
         acts = d["actions"]
         d["actions"] = []
-        
+
         def get_str(x):
             t = None if x is None else x.toStr()
             return t
-        
+
         for a in acts:
             dic = a.__dict__.copy()
             dic["type"] = a.type
@@ -109,7 +109,8 @@ class ofp_match(of.ofp_match):
 
     def __setstate__(self, d):
         for k, v in d.items():
-            setattr(self, k, v)
+            if k != 'wildcards':
+                setattr(self, k, v)
         if d.get("nw_src", None) != None:
             self.nw_src = IPAddr(d["nw_src"])
         if d.get("nw_dst", None) != None:
@@ -118,14 +119,19 @@ class ofp_match(of.ofp_match):
             self.dl_src = EthAddr(d["dl_src"])
         if d.get("dl_dst", None) != None:
             self.dl_dst = EthAddr(d["dl_dst"])
+        try:
+            if d['wildcards'] != self.wildcards:
+                print 'Wildcard mismatch!'
+        except:
+            pass
 
     def __getstate__(self):
         d = {}
-        for k, v in self.__dict__.items():
+        for k in self.__dict__.keys():
             if k.startswith('_'):
-                d[k[1:]] = v
+                d[k[1:]] = getattr(self, k[1:])
             else:
-                d[k] = v
+                d[k] = getattr(self, k)
         def get_str(x):
             t = None if x is None else x.toStr()
             return t
@@ -147,5 +153,5 @@ def ofp_action(d):
     if "dl_addr" in d:
         act.dl_addr = EthAddr(d["dl_addr"])
     if "nw_addr" in d:
-        act.nw_addr = IPAddr(d["nw_addr"])  
+        act.nw_addr = IPAddr(d["nw_addr"])
     return act

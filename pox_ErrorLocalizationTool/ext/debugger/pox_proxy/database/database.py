@@ -171,7 +171,6 @@ class Database:
         if not isinstance(message.data.match, of.ofp_match):
             raise TypeError("Match is not instance of ofp_match")
         for a in message.data.actions:
-            #print a
             if not isinstance(a, of.ofp_action_base):
                 raise TypeError("Action is not instance of ofp_action_base")
         if not isinstance(message.dpid, numbers.Integral):
@@ -510,6 +509,7 @@ class Database:
         add_actionpats = self.get_action_patterns(add_ids)#
         good_adds = [id for id, actpat in zip(add_ids, add_actionpats)
                     if actpat == actionpat_ID]
+
         #Last add is good -> return.
         if add_ids[-1] in good_adds:
             return [('OFPFC_ADD', add_ids[-1])]
@@ -525,11 +525,17 @@ class Database:
         good_strict_mods = [id for id, m in zip(mod_strict_ids, mod_strict_matches)
                             if m == match]
         good_mods.extend(good_strict_mods)
+
         if len(good_mods) == 0:
-            return null_result
+            if len(good_adds) > 0:
+                return [('OFPFC_ADD', good_adds[-1])]
+            else:
+                return null_result
+
         max_mod = max(good_mods)
         command = ("OFPFC_MODIFY_STRICT" if max_mod in good_strict_mods
                    else "OFPFC_MODIFY")
+
         #Decide what was later: good add or bad add + modify.
         #Candidate:
         try:

@@ -6,18 +6,16 @@ import pox.openflow.libopenflow_01 as of
 class XmlMatch(ET.Element):
     def __init__(self, match):
         ET.Element.__init__(self, 'match')
-        for k in ["wildcards", "in_port", "dl_src", "dl_dst", 
-                  "dl_vlan", "dl_vlan_pcp", "dl_type", "nw_tos", "nw_proto", 
+        for k in ["wildcards", "in_port", "dl_src", "dl_dst",
+                  "dl_vlan", "dl_vlan_pcp", "dl_type", "nw_tos", "nw_proto",
                   "nw_src", "nw_dst", "tp_src",  "tp_dst"]:
             v = getattr(match, k, None)
             elem = ET.Element(k)
-            if v is None:
-                elem.text = 'NULL'
-            else:
-                elem.text = str(v)
+            elem.text = str(v)
             self.append(elem)
- 
- 
+        #print match
+
+
 class XmlCode(ET.Element):
     def __init__(self, code):
         ET.Element.__init__(self, 'code')
@@ -43,7 +41,7 @@ class XmlCode(ET.Element):
             else:
                 raise TypeError("Call stack type invalid")
             self.append(e)
-            
+
 
 class XmlAction(ET.Element):
     def __init__(self, action):
@@ -53,8 +51,8 @@ class XmlAction(ET.Element):
             elem = ET.Element(str(k))
             elem.text = str(v)
             self.append(elem)
-            
-            
+
+
 class XmlActions(ET.Element):
     def __init__(self, actions):
         ET.Element.__init__(self, 'actions')
@@ -66,7 +64,7 @@ class XmlFlowMod(ET.Element):
     def __init__(self, flow_mod):
         ET.Element.__init__(self, 'ofp_flow_mod')
         self.set_fields(flow_mod)
-        
+
     def set_fields(self, flow_mod):
         for field in ['dpid', 'command', 'priority']:
             try:
@@ -74,16 +72,20 @@ class XmlFlowMod(ET.Element):
                 elem.text = str(getattr(flow_mod, field))
                 self.append(elem)
             except:
+                if field == 'command':
+                    elem = ET.Element(field)
+                    elem.text = 'None'
+                    self.append(elem)
                 pass
         self.append(XmlMatch(flow_mod.match))
         self.append(XmlActions(flow_mod.actions))
-        
+
 
 class XmlRule(XmlFlowMod):
     def __init__(self, rule):
         ET.Element.__init__(self, 'rule')
         self.set_fields(rule)
-        
+
 
 class XmlInfo(ET.Element):
     """
@@ -122,7 +124,7 @@ class XmlEntry(ET.Element):
             self.append(name)
         else:
             self.append(ET.Element('Empty'))
-        self.append(XmlCode(code))  
+        self.append(XmlCode(code))
 '''
 
 class XmlEntryGroup(ET.Element):
@@ -147,13 +149,13 @@ class XmlEvent(ET.Element):
         desc.text = minfo.event.desc
         self.append(desc)
         self.tail = '\n'
-        
+
         for i, entry_group in enumerate(minfo.event.entry_groups):
             xml_entries = []
             for j in xrange(len(entry_group.entries)):
                 xml_entries.append(XmlInfo(*minfo.get_info_and_code((i, j))))
             self.append(XmlEntryGroup(entry_group, xml_entries))
-            
+
 
 class XmlReport:
 
@@ -192,5 +194,5 @@ class XmlReport:
         return True
 
 
-        
+
 

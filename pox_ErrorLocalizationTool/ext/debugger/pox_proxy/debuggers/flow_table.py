@@ -6,13 +6,13 @@
 import copy
 from pytrie import Trie
 
-from pox.openflow.flow_table import (TableEntry, FlowTable, 
+from pox.openflow.flow_table import (TableEntry, FlowTable,
                                      FlowTableModification)
 import pox.openflow.libopenflow_01 as of
 
 from ..util import profile, ip_to_uint
 
-from .competition_errors import (FlowMasked, FlowModified, 
+from .competition_errors import (FlowMasked, FlowModified,
                                  FlowUndefined, FlowDeleted)
 
 
@@ -33,7 +33,7 @@ class TableEntryTag(object):
         self.history = []
         self.apps = set()
         self.add_history(apps)
-            
+
     def add_history(self, apps):
         if apps is not None:
             self.history.append(apps)
@@ -44,7 +44,7 @@ class TaggedTableEntry(TableEntry):
 
     def __init__(self, priority=of.OFP_DEFAULT_PRIORITY, cookie=0,
                  idle_timeout=0, hard_timeout=0, flags=0, match=None,
-                 actions=[], buffer_id=None, now=None, apps=None, 
+                 actions=[], buffer_id=None, now=None, apps=None,
                  command=None, dpid=None):
         if match is None:
             match = of.ofp_match()
@@ -67,7 +67,7 @@ class TaggedTableEntry(TableEntry):
         command = flow_mod.command
         return TaggedTableEntry(priority, cookie, flow_mod.idle_timeout,
                                 flow_mod.hard_timeout, flags, match, actions,
-                                buffer_id, apps=apps, command=command, 
+                                buffer_id, apps=apps, command=command,
                                 dpid=dpid)
 
     @staticmethod
@@ -243,7 +243,7 @@ class TaggedFlowTable(FlowTable):
         elif (flow_mod.command == of.OFPFC_DELETE or
               flow_mod.command == of.OFPFC_DELETE_STRICT):
             is_strict = (flow_mod.command == of.OFPFC_DELETE_STRICT)
-            result = self.delete_error_checking(current, 
+            result = self.delete_error_checking(current,
                                                 is_strict)
         else:
             raise AttributeError("Command not yet implemented: %s" %
@@ -252,7 +252,7 @@ class TaggedFlowTable(FlowTable):
         return result
 
     def is_app_error(self, tag1, tag2):
-        return (len(tag1.apps) != 1 or 
+        return (len(tag1.apps) != 1 or
                 len(tag2.apps) != 1 or
                 tag1.apps != tag2.apps)
 
@@ -297,13 +297,13 @@ class TaggedFlowTable(FlowTable):
             # overlapping with lower effective priority -> masked
             # TODO: In OF 1.1+, exact matching no longer matters.
             if (entry.priority < current.priority or
-                    entry.match.is_wildcarded() and
-                    not current.match.is_wildcarded()):
+                    entry.match.is_wildcarded and
+                    not current.match.is_wildcarded):
                 masked[current].add(entry)
             # wc, overlapping with equal priority -> undefined behavior
             # TODO: exact matching no longer matters
             elif (entry.priority == current.priority and
-                  entry.match.is_wildcarded()):
+                  entry.match.is_wildcarded):
                 undefined[current].add(entry)
             else:
                 # overlapping with higher eff. priority -> current is masked

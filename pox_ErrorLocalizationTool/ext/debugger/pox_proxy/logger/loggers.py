@@ -29,21 +29,22 @@ class TextLogger:
 
     def log_event(self, conn_name, minfo):
         self.info(conn_name + ":\n" + str(minfo))
-        
+
     def flush(self):
         pass
-        
+
 
 class XmlLogger:
     def __init__(self):
         self.conn_to_report = {}
-        
+
     def log_event(self, conn_name, minfo):
         if conn_name not in self.conn_to_report:
-            self.conn_to_report[conn_name] = XmlReport("event_logs/" + conn_name + ".xml", conn_name)
+            self.conn_to_report[conn_name] = XmlReport(
+                    "event_logs/" + conn_name + ".xml", conn_name)
         self.conn_to_report[conn_name].add_event(minfo)
-        
+
     def flush(self):
         for v in self.conn_to_report.values():
             v.flush()
-            
+

@@ -40,7 +40,7 @@ class LogServer(PythonMessageServer):
         PythonMessageServer.__init__(self, port, enqueue=True,
                                      single_queue=True, cooldown=0.0,
                                      interval=1, connection_factory=factory)
-        
+
     def close(self):
         while self.enqueue and self.check_waiting_messages() is True:
             pass

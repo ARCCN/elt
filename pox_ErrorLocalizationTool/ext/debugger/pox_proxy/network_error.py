@@ -29,7 +29,7 @@ class Entry:
             self.name = data.name
         except:
             pass
-        
+
     def __setstate__(self, d):
         self.dpid = d.get("dpid")
         self.data = instantiate_fm_or_rule(d.get("data"))
@@ -37,14 +37,14 @@ class Entry:
             self.name = self.data.name
         except:
             pass
-        
+
     @staticmethod
     def create_flow_mod(dpid, match, actions, command, priority):
         e = Entry()
         e.data = ofp_flow_mod(match, actions, command, priority)
         e.dpid = dpid
         return e
-    
+
     @staticmethod
     def create_rule(dpid, match, actions, priority):
         e = Entry()
@@ -66,7 +66,7 @@ class EntryGroup:
             else:
                 try:
                     t = e.entry_name.lower()
-                    if t in ["ofp_flow_mod", "flow_mod", 
+                    if t in ["ofp_flow_mod", "flow_mod",
                              "flowmod", "ofpflowmod"]:
                         self.entries.append(Entry.create_flow_mod(
                             e.dpid, e.match, e.actions, e.command, e.priority))
@@ -78,8 +78,8 @@ class EntryGroup:
                 except:
                     self.entries = []
                     return
-        
-        
+
+
     def __setstate__(self, d):
         self.name = d.get("name", "")
         self.desc = d.get("desc", "")
@@ -102,11 +102,11 @@ class NetworkError(Event):
         self.time += "." + "%03d" % (int((t - int(t)) * 1000))
         self.desc = "No description"
         self.entry_groups = []
-        
+
     @property
     def name(self):
         return self._name
-        
+
     def __setstate__(self, d):
         self._name = d.get("_name", self._name)
         self.desc = d.get("desc", "")
@@ -118,7 +118,7 @@ class NetworkError(Event):
                 g = EntryGroup()
                 g.__setstate__(eg)
                 self.entry_groups.append(g)
-                
+
     def __getstate__(self):
         d = {}
         d["_name"] = self._name
@@ -126,17 +126,17 @@ class NetworkError(Event):
         d["time"] = self.time
         d["entry_groups"] = self.entry_groups
         return d
-    
+
     def log(self):
         """
         Return the message to be saved to log.
         %CODE is used for call stack substitution.
         """
         return "%s:\n" % (type(self))
-    
+
     def args(self):
         """
-        Return [Entry1, Entry2, ...] to be used 
+        Return [Entry1, Entry2, ...] to be used
         for call stack retrieval.
         """
         args = []
@@ -144,7 +144,7 @@ class NetworkError(Event):
             for e in eg.entries:
                 args.append(e)
         return args
-    
+
     def indices(self):
         """
         Return [(Group_index, Entry_index)]
@@ -155,3 +155,7 @@ class NetworkError(Event):
             for e_i in xrange(len(self.entry_groups[eg_i].entries)):
                 indices.append((eg_i, e_i))
         return indices
+
+    def __str__(self):
+        return "\n".join([str(e.data.match) for group in self.entry_groups for e in group.entries])
+

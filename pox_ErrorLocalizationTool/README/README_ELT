@@ -69,7 +69,7 @@ Others:
     password=   '1234'
     table_name= 'POX_proxy'
 
-    You can change it in pox_proxy.database module.
+    You can change it in pox_proxy/database/database.py.
 
 -------------------------------------------------------------------------------
 
@@ -89,4 +89,4 @@ Usage:
     python -m ext.debugger.utility.stop_log_server
     python -m ext.debugger.utility.stop_db_server
 
-Or you can just run ./start_scenario.sh.
+Or you can just run ./stress_test.sh.

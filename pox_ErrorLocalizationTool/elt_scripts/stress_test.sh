@@ -20,18 +20,20 @@ function run_term {
 
 terminal='xterm'
 deb='ext.debugger.pox_proxy.of_01_debug'
-#echo $$ > stress_test.pid
-touch stress_test.log
+log='stress_test.log'
+mn_log='multiping.log'
+
+touch $log
 for size in 16;
 do
-    echo "*******" >> stress_test.log
-    echo $size >> stress_test.log
-    echo "*******" >> stress_test.log
+    echo "*******" >> $log
+    echo $size >> $log
+    echo "*******" >> $log
     for len in 3;
     do
-        echo ------- >> stress_test.log
-        echo $len >> stress_test.log
-        echo ------- >> stress_test.log
+        echo ------- >> $log
+        echo $len >> $log
+        echo ------- >> $log
         for i in 0.0;
         do
             run_term $terminal 'python -m ext.debugger.utility.start_db_server'
@@ -47,7 +49,7 @@ do
                 echo 'debug'
             fi
             pox_pid=$!
-            run_term $terminal "python elt_scripts/multiping.py --topo=line,$len,$size" "multiping.log"
+            run_term $terminal "python elt_scripts/multiping.py --topo=line,$len,$size" "$mn_log"
             mn_pid=$!
             while ps -p $mn_pid > /dev/null; do sleep 0.5; done;
             kill -TERM $pox_pid
@@ -55,8 +57,8 @@ do
             while ps -p $log_pid > /dev/null; do sleep 0.5; done;
             python -m ext.debugger.utility.stop_db_server
             while ps -p $db_pid > /dev/null; do sleep 0.5; done;
-            echo $i >> stress_test.log
-            tail -n 1 multiping.log >> stress_test.log;
+            echo $i >> $log
+            tail -n 1 $mn_log >> $log;
         done;
     done;
 done

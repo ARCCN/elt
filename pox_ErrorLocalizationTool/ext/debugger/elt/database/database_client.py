@@ -24,11 +24,10 @@ class DatabaseClient:
     Supports sync/async queries.
     """
     def __init__(self, port=PORT, mode='w', connect=True):
-        self.query = ""
         self.port = port
         self.connection_factory = ConnectionFactory(
                     instantiator = Instantiator(
-                        module="ext.debugger.pox_proxy.database.messages"))
+                        module="ext.debugger.elt.database.messages"))
         self.connection = None
         if connect:
             while self.reconnect() is False:
@@ -66,25 +65,36 @@ class DatabaseClient:
         self.connection.close()
         self.connection = None
 
-    '''
-    def find_flow_mod(self, dpid, info):
+    def find_flow_mod(self, dpid, match, actions,
+                      command, priority):
         """
         Retrieve call stack for FlowMod.
-        QID doesn't matter here.
+        QID does not matter here.
         """
-        return self.query(FlowModQuery(dpid, info))
+        fm = ofp_flow_mod(match=match, actions=actions,
+                          command=command, priority=priority)
+        return self.query(FlowModQuery(dpid, fm))
 
-    def find_rule(self, dpid, info):
-        return self.query(RuleQuery(dpid, info))
+    def find_rule(self, dpid, match, actions, priority):
+        """
+        Retrieve call stack(-s) for Rule.
+        QID does not matter here.
+        """
+        rule = ofp_rule(match=match, actions=actions, priority=priority)
+        return self.query(RuleQuery(dpid, rule))
 
-    def query(self, msg):
+    def query(self, msg, async=False):
+        if not self.connection:
+            raise EOFError('DBClient: Connection closed')
         try:
-            return self.send_message(msg)
+            return self.send_message(msg, async=async)
+        except TimeoutException as e:
+            raise
         except:
             log.info('Connection closed. Try using db.reconnect()')
             self.connection.close()
             self.connection = None
-    '''
+            raise
 
     def find_flow_mod_async(self, dpid, match, actions,
                             command, priority, qid):
@@ -95,7 +105,7 @@ class DatabaseClient:
         #Hack! We save on __init__ calls.
         fm = ofp_flow_mod(match=match, actions=actions,
                           command=command, priority=priority)
-        return self.query_async(FlowModQuery(dpid, fm, qid))
+        return self.query(FlowModQuery(dpid, fm, qid), async=True)
 
     def find_rule_async(self, dpid, match, actions,
                         priority, qid):
@@ -104,20 +114,7 @@ class DatabaseClient:
         QID will be used to match request and response.
         """
         rule = ofp_rule(match=match, actions=actions, priority=priority)
-        return self.query_async(RuleQuery(dpid, rule, qid))
-
-    def query_async(self, msg):
-        if not self.connection:
-            raise EOFError('DBClient: Connection closed')
-        try:
-            return self.send_message(msg, async=True)
-        except TimeoutException as e:
-            raise
-        except:
-            log.info('Connection closed. Try using db.reconnect()')
-            self.connection.close()
-            self.connection = None
-            raise
+        return self.query(RuleQuery(dpid, rule, qid), async=True)
 
     def reconnect(self):
         try:

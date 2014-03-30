@@ -18,8 +18,8 @@ function run_term {
     fi
 }
 
-terminal='xterm'
-deb='ext.debugger.pox_proxy.of_01_debug'
+terminal='no'
+deb='ext.debugger.elt.of_01_debug'
 log='stress_test.log'
 mn_log='multiping.log'
 
@@ -34,7 +34,7 @@ do
         echo ------- >> $log
         echo $len >> $log
         echo ------- >> $log
-        for i in 0.0;
+        for i in 0.01;
         do
             run_term $terminal 'python -m ext.debugger.utility.start_db_server'
             db_pid=$!

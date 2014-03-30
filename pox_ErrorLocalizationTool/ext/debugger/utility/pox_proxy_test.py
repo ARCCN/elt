@@ -1,4 +1,4 @@
-from ext.debugger.pox_proxy.database import *
+from ext.debugger.elt.database import *
 
 d = Database()
 match = of.ofp_match()

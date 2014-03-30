@@ -3,7 +3,7 @@
 import time
 import sys
 import code
-from ext.debugger.debug_proxy import DBChecker
+from ext.debugger.checker import DBChecker
 
 def main():
     checker = DBChecker()

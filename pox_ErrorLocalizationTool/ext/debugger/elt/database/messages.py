@@ -9,7 +9,6 @@ class FlowModMessage(Message):
     """
     FlowMod info to be stored to Database.
     """
-
     def __init__(self, dpid=None, data=None, code_entries=None):
         Message.__init__(self)
         self.dpid = dpid
@@ -53,6 +52,10 @@ class FlowModQuery(Message):
             self.qid = d['qid']
 
 class RuleQuery(Message):
+    """
+    Request call stacks for rule.
+    May contain one ADD and multiple MODIFYs.
+    """
     def __init__(self, dpid=None, data=None, qid=-1):
         Message.__init__(self)
         self.dpid = dpid

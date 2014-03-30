@@ -1,2 +1,2 @@
-from debug_proxy import ProxyTask
+from checker import ProxyTask
 from db_checker import DBChecker

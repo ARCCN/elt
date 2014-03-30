@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-from ext.debugger.pox_proxy import db_cli
+from ext.debugger.elt import db_cli
 from subprocess import Popen
 import sys
 import code
@@ -15,7 +15,7 @@ mn = []
 timer = None
 
 debug_sample = [
-        "ext.debugger.pox_proxy.of_01_debug",
+        "ext.debugger.elt.of_01_debug",
         "--fake_debugger=0.1",
         "--flow_table_controller=config/flow_table_config.cfg",
         "forwarding.l2_learning",

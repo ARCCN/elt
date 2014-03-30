@@ -21,13 +21,13 @@ class DatabaseServer(PythonMessageServer):
 
     def __init__(self, port=PORT, **kw):
         """
-        We need want to wait 0.001s each turn.
-        Every 20th turn we process BUFFER_SIZE messages.
+        We want to wait 0.0s each turn.
+        Every turn we process BUFFER_SIZE messages.
         """
         self.db = Database(**kw)
         self.check_iter = 0
         factory = ConnectionFactory(instantiator=Instantiator(
-            module='ext.debugger.pox_proxy.database.messages'))
+            module='ext.debugger.elt.database.messages'))
         PythonMessageServer.__init__(self, port=port, enqueue=True,
                                      single_queue=True, cooldown=0.0,
                                      interval=1, connection_factory=factory)

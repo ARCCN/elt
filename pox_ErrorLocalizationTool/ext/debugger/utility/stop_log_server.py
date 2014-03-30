@@ -1,4 +1,4 @@
-from ext.debugger.pox_proxy import LogClient
+from ext.debugger.elt import LogClient
 
 c = LogClient(connect=False)
 c.reconnect()

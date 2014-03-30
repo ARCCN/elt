@@ -1,4 +1,4 @@
-from ext.debugger.pox_proxy import DatabaseClient
+from ext.debugger.elt import DatabaseClient
 
 c = DatabaseClient(connect=False)
 c.reconnect()

@@ -23,7 +23,7 @@ import exceptions
 from errno import EAGAIN, ECONNRESET
 import time
 
-from ext.debugger.debug_proxy import ProxyTask
+from ext.debugger.checker import ProxyTask
 import pox.lib.recoco as recoco
 
 scheduler = None

@@ -20,7 +20,7 @@ class LogClient:
         self.name = name
         self.connection_factory = ConnectionFactory(
                     instantiator = Instantiator(
-                        module="ext.debugger.pox_proxy.logger.messages"))
+                        module="ext.debugger.elt.logger.messages"))
 
         self.connection = None
         if connect:

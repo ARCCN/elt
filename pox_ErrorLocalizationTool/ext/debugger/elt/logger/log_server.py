@@ -1,3 +1,5 @@
+import time
+
 from pox.lib.recoco.recoco import Exit
 
 from ..message_server import PythonMessageServer
@@ -36,7 +38,7 @@ class LogServer(PythonMessageServer):
         self.total_sent = 0
         self.empty_response = 0
         factory = ConnectionFactory(instantiator=Instantiator(
-            module='ext.debugger.pox_proxy.logger.messages'))
+            module='ext.debugger.elt.logger.messages'))
         PythonMessageServer.__init__(self, port, enqueue=True,
                                      single_queue=True, cooldown=0.0,
                                      interval=1, connection_factory=factory)
@@ -66,20 +68,23 @@ class LogServer(PythonMessageServer):
         Every flushing we check our DBClient for responses.
         """
         result = False
+        replies = 0
         try:
             if len(self.pending) > 0:
-                self.check_pending()
+                replies = self.check_pending()
                 result = True
         except:
             pass
         if self.single_queue:
             self.check_iter += 1
-            if self.check_iter % 10000 == 0:
-                log.info('Received %-8d Queue %-8d Pending %-8d' % (
-                    self.received, len(self.queue), len(self.pending)))
             pool = (len(self.queue) if len(self.queue) < BUFFER_SIZE
                     else BUFFER_SIZE)
+            if self.check_iter % 100 == 0:
+                log.info('Received %-8d Queue %-8d Pending %-8d' % (
+                    self.received, len(self.queue), len(self.pending)))
             if pool == 0:
+                if replies == 0:
+                    time.sleep(0.01)
                 return result
             for i in xrange(pool):
                 message = self.queue.popleft()
@@ -227,3 +232,4 @@ class LogServer(PythonMessageServer):
                             log.debug(e)
             elif res is None:
                 pass
+        return len(ress)

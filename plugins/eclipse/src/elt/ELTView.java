@@ -25,8 +25,7 @@ public class ELTView extends ViewPart {
 	protected TreeViewer eventViewer;
 	protected Action openFolderAction;
 	protected Document root;
-	protected String defaultPath = "/home/lantame/SDN/pox_debugger/pox_debugger/" +
-			"pox_ErrorLocalizationTool/event_logs/";
+	protected String defaultPath = null;
 	
 	@Override
 	public void createPartControl(Composite parent) {
@@ -81,7 +80,11 @@ public class ELTView extends ViewPart {
 	}
 	
 	protected void openXmlFolder() {
-		JFileChooser fc = new JFileChooser();
+		JFileChooser fc;
+		if (defaultPath != null)
+			fc = new JFileChooser(defaultPath);
+		else
+			fc = new JFileChooser();
 		fc.setFileSelectionMode(JFileChooser.FILES_AND_DIRECTORIES);
 		
 		class CustomFilter extends FileFilter {
@@ -113,27 +116,15 @@ public class ELTView extends ViewPart {
 		
 		fc.setFileFilter(new CustomFilter());
 		fc.setMultiSelectionEnabled(true);
-		fc.showOpenDialog(null);
+		int result = fc.showOpenDialog(null);
+		if (result != JFileChooser.APPROVE_OPTION)
+			return;
+		defaultPath = fc.getCurrentDirectory().getAbsolutePath();
 		File[] files = fc.getSelectedFiles();
 		ArrayList<String> fullnames = new ArrayList<String>();
 		for (File f: files) {
 			fullnames.add(f.getAbsolutePath());
 		}
-		
-		/*
-		FileDialog dialog = new FileDialog(new Shell(), SWT.OPEN | SWT.MULTI);
-		dialog.setText("Choose files to open");
-		String[] filters = new String[1];
-		filters[0] = "*.xml";
-		dialog.setFilterExtensions(filters);
-		dialog.open();
-		String[] filenames = dialog.getFileNames();
-		ArrayList<String> fullnames = new ArrayList<String>();
-		for (String fn: filenames) {
-			fullnames.add(new Path(dialog.getFilterPath()).
-					append(fn).toOSString());
-		}
-		*/
 		root = XMLReader.read(fullnames.toArray(new String[0]));
 		resetViewer(root.getDocumentElement());
 	}

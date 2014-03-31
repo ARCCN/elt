@@ -163,7 +163,6 @@ class Database:
                 rows = cur.fetchall()
             return rows
 
-    @profile
     def process_message(self, message):
         """
         Save FlowMod data, respond queries.

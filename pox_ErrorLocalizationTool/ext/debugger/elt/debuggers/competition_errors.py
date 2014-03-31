@@ -21,7 +21,7 @@ class FlowMasked(CompetitionError):
         d = NetworkError.__getstate__(self)
         d["entry_groups"] = []
         d["entry_groups"].append(EntryGroup(
-            name="Masking", 
+            name="Masking",
             desc="This entry has higher priority",
             entries=[self.masking_entry]))
         d["entry_groups"].append(EntryGroup(
@@ -57,7 +57,7 @@ class FlowDeleted(CompetitionError):
         d = NetworkError.__getstate__(self)
         d["entry_groups"] = []
         d["entry_groups"].append(EntryGroup(
-            name="Template", 
+            name="Template",
             desc="Template for deleting",
             entries=[self.match_entry]))
         d["entry_groups"].append(EntryGroup(
@@ -93,7 +93,7 @@ class FlowModified(CompetitionError):
         d = NetworkError.__getstate__(self)
         d["entry_groups"] = []
         d["entry_groups"].append(EntryGroup(
-            name="Template", 
+            name="Template",
             desc="Modification event",
             entries=[self.match_entry]))
         d["entry_groups"].append(EntryGroup(
@@ -127,7 +127,7 @@ class FlowUndefined(CompetitionError):
         d = NetworkError.__getstate__(self)
         d["entry_groups"] = []
         d["entry_groups"].append(EntryGroup(
-            name="Added", 
+            name="Added",
             desc="This entry was just added",
             entries=[self.new_entry]))
         d["entry_groups"].append(EntryGroup(
@@ -148,22 +148,21 @@ class FlowUndefined(CompetitionError):
         return (s, args)
 
 
-class FakeError(CompetitionError):
+class FakeError(NetworkError):
     """
     For tests.
     """
     def __init__(self, dpid=None, flow_mod=None):
-        CompetitionError.__init__(self)
-        self._name = "AHAHAHA"
+        NetworkError.__init__(self)
         self.flow_mod = ofp_flow_mod.from_flow_mod(flow_mod)
         if flow_mod is not None:
             self.entry_groups.append(EntryGroup(
                 name="Fake Group", desc="No comments",
                 entries = [Entry(self.flow_mod, dpid)]))
-        
+
     def log(self):
         s = []
-        s.append(CompetitionError.log(self)[0])
+        s.append(NetworkError.log(self)[0])
         s.append("Self:\n")
         s.append(str(self.flow_mod))
         s.append("\nCode:\n%CODE\n")

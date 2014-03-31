@@ -1,6 +1,18 @@
 import xml.etree.ElementTree as ET
 from .util import FlowModInfo, RuleInfo
 import pox.openflow.libopenflow_01 as of
+import re
+
+
+def multiwordReplace(text, wordDic):
+    """
+    take a text and replace words that match a key in a dictionary with
+    the associated value, return the changed text
+    """
+    rc = re.compile('|'.join(map(re.escape, wordDic)))
+    def translate(match):
+        return wordDic[match.group(0)]
+    return rc.sub(translate, text)
 
 
 class XmlMatch(ET.Element):
@@ -175,8 +187,26 @@ class XmlReport:
     def flush(self, name=None):
         if name is None:
             name = self.filename
-        tree = ET.ElementTree(self.result)
-        tree.write(name, xml_declaration=True)
+        subelements = []
+        for s, e in self.events.items():
+            tmp = list(e)
+            # Set all subelements as text.
+            e.text = '\n' + "".join([str(c) for c in tmp])
+            # Clear subelements.
+            for se in tmp:
+                e.remove(se)
+            subelements.append(tmp)
+        f = open(name, 'w')
+        f.write(multiwordReplace(ET.tostring(self.result), {
+            '&gt;': '>',
+            '&lt;': '<',
+            '&amp;': '&'
+            }))
+        # Restore subelements.
+        index = 0
+        for s, e in self.events.items():
+            e.extend(subelements[index])
+            index += 1
 
     def add_event(self, minfo):
         s = minfo.event.name
@@ -186,11 +216,13 @@ class XmlReport:
             e = ET.SubElement(self.result, 'event_type')
             name = ET.Element('name')
             name.text = s
-            e.append(name)
+            e.append(ET.tostring(name))
             e.tail = '\n'
             e.text = '\n'
             self.events[s] = e
-        self.events[s].append(XmlEvent(minfo))
+        xml = XmlEvent(minfo)
+        # Cheat. Store strings instead of objects.
+        self.events[s].append(ET.tostring(xml))
         return True
 
 

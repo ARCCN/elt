@@ -24,17 +24,17 @@ log='stress_test.log'
 mn_log='multiping.log'
 
 touch $log
-for size in 16;
+for size in 8;
 do
     echo "*******" >> $log
     echo $size >> $log
     echo "*******" >> $log
-    for len in 3;
+    for len in 4;
     do
         echo ------- >> $log
         echo $len >> $log
         echo ------- >> $log
-        for i in 0.01;
+        for i in 0.5;
         do
             run_term $terminal 'python -m ext.debugger.utility.start_db_server'
             db_pid=$!
@@ -45,7 +45,8 @@ do
                 run_term $terminal "./pox.py forwarding.l2_learning"
                 echo 'No debug'
             else
-                run_term $terminal "./pox.py $deb --flow_table_controller=config/flow_table_config.cfg --fake_debugger=$i forwarding.l2_learning ext.debugger.controllers.interrupter"
+                run_term $terminal "./pox.py $deb --fake_debugger=$i --flow_table_controller=config/flow_table_config.cfg forwarding.l2_learning ext.debugger.controllers.interrupter"
+                #" --flow_table_controller=config/flow_table_config.cfg forwarding.l2_learning ext.debugger.controllers.interrupter"
                 echo 'debug'
             fi
             pox_pid=$!

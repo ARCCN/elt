@@ -12,6 +12,7 @@ from .messages import HelloMessage, LogMessage
 from .loggers import TextLogger, XmlLogger
 
 BUFFER_SIZE = 10
+MAX_ATTEMPTS = 3
 log = app_logging.getLogger('Log Server')
 
 
@@ -208,7 +209,7 @@ class LogServer(PythonMessageServer):
                             ) > 0 else True
                     if not found:
                         minfo, conn_name = self.pending[mid]
-                        if minfo.get_query_count(qid) <= 3:
+                        if minfo.get_query_count(qid) <= MAX_ATTEMPTS:
                             new_qid = self._get_qid()
                             minfo.change_qid(qid, new_qid)
                             self.qid_mid[new_qid] = mid

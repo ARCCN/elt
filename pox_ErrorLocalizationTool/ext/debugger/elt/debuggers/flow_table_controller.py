@@ -16,7 +16,7 @@ class FlowTableController():
         self.apps = {}
         self.apps_rev = {}
         self.read_config()
-        
+
     def read_config(self):
         """
         We have to split modules by apps.
@@ -25,7 +25,7 @@ class FlowTableController():
         """
         self.apps = {}
         self.apps_rev = {}
-        if (self.config is None or 
+        if (self.config is None or
                 not isinstance(self.config, basestring)):
             return
         # map: app -> modules
@@ -50,23 +50,23 @@ class FlowTableController():
                 self.apps[i].add(module)
                 try:
                     finder.run_script(module)
-                    modules = [m.__file__.replace('.pyo', '.py') 
-                               for m in finder.modules.values() 
+                    modules = [m.__file__.replace('.pyo', '.py')
+                               for m in finder.modules.values()
                                if hasattr(m, "__file__") and
-                                  isinstance(m.__file__, basestring) and 
+                                  isinstance(m.__file__, basestring) and
                                   not m.__file__.startswith('/usr')]
                     self.apps[i].update(modules)
                 except Exception as e:
                     print e
             i += 1
-        
+
         # Reverse map: module -> apps
         for i, modules in self.apps.items():
             for module in modules:
                 if module not in self.apps_rev:
                     self.apps_rev[module] = set()
                 self.apps_rev[module].add(i)
-        
+
     def get_apps(self, module):
         return self.apps_rev.get(module, set())
 

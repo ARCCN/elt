@@ -26,6 +26,8 @@ def int_to_eth(addr):
 
 
 def ip_to_uint(addr):
+    if isinstance(addr, tuple):
+        addr = addr[0]
     if not isinstance(addr, IPAddr):
         return None
     return addr.toUnsigned()

@@ -121,7 +121,8 @@ class ofp_match(of.ofp_match):
             self.dl_dst = EthAddr(d["dl_dst"])
         try:
             if d['wildcards'] != self.wildcards:
-                print 'Wildcard mismatch!'
+                # ip src/dst has mask
+                self.wildcards = d['wildcards']
         except:
             pass
 

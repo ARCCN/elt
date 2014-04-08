@@ -23,18 +23,21 @@ deb='ext.debugger.elt.of_01_debug'
 log='stress_test.log'
 mn_log='multiping.log'
 
+for iter in 1;
+do
+log="stress_test$iter.log"
 touch $log
 for size in 8;
 do
     echo "*******" >> $log
     echo $size >> $log
     echo "*******" >> $log
-    for len in 4;
+    for len in 3;
     do
         echo ------- >> $log
         echo $len >> $log
         echo ------- >> $log
-        for i in 0.5;
+        for i in 0.1;
         do
             run_term $terminal 'python -m ext.debugger.utility.start_db_server'
             db_pid=$!
@@ -62,4 +65,5 @@ do
             tail -n 1 $mn_log >> $log;
         done;
     done;
+done;
 done

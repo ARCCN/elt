@@ -184,15 +184,20 @@ def insert_table(table_name, return_last_id=False, ignore=False, id_var=None,
 
 # FlowMatch table
 
+
 def create_flow_match():
     cr = create_table("FlowMatch")
     cr = cr[:-2] + ", UNIQUE INDEX flow ("
     for column in tables["FlowMatch"]:
         if column.name != "ID":
             cr += column.name + ", "
-    cr += "ID" + ", "
-    cr = cr[:-2] + ") ) ENGINE = InnoDB;"
-    # print cr
+    cr += "ID" + "), "
+    cr += "UNIQUE INDEX flow2 ("
+    for column in tables["FlowMatch"]:
+        if column.name != "ID" and column.name != "wildcards":
+            cr += column.name + ", "
+    cr += "wildcards, ID)"
+    cr += " ) ENGINE = InnoDB;"
     return cr
 
 
@@ -248,12 +253,10 @@ def convert_insert_flow_match(match, args=None):
 
 # FlowModParams table
 
-
 def create_flow_mod_params():
     cr = create_table("FlowModParams")
     cr = cr[:-2] + ", INDEX params (command, priority))"
     cr += " ENGINE = MyISAM;"
-    # print cr
     return cr
 
 
@@ -315,7 +318,6 @@ def create_actions():
         if column.name != "ID":
             cr += column.name + ", "
     cr = cr[:-2] + ") ) ENGINE = MyISAM;"
-    # print cr
     return cr
 
 
@@ -463,10 +465,9 @@ def create_code_entries():
     cr = create_table("CodeEntries")
     cr = cr[:-2] + ", UNIQUE INDEX code_entry ("
     for column in tables["CodeEntries"]:
-        if column.name != "ID":  # and column.name != 'module':
+        if column.name != "ID":
             cr += column.name + ", "
     cr = cr[:-2] + ") ) ENGINE = MyISAM;"
-    # print cr
     return cr
 
 
@@ -591,13 +592,8 @@ def convert_insert_code_patterns_to_code_entries(codepat_ID,
 # FlowMods table
 def create_flow_mods():
     cr = create_table("FlowMods")
-    '''
-    cr = cr[:-2] + ", INDEX flow_entry (match_ID, dpid, actionpat_ID)"
-    cr += ", INDEX (dpid, actionpat_ID, params_ID)"
-    '''
-
     cr = cr[:-2] + (", INDEX (dpid, actionpat_ID, params_ID)"
-                    ", INDEX (match_ID, dpid, actionpat_ID))"
+                    ", INDEX (match_ID, dpid, actionpat_ID, params_ID, ID))"
                     " ENGINE = InnoDB;")
     return cr
 

@@ -1,6 +1,7 @@
 import numbers
 import socket
 import MySQLdb as mdb
+import MySQLdb.cursors
 
 import pox.openflow.libopenflow_01 as of
 from pox.lib.recoco.recoco import Exit
@@ -22,6 +23,42 @@ PASSWORD = '1234'
 DATABASE = 'POX_proxy'
 #Logging
 log = app_logging.getLogger("Database")
+ENABLE_LOGGING = True
+
+
+class LoggingCursor:
+    def __init__(self, cur, log_file):
+        self.cur = cur
+        self.log_file = log_file
+
+    def __getattr__(self, name):
+        if name == "cur":
+            return self.cur
+        if name == "execute":
+            return self.execute
+        else:
+            return getattr(self.cur, name)
+
+    def execute(self, query, args=None):
+        s = str(query)
+        if s[-1] == ';':
+            self.log_file.write(s + "\n")
+        else:
+            self.log_file.write(s + ";\n")
+        #log_file.flush()
+        return self.cur.execute(query, args)
+
+
+class LoggingConnection:
+    def __init__(self, con, log_file):
+        self.con = con
+        self.log_file = log_file
+
+    def cursor(self):
+        return LoggingCursor(self.con.cursor(), self.log_file)
+
+    def close(self):
+        self.con.close()
 
 
 class Database:
@@ -56,6 +93,9 @@ class Database:
         try:
             self.con = mdb.connect(self.domain, self.user,
                                    self.password, self.table_name)
+            if ENABLE_LOGGING:
+                log_file = open("queries.log", "w")
+                self.con = LoggingConnection(self.con, log_file)
         except:
             self._closing = True
 
@@ -493,27 +533,64 @@ class Database:
                 # Hack. Reduce output by selection
                 # only matches those are wider than given one.
 
-                query += "".join([" JOIN FlowMatch ON",
-                                  " FlowMods.match_ID = FlowMatch.ID"])
-                query += " AND (~wildcards & %d = 0) " % match.wildcards
-
+                # HINT: OF 1.0: subnet mask is in wildcards.
+                #       it must be greater or equal.
+                match_cond = " (~wildcards & %d = 0) " % ( match.wildcards &
+                        ~of.OFPFW_NW_SRC_MASK & ~of.OFPFW_NW_DST_MASK)
+                match_cond += ("AND (wildcards & %d >= %d) " * 2) % (
+                        of.OFPFW_NW_SRC_MASK,
+                        match.wildcards & of.OFPFW_NW_SRC_MASK,
+                        of.OFPFW_NW_DST_MASK,
+                        match.wildcards & of.OFPFW_NW_DST_MASK)
                 # Force to use index.
+                # TODO: nw_src, nw_dst lookup is incorrect.
+                #       we have to match by mask.
                 for f in ["in_port", "dl_src", "dl_dst", "dl_vlan",
                           "dl_vlan_pcp", "dl_type", "nw_tos", "nw_proto",
                           "nw_src", "nw_dst", "tp_src", "tp_dst"]:
                     value = getattr(match, f)
                     if value is not None:
-                        if isinstance(value, IPAddr):
-                            query += "AND (%s <=> NULL || %s = %d) " % (
-                                f, f, ip_to_uint(value))
+                        # We know that wildcards are wider than ours.
+                        # IP prefixes must match.
+                        if isinstance(value, IPAddr) and f == "nw_src":
+                            match_cond += "".join([
+                                "AND (%s <=> NULL ||",
+                                " (%s ^ %d) &",
+                                " ~((1 << ((wildcards & %d) >> %d))-1) = 0) "
+                                ]) % (
+                                f, f, ip_to_uint(value),
+                                of.OFPFW_NW_SRC_MASK, of.OFPFW_NW_SRC_SHIFT)
+                        elif isinstance(value, IPAddr) and f == "nw_dst":
+                            match_cond += "".join([
+                                "AND (%s <=> NULL ||",
+                                " (%s ^ %d) &",
+                                " ~((1 << ((wildcards & %d) >> %d))-1) = 0) "
+                                ]) % (
+                                f, f, ip_to_uint(value),
+                                of.OFPFW_NW_DST_MASK, of.OFPFW_NW_DST_SHIFT)
                         elif isinstance(value, EthAddr):
-                            query += "AND (%s <=> NULL || %s = %d) " % (
+                            match_cond += "AND (%s <=> NULL || %s = %d) " % (
                                 f, f, eth_to_int(value))
                         else:
-                            query += "AND (%s <=> NULL || %s = %d) " % (
+                            match_cond += "AND (%s <=> NULL || %s = %d) " % (
                                 f, f, value)
                     else:
-                        query += "AND (%s <=> NULL) " % (f)
+                        match_cond += "AND (%s <=> NULL) " % (f)
+                match_query = "".join([" JOIN FlowMatch ON",
+                                       " FlowMods.match_ID = FlowMatch.ID AND",
+                                       match_cond])
+                '''
+                query = query.replace(
+                        "FlowMods JOIN FlowModParams ON"
+                        " FlowMods.params_ID = FlowModParams.ID",
+                        "FlowMods JOIN FlowMatch "
+                        "ON FlowMods.match_ID = FlowMatch.ID")
+                query = query.replace(
+                        "AND command",
+                        ("AND " + match_cond + " JOIN FlowModParams ON " +
+                         "FlowMods.params_ID = FlowModParams.ID AND command"))
+                '''
+                query += match_query
             elif match is not None and not wider:
                 tmp = select_flow_match(match, fields='ID', args=None)
                 tmp = tmp[(tmp.find('WHERE') + 6):tmp.find('LIMIT')]
@@ -536,14 +613,27 @@ class Database:
                                   "SELECT " + single + "(FlowMods.ID)")
 
         cur = self.con.cursor()
+
+        def f6(cur, query):
+            return cur.execute(query)
+        def f7(cur, query):
+            return cur.execute(query)
+        def f8(cur, query):
+            if wider:
+                f6(cur, query)
+            else:
+                f7(cur, query)
+
         if len(additionals) > 0:
             query = query.replace(
                     "(FlowMods.ID)",
                     "(FlowMods.ID), " + ", ".join(additionals))
-            cur.execute(query)
+            #cur.execute(query)
+            f8(cur, query)
             return cur.fetchall()
         else:
-            cur.execute(query)
+            #cur.execute(query)
+            f8(cur, query)
             return [id for id, in cur.fetchall()]
 
 # Get variuos data pieces for given flowmod_ids.

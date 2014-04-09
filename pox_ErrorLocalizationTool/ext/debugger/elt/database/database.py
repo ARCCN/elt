@@ -191,11 +191,13 @@ class Database:
         if id is None:
             return 'Not found'
         if self.con:
-            query = ("SELECT module, line FROM (CodeEntries INNER JOIN "
+            query = ("SELECT module, line FROM CodeEntries JOIN "
                      "CodePatternsToCodeEntries ON CodeEntries.ID = "
-                     "CodePatternsToCodeEntries.codeentry_ID) WHERE "
-                     "codepat_ID <=> (SELECT codepat_ID FROM FlowMods "
-                     "WHERE ID = %s);") % (id)
+                     "CodePatternsToCodeEntries.codeentry_ID JOIN "
+                     "FlowMods on FlowMods.codepat_ID = "
+                     "CodePatternsToCodeEntries.codepat_ID AND "
+                     "FlowMods.ID = %s order by "
+                     "CodePatternsToCodeEntries.ID;") % (id)
             cur = self.con.cursor()
             cur.execute(query)
             rows = cur.fetchall()
@@ -305,7 +307,7 @@ class Database:
 
     def _save_action_pattern(self, action_ids):
         actionpat_id = self.action_patterns.find(action_ids)
-        if actionpat_id is None:
+        if actionpat_id is None and len(action_ids) > 0:
             actionpat_id = self._get_id_by_query(
                 QueryCreator.get_actionpat_id_subquery_ids(action_ids) +
                 "SELECT @actionpat_ID;")
@@ -314,7 +316,7 @@ class Database:
 
     def _save_code_pattern(self, codeentry_ids):
         codepat_id = self.code_patterns.find(codeentry_ids)
-        if codepat_id is None:
+        if codepat_id is None and len(codeentry_ids) > 0:
             codepat_id = self._get_id_by_query(
                 QueryCreator.get_codepat_id_subquery_ids(codeentry_ids) +
                 "SELECT @codepat_ID;")
@@ -463,9 +465,11 @@ class Database:
 
 # Find flow_mods of specific type.
 
-    def _find_adds(self, match_ID, dpid, priority):
+    def _find_adds(self, match_ID, dpid, priority, additionals=None):
         if match_ID is None:
             return []
+        if additionals is None:
+            additionals = []
         query = "".join(["SELECT FlowMods.ID from FlowMods join FlowModParams",
                          " ON FlowMods.params_ID = FlowModParams.ID AND",
                          " match_ID = %d AND dpid = %d AND",
@@ -474,6 +478,12 @@ class Database:
                          of.ofp_flow_mod_command_rev_map["OFPFC_ADD"],
                          priority)
         cur = self.con.cursor()
+        if len(additionals) > 0:
+            query = query.replace(
+                    "FlowMods.ID",
+                    "FlowMods.ID, " + ", ".join(additionals))
+            cur.execute(query)
+            return cur.fetchall()
         cur.execute(query)
         return [id for id, in cur.fetchall()]
 
@@ -631,10 +641,9 @@ class Database:
             #cur.execute(query)
             f8(cur, query)
             return cur.fetchall()
-        else:
-            #cur.execute(query)
-            f8(cur, query)
-            return [id for id, in cur.fetchall()]
+        #cur.execute(query)
+        f8(cur, query)
+        return [id for id, in cur.fetchall()]
 
 # Get variuos data pieces for given flowmod_ids.
 
@@ -710,6 +719,7 @@ class Database:
                 setattr(m, mac, int_to_eth(x))
         return m
 
+    @profile
     def _find_rule(self, message):
         """
         Rule can be installed as-is or
@@ -723,15 +733,18 @@ class Database:
         match = message.data.match
         dpid = message.dpid
         priority = message.data.priority
-        match_ID = self._find_match(match)
-
         null_result = [("OFPFC_ADD", None)]
+
+
+        match_ID = self._find_match(match)
         if match_ID is None:
             return null_result
-        add_ids = sorted(self._find_adds(match_ID, dpid, priority))
+        adds = sorted(self._find_adds(match_ID, dpid, priority,
+                                      additionals=["actionpat_ID"]),
+                          key=lambda tup: tup[0])
         actionpat_ID = self._find_action_pattern(actions)
-        if len(add_ids) == 0:
 
+        if len(adds) == 0:
             # No flow_mod/add with such header/priority.
             # We should check flow_mod/modify*.
             # HINT: This is changed in OF 1.3+.
@@ -791,6 +804,7 @@ class Database:
                      match_mods[0][0]),
                     (of.ofp_flow_mod_command_map[max_mod[2]],
                      max_mod[0])]
+
             '''
             #OLD stuff
             mod_add_ids = self._find_modifies(None, dpid, priority,
@@ -850,50 +864,50 @@ class Database:
 
         else:
             # We have adds. Do not treat flow_mod/modify as 'add'.
-            add_actionpats = self._get_action_patterns(add_ids)
             # As-is flow_mod/add
-            good_adds = [id for id, actpat in zip(add_ids, add_actionpats)
-                         if actpat == actionpat_ID]
+            good_adds = [tup for tup in adds if tup[1] == actionpat_ID]
 
             # Last add is good -> return.
-            if add_ids[-1] in good_adds:
-                return [('OFPFC_ADD', add_ids[-1])]
+            if len(good_adds) > 0 and adds[-1] == good_adds[-1]:
+                return [('OFPFC_ADD', adds[-1][0])]
             # Last add is not good -> last can be modified to good.
             # We only need the last good modify.
 
-            good_mods = self._find_modifies(actionpat_ID, dpid, priority,
-                                            strict=False, single='max',
-                                            match=match, wider=True)
-            good_mods = [x for x in good_mods if x is not None]
+            good_mod_ids = self._find_modifies(actionpat_ID, dpid,priority,
+                                               strict=False, single='max',
+                                               match=match, wider=True)
+            good_mod_ids = [x for x in good_mod_ids if x is not None]
 
-            good_strict_mods = self._find_modifies(actionpat_ID, dpid, priority,
-                                                 strict=True, single='max',
-                                                 match_ID=match_ID)
-            good_strict_mods = [x for x in good_strict_mods if x is not None]
+            good_strict_mod_ids = self._find_modifies(
+                    actionpat_ID, dpid, priority, strict=True,
+                    single='max', match_ID=match_ID)
+            good_strict_mod_ids = [x for x in good_strict_mod_ids
+                                   if x is not None]
 
             # We checked match correctness in _find_modifies.
-            good_mods.extend(good_strict_mods)
+            good_mod_ids.extend(good_strict_mod_ids)
 
-            if len(good_mods) == 0:
+            if len(good_mod_ids) == 0:
                 # Only adds.
                 if len(good_adds) > 0:
-                    return [('OFPFC_ADD', good_adds[-1])]
+                    return [('OFPFC_ADD', good_adds[-1][0])]
                 else:
                     return null_result
 
-            max_mod = max(good_mods)
-            command = ("OFPFC_MODIFY_STRICT" if max_mod in good_strict_mods
+            max_mod = max(good_mod_ids)
+            command = ("OFPFC_MODIFY_STRICT"
+                       if max_mod in good_strict_mod_ids
                        else "OFPFC_MODIFY")
 
             # Decide what was later: good add or bad add + modify.
             # Candidate: last add before last good modify.
             try:
-                max_add = max([id for id in add_ids if id < max_mod])
+                max_add = max([tup[0] for tup in adds if tup[0] < max_mod])
             except:
                 return null_result
             #Last good add was later -> return it.
-            if len(good_adds) > 0 and good_adds[-1] > max_mod:
-                return [('OFPFC_ADD', good_adds[-1])]
+            if len(good_adds) > 0 and good_adds[-1][0] > max_mod:
+                return [('OFPFC_ADD', good_adds[-1][0])]
             # Last good add was before good mod -> return ADD + MOD.
             # Probably good_add + good_mod.
             return [('OFPFC_ADD', max_add), (command, max_mod)]

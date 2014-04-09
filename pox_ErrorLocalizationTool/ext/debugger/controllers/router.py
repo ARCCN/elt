@@ -24,7 +24,6 @@ class Router(EventMixin):
         ip = packet.find('ipv4')
         if ip is None or ip.find('udp') is not None:
             raise Exception()
-        print event.dpid, ip
         if ip.srcip.inNetwork(our_network, 24):
             self.send_out_from_our_network(event)
         elif ip.dstip.inNetwork(our_network, 24):
@@ -43,7 +42,6 @@ class Router(EventMixin):
     actions = [of.ofp_action_output(port=our_network_port)]
     match = of.ofp_match(dl_type=2048, nw_dst=(our_network, 24))
     fm = of.ofp_flow_mod(match=match, actions=actions, buffer_id=event.ofp.buffer_id)
-    #print fm
     event.connection.send(fm)
 
   def change_port(self):
@@ -54,7 +52,6 @@ class Router(EventMixin):
     match = of.ofp_match(dl_type=2048, nw_dst=(our_network, 24))
     actions = [of.ofp_action_output(port=our_network_port)]
     fm = of.ofp_flow_mod(match=match, actions=actions, command=of.OFPFC_MODIFY)
-    #print fm
     core.openflow.sendToDPID(1, fm)
 
 

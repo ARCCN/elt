@@ -23,7 +23,10 @@ class Interrupter(EventMixin):
 
     actions = [of.ofp_action_output(port = random.choice(range(1, 4)))]
     priority = random.choice([100, 1000, 10000])
-    flow_mod = of.ofp_flow_mod(match=match, actions=actions, priority=priority, command = of.OFPFC_MODIFY)
+    command = random.choice(range(5))
+    if command > 2:
+        command = 0
+    flow_mod = of.ofp_flow_mod(match=match, actions=actions, priority=priority, command=command)
     event.connection.send(flow_mod)
 
     if random.random() < 0.05:

@@ -4,7 +4,7 @@ from modulefinder import ModuleFinder
 import pox.openflow.libopenflow_01 as of
 
 from .flow_table import TaggedFlowTable
-
+from ..util import profile
 
 class FlowTableController():
 
@@ -74,22 +74,11 @@ class FlowTableController():
         """
         Check for errors on FlowTable model.
         """
-        #self.last_local_id += 1
-        #local_id = self.last_local_id
         flow_mod.flags |= of.OFPFF_SEND_FLOW_REM
 
         if dpid not in self.flow_tables:
             self.flow_tables[dpid] = TaggedFlowTable(dpid, nexus=self)
-            #self.listenTo(self.flow_tables[dpid])
 
-        #if local_id % 1000 == 0:
-        #print len(self.flow_tables[dpid]._table)
-
-        #    print ("%lf %lf" % (timeit.timeit(functools.partial(
-        #        self.flow_tables[dpid].process_flow_mod,
-        #        flow_mod, local_id, None), number=1),
-        #        len(self.flow_tables[dpid]._table)))
-        #else:
         self.flow_tables[dpid].process_flow_mod(
             flow_mod, self.get_apps(module))
 

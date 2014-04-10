@@ -39,6 +39,14 @@ class LoggingCursor:
         else:
             return getattr(self.cur, name)
 
+    def __setattr__(self, name, value):
+        if name == "cur":
+            self.__dict__[name] = value
+        elif name == "execute":
+            self.__dict__[name] = value
+        else:
+            return setattr(self.cur, name, value)
+
     def execute(self, query, args=None):
         s = str(query)
         if s[-1] == ';':
@@ -589,7 +597,7 @@ class Database:
                 match_query = "".join([" JOIN FlowMatch ON",
                                        " FlowMods.match_ID = FlowMatch.ID AND",
                                        match_cond])
-                '''
+
                 query = query.replace(
                         "FlowMods JOIN FlowModParams ON"
                         " FlowMods.params_ID = FlowModParams.ID",
@@ -597,10 +605,12 @@ class Database:
                         "ON FlowMods.match_ID = FlowMatch.ID")
                 query = query.replace(
                         "AND command",
-                        ("AND " + match_cond + " JOIN FlowModParams ON " +
-                         "FlowMods.params_ID = FlowModParams.ID AND command"))
+                        "".join(["AND ", match_cond, " JOIN FlowModParams ON ",
+                                 "FlowMods.params_ID = FlowModParams.ID",
+                                 " AND command"]))
                 '''
                 query += match_query
+                '''
             elif match is not None and not wider:
                 tmp = select_flow_match(match, fields='ID', args=None)
                 tmp = tmp[(tmp.find('WHERE') + 6):tmp.find('LIMIT')]
@@ -719,7 +729,6 @@ class Database:
                 setattr(m, mac, int_to_eth(x))
         return m
 
-    @profile
     def _find_rule(self, message):
         """
         Rule can be installed as-is or

@@ -27,7 +27,7 @@ for iter in 1;
 do
     log="stress_test$iter.log"
     touch $log
-    for size in 16;
+    for size in 8;
     do
         echo "*******" >> $log
         echo $size >> $log

@@ -284,7 +284,6 @@ class TaggedFlowTable(FlowTable):
             if self.is_app_error(current.tag, entry.tag):
                 for a1, a2 in zip(current.actions, entry.actions):
                     if a1 != a2:
-                        print a1.max_len, a2.max_len
                         modified[current].add(entry)
                         break
         overlapping -= exact
@@ -315,7 +314,6 @@ class TaggedFlowTable(FlowTable):
             return ("added", [])
 
         self.raise_competition(masked, None, modified, undefined)
-        #print 'added', len(self._table)
         # 0.15ms
         if len(exact) > 0:
             entry.tag.add_history(current.tag.apps)
@@ -362,7 +360,6 @@ class TaggedFlowTable(FlowTable):
                 removed.append(entry)
                 if self.is_app_error(current.tag, entry.tag):
                     deleted.add(entry)
-        #print 'Removed', len(removed),'/', len(self._table)
         if raise_error:
             self.raise_competition(deleted={current : deleted})
         return self.remove_entries_simple(removed)

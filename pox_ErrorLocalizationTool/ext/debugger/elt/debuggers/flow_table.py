@@ -16,15 +16,32 @@ from .competition_errors import (FlowMasked, FlowModified,
                                  FlowUndefined, FlowDeleted)
 
 
-def ip_to_key(addr):
+def get_ip(match, f):
+    value = getattr(match, f)
+    if value is None:
+        return None
+    if f == 'nw_src':
+        mask = ((match.wildcards & of.OFPFW_NW_SRC_MASK) >>
+                of.OFPFW_NW_SRC_SHIFT)
+    elif f == 'nw_dst':
+        mask = ((match.wildcards & of.OFPFW_NW_DST_MASK) >>
+                of.OFPFW_NW_DST_SHIFT)
+    else:
+        return None
+    if mask == 0:
+        return value
+    return (value, 32 - mask)
+
+
+def ip_to_key(addr, addr_len=32):
     """Generate a trie key."""
     if addr is None:
         return ''
     if not isinstance(addr, tuple):
-        return bin(ip_to_uint(addr))
+        return bin(ip_to_uint(addr))[2:].zfill(addr_len)
     if addr[1] == 0 or addr[0] is None:
         return ''
-    return bin(ip_to_uint(addr[0]))[2:2 + addr[1]]
+    return bin(ip_to_uint(addr[0]))[2:].zfill(addr_len)[:addr[1]]
 
 
 class TableEntryTag(object):
@@ -374,7 +391,7 @@ class TaggedFlowTable(FlowTable):
                 self.fields[f][attr].add(current)
 
         for f in self.trie_field_names:
-            attr = ip_to_key(getattr(current.match, f))
+            attr = ip_to_key(get_ip(current.match, f))
             if attr not in self.fields[f]:
                 self.fields[f][attr] = {current}
             else:
@@ -397,7 +414,7 @@ class TaggedFlowTable(FlowTable):
 
         for f in self.trie_field_names:
             for current in removed:
-                attr = ip_to_key(getattr(current.match, f))
+                attr = ip_to_key(get_ip(current.match, f))
                 self.fields[f][attr].discard(current)
 
         return ("removed", self.remove_entries(removed))
@@ -432,7 +449,7 @@ class TaggedFlowTable(FlowTable):
 
         # 0.15ms
         for f in self.trie_field_names:
-            attr = ip_to_key(getattr(match, f))
+            attr = ip_to_key(get_ip(match, f))
             s = set([])
             if outer:
                 for i in self.fields[f].iter_prefix_values(attr):

@@ -12,7 +12,7 @@ def get_data(filename, val='0.0'):
     match = re.compile(
         '-\n([0-9]*).*?' +
         val + '\n' +
-        '.*?, ([0-9\.]*) in',
+        '.*?, ([0-9\.]*) in ([0-9\.]*)',
         flags=re.DOTALL)
     data = []
     fin = open(filename, 'r')
@@ -21,11 +21,11 @@ def get_data(filename, val='0.0'):
     for i in range(len(h)-1):
         for m in match.finditer(s, h[i].end(), h[i+1].start()):
             #print h[i].group(1), m.group(1), m.group(2)
-            data.append((h[i].group(1), m.group(1), m.group(2)))
+            data.append((h[i].group(1), m.group(1), m.group(2), m.group(3)))
     for m in match.finditer(s, h[-1].end()):
         #print h[-1].group(1), m.group(1), m.group(2)
-        data.append((h[-1].group(1), m.group(1), m.group(2)))
-    data = [(int(a), int(b), float(c)) for a, b, c in data]
+        data.append((h[-1].group(1), m.group(1), m.group(2), m.group(3)))
+    data = [(int(a), int(b), float(c), float(d)) for a, b, c, d in data]
     return data
 
 if __name__ == '__main__':

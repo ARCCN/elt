@@ -33,7 +33,6 @@ class ProxiedConnection (Connection):
         self.msg_id = 0
         self.proxy = proxy
 
-    #@profile
     def send(self, data):
         if isinstance(data, of.ofp_header):
             pass
@@ -211,7 +210,6 @@ class Proxied_OF_01_Task (OpenFlow_01_Task):
                             else:
                                 newcon = Connection(new_sock)
                             sockets.append(newcon)
-                            # print str(newcon) + " connected"
                         else:
                             con.idle_time = timestamp
                             if con.read() is False:

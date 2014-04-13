@@ -25,7 +25,6 @@ class XmlMatch(ET.Element):
             elem = ET.Element(k)
             elem.text = str(v)
             self.append(elem)
-        #print match
 
 
 class XmlCode(ET.Element):

@@ -6,6 +6,7 @@ import pox.openflow.libopenflow_01 as of
 from .flow_table import TaggedFlowTable
 from ..util import profile
 
+
 class FlowTableController():
 
     def __init__(self, proxy, config=None):
@@ -16,6 +17,7 @@ class FlowTableController():
         self.apps = {}
         self.apps_rev = {}
         self.read_config()
+        self.frm = 0
 
     def read_config(self):
         """
@@ -87,6 +89,7 @@ class FlowTableController():
         #TODO: OVS changes priority
         if dpid not in self.flow_tables:
             return
+        self.frm += 1
         self.flow_tables[dpid].process_flow_removed(flow_rem)
 
     def handle_CompetitionError(self, event):

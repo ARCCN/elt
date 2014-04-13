@@ -282,7 +282,6 @@ class SimpleConnection:
         except:
             self.dead = True
         if len(w) > 0:
-            #print 'send', obj
             self.socket.sendall(d)
         else:
             log.info("Unable to send: select() timeout")
@@ -350,7 +349,6 @@ class SimpleConnection:
             try:
                 obj = self.load(self.buffer)
             except Exception as e:
-                #log.debug(str(e) + self.buffer.getvalue())
                 self.buffer.loadstate()
                 if self.dead and len(objs) == 0:
                     raise EOFError("Socket is closed")

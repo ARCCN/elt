@@ -23,7 +23,7 @@ PASSWORD = '1234'
 DATABASE = 'POX_proxy'
 #Logging
 log = app_logging.getLogger("Database")
-ENABLE_LOGGING = True
+ENABLE_LOGGING = False
 
 
 class LoggingCursor:
@@ -87,6 +87,9 @@ class Database:
         self.connect()
         self.create_tables()
         self.tick_id = 0
+        self.saves = 0
+        self.flow_mods = 0
+        self.rules = 0
         self.actions = ActionsCache()
         self.code_entries = CodeEntriesCache()
         self.action_patterns = ActionPatternsToActionsCache()
@@ -104,12 +107,14 @@ class Database:
             if ENABLE_LOGGING:
                 log_file = open("queries.log", "w")
                 self.con = LoggingConnection(self.con, log_file)
+            return True
         except:
             self._closing = True
+            return False
 
     def create_tables(self):
         if self.con:
-            cur = self.con.cursor()
+            cur = self._get_cursor()
             cur._defer_warnings = True
             cur.execute(create_flow_match())
             cur.execute(create_flow_mod_params())
@@ -146,6 +151,8 @@ class Database:
         for cache in caches:
             f.write("%07d hit : %07d miss, %s\n" % (
                 cache.hit, cache.miss, cache.__class__))
+        f.write('Saves: %07d\nFlowMod queries: %07d\nRule queries: %07d\n' % (
+            self.saves, self.flow_mods, self.rules))
         f.close()
 
     def clear(self):
@@ -153,7 +160,7 @@ class Database:
         Remove all data from the tables.
         """
         if self.con:
-            cur = self.con.cursor()
+            cur = self._get_cursor()
             try:
                 for table in tables.keys():
                     cur.execute("DELETE FROM " + table)
@@ -165,7 +172,7 @@ class Database:
         Remove all tables used.
         """
         if self.con:
-            cur = self.con.cursor()
+            cur = self._get_cursor()
             try:
                 for table in tables.keys():
                     cur.execute("DROP TABLE " + table)
@@ -206,7 +213,7 @@ class Database:
                      "CodePatternsToCodeEntries.codepat_ID AND "
                      "FlowMods.ID = %s order by "
                      "CodePatternsToCodeEntries.ID;") % (id)
-            cur = self.con.cursor()
+            cur = self._get_cursor()
             cur.execute(query)
             rows = cur.fetchall()
             while cur.nextset() is not None:
@@ -221,6 +228,7 @@ class Database:
             return None
         if isinstance(message, FlowModMessage):
             try:
+                self.saves += 1
                 return self._save_data(message)
             except Exception as e:
                 log.debug(str(e))
@@ -254,14 +262,11 @@ class Database:
             raise TypeError("Unknown flow_mod command")
         flowmods = []
         if isinstance(message, FlowModQuery):
+            self.flow_mods += 1
             flowmods = self._find_flow_mod(message)
         elif isinstance(message, RuleQuery):
-            try:
-                flowmods = self._find_rule(message)
-            except Exception as e:
-                log.debug(str(e))
-                raise
-        #log.debug(str(flowmods))
+            self.rules += 1
+            flowmods = self._find_rule(message)
         code = []
         try:
             for type, ID in flowmods:
@@ -270,8 +275,21 @@ class Database:
             log.debug("%s %s" % (e, flowmods))
         return QueryReply(code=code, qid=message.qid)
 
+    def _get_cursor(self, *args, **kw):
+        try:
+            return self.con.cursor(*args, **kw)
+        except:
+            self.disconnect()
+            if not self.connect():
+                raise EOFError('No connection to MySQL')
+            try:
+                return self.con.cursor(*args, **kw)
+            except:
+                self.disconnect()
+                raise EOFError('No connection to MySQL')
+
     def _get_id_by_query(self, query):
-        cur = self.con.cursor()
+        cur = self._get_cursor()
         queries = query.split(';')
         for q in queries:
             if q.isspace() or q == '':
@@ -462,7 +480,7 @@ class Database:
                         dpid, actionpat_id, command, priority)
 
         query = query.replace('None', 'NULL')
-        cur = self.con.cursor()
+        cur = self._get_cursor()
         cur.execute(query)
         id = cur.fetchone()
         while cur.nextset() is not None:
@@ -485,7 +503,7 @@ class Database:
                          match_ID, dpid,
                          of.ofp_flow_mod_command_rev_map["OFPFC_ADD"],
                          priority)
-        cur = self.con.cursor()
+        cur = self._get_cursor()
         if len(additionals) > 0:
             query = query.replace(
                     "FlowMods.ID",
@@ -632,7 +650,7 @@ class Database:
             query = query.replace("SELECT (FlowMods.ID)",
                                   "SELECT " + single + "(FlowMods.ID)")
 
-        cur = self.con.cursor()
+        cur = self._get_cursor()
 
         def f6(cur, query):
             return cur.execute(query)
@@ -665,7 +683,7 @@ class Database:
         query += "".join(["UNION ALL SELECT %d, %d " % (num, fm)
                           for num, fm in enumerate(flowmod_ids[1:], start=2)])
         query += ") SearchSet NATURAL JOIN FlowMods order by num;"
-        cur = self.con.cursor()
+        cur = self._get_cursor()
         cur.execute(query)
         return [id for id, in cur.fetchall()]
 
@@ -677,7 +695,7 @@ class Database:
         query += "".join(["UNION ALL SELECT %d, %d " % (num, fm)
                           for num, fm in enumerate(flowmod_ids[1:], start=2)])
         query += ") SearchSet NATURAL JOIN FlowMods order by num;"
-        cur = self.con.cursor()
+        cur = self._get_cursor()
         cur.execute(query)
         return [id for id, in cur.fetchall()]
 
@@ -692,7 +710,7 @@ class Database:
         query += ") SearchSet NATURAL JOIN FlowMods "
         query += "JOIN FlowModParams on FlowMods.params_ID = FlowModParams.ID "
         query += "ORDER BY num;"
-        cur = self.con.cursor()
+        cur = self._get_cursor()
         cur.execute(query)
         return [id for id, in cur.fetchall()]
 
@@ -701,7 +719,7 @@ class Database:
         query = "".join(["SELECT FlowModParams.command FROM FlowMods JOIN",
                          " FlowModParams ON FlowMods.params_ID =",
                          " FlowModParams.ID and FlowMods.ID=%d"]) % flowmod_id
-        cur = self.con.cursor()
+        cur = self._get_cursor()
         cur.execute(query)
         return cur.fetchall()[0][0]
 
@@ -710,7 +728,7 @@ class Database:
 
     def _select_match_rev(self, match_ID):
         query = "SELECT * FROM FlowMatch WHERE ID = %d" % match_ID
-        cur = self.con.cursor(mdb.cursors.DictCursor)
+        cur = self._get_cursor(mdb.cursors.DictCursor)
         cur.execute(query)
         return self._create_match(cur.fetchall()[0])
 
@@ -928,9 +946,9 @@ class Database:
         if self.con:
             cur = None
             if cursor is None or cursor == self.SIMPLE:
-                cur = self.con.cursor()
+                cur = self._get_cursor()
             elif cursor == self.DICTIONARY:
-                cur = self.con.cursor(mdb.cursors.DictCursor)
+                cur = self._get_cursor(mdb.cursors.DictCursor)
             if cur is None:
                 return None
             cur.execute(query)

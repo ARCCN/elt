@@ -219,7 +219,6 @@ class TaggedFlowTable(FlowTable):
         return self.delete_error_checking(current, is_strict=True,
                                           raise_error=False)
 
-    #@profile
     def process_flow_mod(self, flow_mod, apps):
         """
         Process a flow mod sent to the switch
@@ -512,22 +511,3 @@ class TaggedFlowTable(FlowTable):
                     events.append(e)
         for e in events:
             self.nexus.handle_CompetitionError(e)
-'''
-    def assign_flowmod_id(self, local_id, flowmod_id):
-        """ Set flowmod_id by local_id. """
-        for entry in self._table:
-            if entry.local_id == local_id:
-                entry.flowmod_id = flowmod_id
-
-    def add_local_id(self, local_id, count=1):
-        if local_id not in self.local_ids:
-            self.local_ids[local_id] = count
-        else:
-            self.local_ids[local_id] += count
-
-    def remove_local_id(self, local_id, count=1):
-        if local_id in self.local_ids:
-            self.local_ids[local_id] -= count
-        if self.local_ids[local_id] <= 0:
-            del self.local_ids[local_id]
-'''

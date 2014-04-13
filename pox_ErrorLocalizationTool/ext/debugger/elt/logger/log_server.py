@@ -35,6 +35,7 @@ class LogServer(PythonMessageServer):
         self.last_qid = 0
         self.last_mid = 0
         self.check_iter = 0
+        self.events = 0
         self.generated = 0
         self.total_sent = 0
         self.empty_response = 0
@@ -58,12 +59,13 @@ class LogServer(PythonMessageServer):
 
     def flush_stats(self):
         f = open('LogServer.stats', 'w')
+        f.write('Received  %06d messages\n' % self.received)
+        f.write('Of them   %06d events\n' % self.events)
         f.write('Generated %06d queries\n' % self.generated)
         f.write('Received  %06d empty responses\n' % self.empty_response)
-        f.write('Sent      %06d messages totally' % (self.total_sent))
+        f.write('Sent      %06d messages totally\n' % (self.total_sent))
         f.close()
 
-    #@profile
     def check_waiting_messages(self):
         """
         Every flushing we check our DBClient for responses.
@@ -106,6 +108,7 @@ class LogServer(PythonMessageServer):
         """
         try:
             if isinstance(msg, LogMessage):
+                self.events += 1
                 self.last_mid += 1
                 args = msg.event.args()
                 qids = []
@@ -175,8 +178,6 @@ class LogServer(PythonMessageServer):
 
     def _get_qid(self):
         self.last_qid += 1
-        #if self.last_qid % 1000 == 0:
-        #    print 'last_qid', self.last_qid
         return self.last_qid
 
     def check_pending(self):
@@ -200,7 +201,6 @@ class LogServer(PythonMessageServer):
             if isinstance(res, QueryReply):
                 code = res.code
                 qid = res.qid
-                #print qid
                 mid = self.qid_mid.get(qid, None)
                 if mid is not None and mid in self.pending:
                     found = False if len(

@@ -23,21 +23,21 @@ deb='ext.debugger.elt.of_01_debug'
 log='stress_test.log'
 mn_log='multiping.log'
 
-for iter in 1;
+for iter in "";
 do
     log="stress_test$iter.log"
     touch $log
-    for size in 8;
+    for size in 16;
     do
         echo "*******" >> $log
         echo $size >> $log
         echo "*******" >> $log
-        for len in 3;
+        for len in 5;
         do
             echo ------- >> $log
             echo $len >> $log
             echo ------- >> $log
-            for i in 0.02;
+            for i in proxy;
             do
                 run_term $terminal 'python -m ext.debugger.utility.start_db_server'
                 db_pid=$!
@@ -45,10 +45,14 @@ do
                 log_pid=$!
                 if [[ $i == "no" ]] ;
                 then
-                    run_term $terminal "./pox.py forwarding.l2_learning"
-                    echo 'No debug'
+                    run_term $terminal "./pox.py log.level --WARNING forwarding.l2_learning"
+                    echo 'no proxy'
+                elif [[ $i == "proxy" ]];
+                then
+                    run_term $terminal "./pox.py log.level --WARNING $deb forwarding.l2_learning ext.debugger.controllers.interrupter --rate=0.0"
+                    echo 'just proxy'
                 else
-                    run_term $terminal "./pox.py log.level --WARNING $deb --fake_debugger=$i --flow_table_controller=config/flow_table_config.cfg forwarding.l2_learning ext.debugger.controllers.interrupter"
+                    run_term $terminal "./pox.py log.level --WARNING $deb --flow_table_controller=config/flow_table_config.cfg forwarding.l2_learning ext.debugger.controllers.interrupter --rate=$i"
                     #" --flow_table_controller=config/flow_table_config.cfg forwarding.l2_learning ext.debugger.controllers.interrupter"
                     echo 'debug'
                 fi

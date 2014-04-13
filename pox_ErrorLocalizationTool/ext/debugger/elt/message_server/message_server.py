@@ -45,7 +45,6 @@ class PythonMessageServer(Task):
         self.connection_factory = connection_factory
         Task.__init__(self)
 
-    #@profile
     def dummy_select(self, r, w, e, cooldown):
         cd = 1.0 * cooldown / (len(r) + len(w) + len(e))
         rd = []
@@ -72,14 +71,11 @@ class PythonMessageServer(Task):
 
     def run(self):
         self.sockets = []
-        #self.connections = {}
-        #listen = Listener(('0.0.0.0', self.port), backlog=1000)
         listener = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.listener = listener
         listener.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         listener.bind(('0.0.0.0', self.port))
         listener.listen(1000)
-        #listener = listen._listener._socket
         self.sockets.append(listener)
         log.info('Running at 0.0.0.0 :%d' % self.port)
         iteration = 0
@@ -88,12 +84,9 @@ class PythonMessageServer(Task):
                 while True:
                     to_sleep = False
                     con = None
-                    #rlist, wlist, elist = yield Select(
-                    #    self.sockets, [], self.sockets, self.cooldown)
                     try:
                         rlist, wlist, elist = self.dummy_select(
                             self.sockets, [], self.sockets, self.cooldown)
-                        #print 'message_server:', rlist, wlist, elist
                     except Exception as e:
                         log.debug(str(e))
                     if len(rlist) + len(wlist) + len(elist) == 0:
@@ -118,14 +111,11 @@ class PythonMessageServer(Task):
 
                         else:
                             try:
-                                #connection = self.connections[con]
                                 connection = con
-                                #obj = connection.recv()
                                 objs = connection.recv_all()
                                 for obj in objs:
                                     if obj is None:
                                         continue
-                                        #raise Exception('OBJ is None')
                                     self.process_object(obj, con)
                             except EOFError:
                                 try:
@@ -158,7 +148,7 @@ class PythonMessageServer(Task):
                     break
 
                 if con is listener:
-                    print 'Error on listener'
+                    log.error('Error on listener')
                     break
                 try:
                     self.remove_connection(con)
@@ -174,10 +164,8 @@ class PythonMessageServer(Task):
 
     def add_connection(self, skt):
         c = self.connection_factory.create_connection(skt)
-        #log.info("%s -> %s" % (skt, c))
         self.sockets.append(c)
         self.clients[c] = []
-        #self.connections[con] = c
 
     def close(self):
         """

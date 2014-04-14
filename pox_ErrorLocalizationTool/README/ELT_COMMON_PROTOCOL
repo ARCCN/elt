@@ -1,0 +1,53 @@
+Common structures in JSON.
+
+<rule>:
+{
+ "name":"rule",
+ "priority":<int>,
+ "match":<match>,
+ "actions":[<action>,<action>, ...],
+ "hard_timeout":<int>, # optional
+ "idle_timeout":<int>, # optional
+ "out_port":<int>, # optional
+ "version":<int>, # optional
+ "flags":<int> # optional
+}
+
+
+<flow_mod>:
+{
+ "name":"ofp_flow_mod",
+ "command":<int>,
+ "priority":<int>,
+ "match":<match>,
+ "actions":[<action>,<action>, ...],
+ "hard_timeout":<int>, # optional
+ "idle_timeout":<int>, # optional
+ "out_port":<int>, # optional
+ "version":<int>, # optional
+ "flags":<int> # optional
+ }
+
+<match>:
+{
+ wildcards:<int>,
+ in_port:<int>/null, # optional
+ dl_type:<int>/null, # optional
+ dl_src:<MAC as string>/null, # optional
+ dl_dst:<MAC as string>/null, # optional
+ dl_vlan:<int>/null, # optional
+ dl_vlan_pcp:<int>/null, # optional
+ nw_src:<IP as string>/null, # optional
+ nw_dst:<IP as string>/null, # optional
+ nw_tos:<int>/null, # optional
+ nw_proto:<int>/null, # optional
+ tp_src:<int>/null, # optional
+ tp_dst:<int>/null, #optional
+}
+
+
+<action>:
+{
+ "type":<int>,
+ <type-dependent values>
+}

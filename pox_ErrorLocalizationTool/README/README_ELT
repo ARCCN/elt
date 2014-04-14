@@ -29,6 +29,18 @@ Main modules:
 4.  ProxyController.
     Grabs flowmods. Stores to FlowTable and sends to Database and Logger.
 
+------------------------------------------------------------------------------
+
+LogServer and Database protocol definition:
+
+Textual interface using JSON.
+Structure definitions and examples can be found in
+
+README/
+    ELT_COMMON_PROTOCOL
+    ELT_DB_PROTOCOL
+    ELT_LOG_PROTOCOL
+
 -------------------------------------------------------------------------------
 
 Utility:

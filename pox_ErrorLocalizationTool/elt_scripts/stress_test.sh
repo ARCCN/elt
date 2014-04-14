@@ -27,17 +27,17 @@ for iter in "";
 do
     log="stress_test$iter.log"
     touch $log
-    for size in 16;
+    for size in 2;
     do
         echo "*******" >> $log
         echo $size >> $log
         echo "*******" >> $log
-        for len in 5;
+        for len in 1;
         do
             echo ------- >> $log
             echo $len >> $log
             echo ------- >> $log
-            for i in proxy;
+            for i in 0.5;
             do
                 run_term $terminal 'python -m ext.debugger.utility.start_db_server'
                 db_pid=$!

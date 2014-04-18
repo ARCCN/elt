@@ -774,7 +774,7 @@ class Database:
         if len(adds) == 0:
             # No flow_mod/add with such header/priority.
             # We should check flow_mod/modify*.
-            # HINT: This is changed in OF 1.3+.
+            # HINT: This is changed in OF 1.2+.
 
             # tuple of tuples: (ID, actionpat_ID, command)
             match_mods = self._find_modifies(

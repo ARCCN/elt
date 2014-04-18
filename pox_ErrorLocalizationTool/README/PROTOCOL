@@ -1,0 +1,425 @@
+###############################################################################
+
+Общие структуры в формате JSON.
+
+###############################################################################
+
+Правило:
+
+<rule>:
+{
+ "name":"rule", # Тип структуры
+ "priority":<int>,
+ "match":<match>,
+ "actions":[<action>,<action>, ...],
+ "hard_timeout":<int>, # опционально
+ "idle_timeout":<int>, # опционально
+ "out_port":<int>, # опционально
+ "version":<int>, # опционально
+ "flags":<int> # опционально
+}
+
+Сообщение модификации таблиц:
+
+<flow_mod>:
+{
+ "name":"ofp_flow_mod", # Тип структуры
+ "command":<int>,
+ "priority":<int>,
+ "match":<match>,
+ "actions":[<action>,<action>, ...],
+ "hard_timeout":<int>, # опционально
+ "idle_timeout":<int>, # опционально
+ "out_port":<int>, # опционально
+ "version":<int>, # опционально
+ "flags":<int> # опционально
+ }
+
+Шаблон сообщения:
+
+<match>:
+{
+ wildcards:<int>,
+ in_port:<int>/null, # опционально
+ dl_type:<int>/null, # опционально
+ dl_src:<MAC as string>/null, # опционально
+ dl_dst:<MAC as string>/null, # опционально
+ dl_vlan:<int>/null, # опционально
+ dl_vlan_pcp:<int>/null, # опционально
+ nw_src:<IP as string>/null, # опционально
+ nw_dst:<IP as string>/null, # опционально
+ nw_tos:<int>/null, # опционально
+ nw_proto:<int>/null, # опционально
+ tp_src:<int>/null, # опционально
+ tp_dst:<int>/null, #опционально
+}
+
+
+Действие:
+
+<action>:
+{
+ "type":<int>,
+ <Другие данные, в зависимости от типа действия>
+}
+
+тип:                                                                          поля:
+OFPAT_OUTPUT                                     "port":<int>
+                                                                         "max_len":<int>
+OFPAT_ENQUEUE                                  "queue_id":<int>
+OFPAT_STRIP_VLAN                            -
+OFPAT_SET_VLAN_VID                      "vlan_vid":<int>
+OFPAT_SET_VLAN_PCP                     "vlan_pcp":<int>
+OFPAT_SET_DL_SRC/DST                  "dl_addr":<MAC as string>
+OFPAT_SET_NW_SRC/DST                "nw_addr":<IP as string>
+OFPAT_SET_NW_TOS                          "nw_tos":<int>
+OFPAT_SET_NW_SRC/DST                "tp_port":<int>
+
+###############################################################################
+
+ПРОТОКОЛ СЕРВЕРА БАЗЫ ДАННЫХ
+
+###############################################################################
+
+FlowModMessage: Сохранить информацию о сообщении в БД.
+
+{
+ "dpid":<int>,
+ "data":<flow_mod>,
+ "code_entries":<call_stack>,
+ "_name":"FlowModMessage" # Тип сообщения
+}
+
+Стека вызовов:
+
+<call_stack>:
+[<code_entry>,<code_entry>, ...]
+
+Точка вызова функции:
+
+<code_entry>:
+[<module_name (string)>, <line_number (int)>]
+
+
+Пример:
+
+{
+ "dpid":1,
+ "data":
+	{
+	 "name":"ofp_flow_mod",
+	 "hard_timeout":0,
+	 "out_port":65535,
+	 "priority":10000,
+	 "idle_timeout":0,
+	 "version":1,
+	 "command":2,
+	 "actions":
+	 [
+		{"max_len":0,"type":0,"port":1}
+	 ],
+	 "flags":0,
+	 "match":
+	 {
+		 "wildcards":3678433,
+		 "dl_type":34525,
+		 "nw_dst":null,
+		 "dl_vlan_pcp":null,
+		 "dl_src":"86:4d:b6:63:47:4f",
+		 "nw_proto":null,
+		 "nw_tos":null,
+		 "tp_dst":null,
+		 "tp_src":null,
+		 "dl_dst":"33:33:00:00:00:16",
+		 "dl_vlan":65535,
+		 "nw_src":null,
+		 "in_port":null
+	 }
+ },
+ "code_entries":
+ [
+	["/home/lantame/SDN/ELT/pox_ErrorLocalizationTool/ext/debugger/controllers/interrupter.py",35],
+	["/home/lantame/SDN/ELT/pox_ErrorLocalizationTool/pox/lib/revent/revent.py",159],
+	["/home/lantame/SDN/ELT/pox_ErrorLocalizationTool/pox/lib/revent/revent.py",281],
+	["/home/lantame/SDN/ELT/pox_ErrorLocalizationTool/pox/lib/revent/revent.py",234],
+	["/home/lantame/SDN/ELT/pox_ErrorLocalizationTool/pox/openflow/of_01.py",178]
+ ],
+ "_name":"FlowModMessage"
+}
+
+###############################################################################
+
+FlowModQuery: Запросить стек вызовов для сообщения модификации таблиц.
+
+{
+ "qid":<int>, # -1 = не важно
+ "dpid":<int>,
+ "data":<flow_mod>, # Запрашиваемое сообщение
+ "_name":"FlowModQuery" # Тип сообщения
+}
+
+
+Пример:
+
+{
+ "qid":5,
+ "dpid":1,
+ "data":
+{
+	 "name":"ofp_flow_mod",
+	 "hard_timeout":0,
+	 "out_port":65535,
+	 "priority":1000,
+	 "idle_timeout":0,
+	 "version":1,
+	 "command":0,
+	 "actions":
+	 [
+		{"max_len":0,"type":0,"port":1}
+	 ],
+	 "flags":0,
+	 "match":
+	 {
+		 "wildcards":3145920,
+		 "dl_type":2054,
+		 "nw_dst":"10.0.0.1",
+		 "dl_vlan_pcp":null,
+		 "dl_src":"16:48:89:95:25:59",
+		 "nw_proto":2,
+		 "nw_tos":null,
+		 "tp_dst":null,
+		 "tp_src":null,
+		 "dl_dst":"66:4e:5f:da:3c:99",
+		 "dl_vlan":65535,
+		 "nw_src":"10.0.0.3",
+		 "in_port":3
+	 }
+ },
+ "_name":"FlowModQuery"
+}
+
+###############################################################################
+
+RuleQuery: Запросить стеки вызовов для всех сообщений, участвовавших в создании правила.
+
+{
+ "qid":<int>, # -1 = не важно
+ "dpid":<int>,
+ "data":<rule>, # Запрашиваемое правило
+ "_name":"RuleQuery" # Тип сообщения
+}
+
+
+Пример:
+
+{
+ "qid":26,
+ "dpid":1,
+ "data":
+ {
+		 "name":"rule",
+		 "hard_timeout":0,
+		 "out_port":65535,
+		 "priority":100,
+		 "idle_timeout":0,
+		 "version":1,
+		 "actions":
+		 [
+			{"max_len":0,"type":0,"port":1}
+		 ],
+		 "flags":0,
+		 "match":
+		 {
+			 "wildcards":1048577,
+			 "dl_type":2048,
+			 "nw_dst":"10.0.0.4",
+			 "dl_vlan_pcp":null,
+			 "dl_src":"9e:f3:e8:bb:54:1a",
+			 "nw_proto":1,
+			 "nw_tos":0,
+			 "tp_dst":0,
+			 "tp_src":0,
+			 "dl_dst":"9e:fe:0e:2f:ff:61",
+			 "dl_vlan":65535,
+			 "nw_src":"10.0.0.2",
+			 "in_port":null
+		}
+ },
+ "_name":"RuleQuery"
+}
+
+###############################################################################
+
+QueryReply: Стек(-и) вызовов в ответ на FlowModQuery / RuleQuery.
+
+{
+ "qid":<int>, # Такое же, как в запросе
+ "code":[<fm_code>,<fm_code>, ...], # Стеки вызовов
+ "_name":"QueryReply" # Тип сообщения
+}
+
+Стек вызовов для одного сообщения
+
+<fm_code>:
+[
+ <"OFPFC_*" (string)>, # Код команды сообщения
+ <call_stack> # Стек вызовов
+]
+
+
+Пример:
+
+{
+ "qid":26,
+ "code":
+ [
+	[
+		"OFPFC_ADD",
+		[
+			["/home/lantame/SDN/ELT/pox_ErrorLocalizationTool/ext/debugger/controllers/interrupter.py",35],
+			["/home/lantame/SDN/ELT/pox_ErrorLocalizationTool/pox/lib/revent/revent.py",159],
+			["/home/lantame/SDN/ELT/pox_ErrorLocalizationTool/pox/lib/revent/revent.py",281],
+			["/home/lantame/SDN/ELT/pox_ErrorLocalizationTool/pox/lib/revent/revent.py",234],
+			["/home/lantame/SDN/ELT/pox_ErrorLocalizationTool/pox/openflow/of_01.py",178]
+		]
+	]
+ ],
+ "_name":"QueryReply"
+}
+
+###############################################################################
+
+ПРОТОКОЛ СЕРВЕРА ЛОГИРОВАНИЯ
+
+###############################################################################
+
+LogMessage: Сохранить сообщение об ошибке.
+
+{
+ "event":<event>, # Описание события
+ "_name":"LogMessage" # Тип сообщения
+}
+
+<event>:
+{
+ "_name":<string>, # Название, опционально
+ "desc":<string>, # Описание, опционально
+ "time":"DD.MM.YYYY hh:mm:ss.sss", # Время возникновения, опционально
+ "entry_groups":[<entry_group>,<entry_group>, ...] # Группы правил/сообщений
+}
+
+Группа правил/сообщений
+
+<entry_group>:
+{
+ "name":<string>, # Название, опционально
+ "desc":<string>, # Описание, опционально
+ "entries":[<entry>,<entry>, ...] # Правила/сообщения на коммутаторах, опционально
+}
+
+# Правило/сообщение на коммутаторе
+
+<entry>:
+{
+ "dpid":<int>, # Идентификатор коммутатора
+ "data":<flow_mod>|<rule> # Сообщение/правило
+}
+
+
+Пример:
+
+{
+ "event":
+ {
+	"entry_groups":
+	[
+		{
+			"entries":
+			[
+				{
+					"data":
+					{
+						"name":"ofp_flow_mod",
+						"hard_timeout":0,
+						"out_port":65535,
+						"priority":1000,
+						"idle_timeout":0,
+						"version":1,
+						"command":0,
+						"actions":
+						[
+							{"max_len":0,"type":0,"port":4}
+						],
+						"flags":0,
+						"match":
+						{
+							"wildcards":3145920,
+							"dl_type":2054,
+							"nw_dst":"10.0.0.4",
+							"dl_vlan_pcp":null,
+							"dl_src":"66:4e:5f:da:3c:99",
+							"nw_proto":1,
+							"nw_tos":null,
+							"tp_dst":null,
+							"tp_src":null,
+							"dl_dst":"9e:fe:0e:2f:ff:61",
+							"dl_vlan":65535,
+							"nw_src":"10.0.0.1",
+							"in_port":1
+						}
+					},
+					"dpid":1
+				}
+			],
+			"name":"Added",
+			"desc":"This entry was just added"
+		},
+		{
+			"entries":
+			[
+				{
+					"data":
+					{
+						"name":"rule",
+						"hard_timeout":0,
+						"out_port":65535,
+						"priority":1000,
+						"idle_timeout":0,
+						"version":1,
+						"actions":
+						[
+							{"max_len":0,"type":0,"port":1}
+						],
+						"flags":0,
+						"match":
+						{
+							"wildcards":2097345,
+							"dl_type":2054,
+							"nw_dst":"10.0.0.4",
+							"dl_vlan_pcp":0,
+							"dl_src":"66:4e:5f:da:3c:99",
+							"nw_proto":1,
+							"nw_tos":null,
+							"tp_dst":null,
+							"tp_src":null,
+							"dl_dst":"9e:fe:0e:2f:ff:61",
+							"dl_vlan":65535,
+							"nw_src":"10.0.0.1",
+							"in_port":null
+						}
+					},
+					"dpid":1
+				}
+			],
+			"name":"Old",
+			"desc":"These entries were installed before"
+		}
+	],
+	"desc":"No description",
+	"time":"14.04.2014 21:29:43.624",
+	"_name":"FlowUndefined"
+ },
+ "_name":"LogMessage"
+}
+
+###############################################################################

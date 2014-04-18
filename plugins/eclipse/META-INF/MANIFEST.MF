@@ -1,7 +1,7 @@
 Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
-Bundle-Name: ELT
-Bundle-SymbolicName: ELT;singleton:=true
+Bundle-Name: Error Localization Tool Log Viewer
+Bundle-SymbolicName: org.eclipse.sdn.debugging.ELT;singleton:=true
 Bundle-Version: 1.0.0.qualifier
 Bundle-Activator: elt.Activator
 Require-Bundle: org.eclipse.ui,

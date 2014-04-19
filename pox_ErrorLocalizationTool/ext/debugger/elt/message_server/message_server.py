@@ -5,8 +5,6 @@ import select
 import time
 from collections import deque
 
-from pox.lib.recoco.recoco import Task, Scheduler, Exit, Select
-
 from ..interaction import SimpleConnection, ConnectionFactory
 from ..util import app_logging, profile
 
@@ -18,7 +16,7 @@ COOLDOWN = 0.01
 log = app_logging.getLogger("Message Server")
 
 
-class PythonMessageServer(Task):
+class PythonMessageServer():
     """
     Base class for our servers.
     Supports queues/immediate processing.
@@ -34,7 +32,6 @@ class PythonMessageServer(Task):
         self._closing = False
         self.queue = deque()
         self.current_client = None
-        self.scheduler = Scheduler(daemon=True)
         self.closed = False
         self.enqueue = enqueue
         self.single_queue = single_queue
@@ -44,7 +41,7 @@ class PythonMessageServer(Task):
         if connection_factory is None:
             connection_factory = ConnectionFactory()
         self.connection_factory = connection_factory
-        Task.__init__(self)
+        self.run()
 
     def dummy_select(self, r, w, e, cooldown):
         cd = 1.0 * cooldown / (len(r) + len(w) + len(e))
@@ -177,7 +174,7 @@ class PythonMessageServer(Task):
         for s in self.sockets:
             self.remove_connection(s)
         self.closed = True
-        Exit()
+        sys.exit(0)
 
     def get_client_queue(self):
         """

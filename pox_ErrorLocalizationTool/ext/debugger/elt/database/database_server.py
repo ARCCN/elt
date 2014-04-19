@@ -1,6 +1,5 @@
 import socket
-
-from pox.lib.recoco.recoco import Exit
+import sys
 
 from ..message_server import Message, PythonMessageServer
 from ..interaction import (SimpleConnection, TimeoutException,
@@ -43,7 +42,7 @@ class DatabaseServer(PythonMessageServer):
         self.db.disconnect()
         self.closed = True
         self.db.flush_stats()
-        Exit()
+        sys.exit(0)
 
     def check_waiting_messages(self):
         """

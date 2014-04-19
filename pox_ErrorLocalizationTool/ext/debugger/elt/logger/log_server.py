@@ -1,6 +1,5 @@
 import time
-
-from pox.lib.recoco.recoco import Exit
+import sys
 
 from ..message_server import PythonMessageServer
 from ..util import profile, app_logging
@@ -57,7 +56,7 @@ class LogServer(PythonMessageServer):
         self.log.flush()
         self.closed = True
         self.flush_stats()
-        Exit()
+        sys.exit(0)
 
     def flush_stats(self):
         f = open('LogServer.stats', 'w')

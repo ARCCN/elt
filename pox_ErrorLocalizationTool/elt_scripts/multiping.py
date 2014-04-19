@@ -112,8 +112,8 @@ def multiping( topo, chunksize, seconds):
             cnt += 1
             if cnt % 100 == 0:
                 avg_tims.append(avg(tim))
-                print '%06d / %06d, %06f, %06f' % (
-                    safe_sum(r), safe_sum(t), avg(tim), avg(tim[-100:]))
+                #print '%06d / %06d, %06f, %06f' % (
+                #    safe_sum(r), safe_sum(t), avg(tim), avg(tim[-100:]))
             if len(finish.findall(s)) > 0:
                 finished += 1
 

@@ -4,14 +4,14 @@ function run_term {
     then
         if [[ $3 != "" ]];
         then
-            $2 > $3 &
+            $2 >> $3 &
         else
             $2 &
         fi
     else
         if [[ $3 != "" ]];
         then
-            $1 -e "$2 > $3" &
+            $1 -e "$2 >> $3" &
         else
             $1 -e "$2" &
         fi
@@ -27,7 +27,7 @@ for iter in "";
 do
     log="stress_test$iter.log"
     touch $log
-    for size in 4;
+    for size in 64;
     do
         echo "*******" >> $log
         echo $size >> $log
@@ -37,7 +37,7 @@ do
             echo ------- >> $log
             echo $len >> $log
             echo ------- >> $log
-            for i in 0.5;
+            for i in no proxy 0.0 0.01 0.1 0.5;
             do
                 run_term $terminal 'python -m ext.debugger.utility.start_db_server'
                 db_pid=$!
@@ -57,7 +57,8 @@ do
                     echo 'debug'
                 fi
                 pox_pid=$!
-                run_term $terminal "python elt_scripts/multiping.py --topo=line,$len,$size" "$mn_log"
+                echo $i >> $log
+                run_term $terminal "python elt_scripts/multiping.py --topo=line,$len,$size" "$log"
                 mn_pid=$!
                 while ps -p $mn_pid > /dev/null; do sleep 0.5; done;
                 kill -TERM $pox_pid
@@ -65,8 +66,6 @@ do
                 while ps -p $log_pid > /dev/null; do sleep 0.5; done;
                 python -m ext.debugger.utility.stop_db_server
                 while ps -p $db_pid > /dev/null; do sleep 0.5; done;
-                echo $i >> $log
-                tail -n 1 $mn_log >> $log;
             done;
         done;
     done;

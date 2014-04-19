@@ -26,8 +26,8 @@ class DatabaseClient:
     def __init__(self, port=PORT, mode='w', connect=True):
         self.port = port
         self.connection_factory = ConnectionFactory(
-                    instantiator = Instantiator(
-                        module="ext.debugger.elt.database.messages"))
+            instantiator=Instantiator(
+                module="ext.debugger.elt.database.messages"))
         self.connection = None
         if connect:
             while self.reconnect() is False:
@@ -126,7 +126,7 @@ class DatabaseClient:
         except Exception as e:
             log.debug(str(e))
             log.info('DBClient: Unable to establish connection. ' +
-                   'Try using db.reconnect()')
+                     'Try using db.reconnect()')
             return False
 
     def send_message(self, msg, async=False):
@@ -185,5 +185,3 @@ class DatabaseClient:
             self.connection.close()
             self.connection = None
             raise
-
-

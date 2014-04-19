@@ -253,6 +253,7 @@ def convert_insert_flow_match(match, args=None):
 
 # FlowModParams table
 
+
 def create_flow_mod_params():
     cr = create_table("FlowModParams")
     cr = cr[:-2] + ", INDEX params (command, priority))"

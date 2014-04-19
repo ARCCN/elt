@@ -22,8 +22,6 @@ class FakeDebugger():
         return 0
 
     def process_flow_mod(self, dpid, flow_mod, _):
-        #if flow_mod.command != 0:
-        #    return
         t = self.get_times()
         for _ in xrange(t):
             self.proxy.log_event(self, FakeError(dpid, flow_mod))

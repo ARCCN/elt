@@ -9,18 +9,19 @@ from .messages import HelloMessage, LogMessage
 
 
 log = app_logging.getLogger('Log Client')
+LOG_PORT = 5523
 
 
 class LogClient:
     """
     The only thing I can is sending errors to log.
     """
-    def __init__(self, port=5523, name="", connect=True):
+    def __init__(self, port=LOG_PORT, name="", connect=True):
         self.port = port
         self.name = name
         self.connection_factory = ConnectionFactory(
-                    instantiator = Instantiator(
-                        module="ext.debugger.elt.logger.messages"))
+            instantiator=Instantiator(
+                module="ext.debugger.elt.logger.messages"))
 
         self.connection = None
         if connect:
@@ -42,7 +43,8 @@ class LogClient:
         try:
             self.connection.send(LogMessage(event))
         except Exception as e:
-            log.info('LogClient: Connection closed. Try using self.reconnect()')
+            log.info('LogClient: Connection closed.' +
+                     ' Try using self.reconnect()')
 
     def reconnect(self):
         try:
@@ -56,7 +58,5 @@ class LogClient:
         except Exception as e:
             log.debug(str(e))
             log.info('LogClient: Unable to establish connection. ' +
-                   'Try using self.reconnect()')
+                     'Try using self.reconnect()')
             return False
-
-

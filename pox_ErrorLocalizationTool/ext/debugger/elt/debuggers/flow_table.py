@@ -240,7 +240,8 @@ class TaggedFlowTable(FlowTable):
         else:
             check_overlap = False
         if(flow_mod.out_port != of.OFPP_NONE and
-           flow_mod.command == of.ofp_flow_mod_command_rev_map['OFPFC_DELETE']):
+           flow_mod.command == of.ofp_flow_mod_command_rev_map[
+               'OFPFC_DELETE']):
             raise NotImplementedError(
                 "flow_mod outport checking not implemented")
 
@@ -377,7 +378,7 @@ class TaggedFlowTable(FlowTable):
                 if self.is_app_error(current.tag, entry.tag):
                     deleted.add(entry)
         if raise_error:
-            self.raise_competition(deleted={current : deleted})
+            self.raise_competition(deleted={current: deleted})
         return self.remove_entries_simple(removed)
 
     def add_entry_simple(self, current):

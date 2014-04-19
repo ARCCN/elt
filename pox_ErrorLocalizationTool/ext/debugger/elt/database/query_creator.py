@@ -31,6 +31,7 @@ class QueryCreator:
             query = " SET %s = (%s)" % (out_var, query)
         return query + ";"
 
+    '''
     @staticmethod
     def select_actions_ordered(actions, fields="Actions.ID", arg_list=None):
         """
@@ -49,6 +50,7 @@ class QueryCreator:
                   Actions.type <=> SearchSet.type and Actions.value <=> \
                   SearchSet.value ORDER BY SearchSet.num"
         return QueryCreator.substitute(query, args, arg_list)
+    '''
 
     @staticmethod
     def find_actionpat_id_subquery_ids(action_ids,
@@ -78,6 +80,7 @@ class QueryCreator:
                   "CONCAT(',', b.xz, ',') LIMIT 1")
         return QueryCreator.substitute(query, args, arg_list)
 
+    '''
     @staticmethod
     def find_actionpat_id_subquery(actions, out_var=None, arg_list=None):
         """
@@ -102,6 +105,7 @@ class QueryCreator:
                  CONCAT(\',\',b.xz,\',\') LIMIT 1"
 
         return QueryCreator.substitute(query, args, arg_list)
+    '''
 
     @staticmethod
     def get_pat_id_subquery_ids(ids, out_var="@actionpat_ID",

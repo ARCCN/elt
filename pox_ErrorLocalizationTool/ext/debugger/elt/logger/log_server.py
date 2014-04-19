@@ -11,9 +11,11 @@ from .util import FlowModInfo, RuleInfo, MessageInfo, ReQuery
 from .messages import HelloMessage, LogMessage
 from .loggers import TextLogger, XmlLogger
 
+
 BUFFER_SIZE = 10
 MAX_ATTEMPTS = 3
 log = app_logging.getLogger('Log Server')
+LOG_PORT = 5523
 
 
 class LogServer(PythonMessageServer):
@@ -22,7 +24,7 @@ class LogServer(PythonMessageServer):
     Uses DatabaseClient to retrieve FlowMod call stack.
     Uses asynchronious querying to save resources.
     """
-    def __init__(self, port=5523, logger=None, log_file='LogServer.log'):
+    def __init__(self, port=LOG_PORT, logger=None, log_file='LogServer.log'):
         self.db_client = DatabaseClient(mode='rw')
         if logger is None:
             #self.log = TextLogger(log_file)
@@ -30,7 +32,7 @@ class LogServer(PythonMessageServer):
         else:
             self.log = logger
         self.names = {}
-        self.pending = {} # mid -> (MessageInfo, conn_name)
+        self.pending = {}  # mid -> (MessageInfo, conn_name)
         self.qid_mid = {}
         self.last_qid = 0
         self.last_mid = 0
@@ -72,12 +74,10 @@ class LogServer(PythonMessageServer):
         """
         result = False
         replies = 0
-        try:
-            if len(self.pending) > 0:
-                replies = self.check_pending()
-                result = True
-        except:
-            pass
+        if len(self.pending) > 0:
+            replies = self.check_pending()
+            result = True
+
         if self.single_queue:
             self.check_iter += 1
             pool = (len(self.queue) if len(self.queue) < BUFFER_SIZE
@@ -89,7 +89,7 @@ class LogServer(PythonMessageServer):
                 if replies == 0:
                     time.sleep(0.01)
                 return result
-            for i in xrange(pool):
+            for _ in xrange(pool):
                 message = self.queue.popleft()
                 if isinstance(message, tuple):
                     msg, con = message
@@ -99,45 +99,48 @@ class LogServer(PythonMessageServer):
             result = True
         return result
 
-    def process_message(self, msg, con):
+    def process_log_message(self, msg, con):
         """
         Substitute call stack in place of %CODE.
         We just send requests to Database and check replies some time.
         We use qid_mid to match response with request.
         At first we prepare everything to get reply. Finally, send messages.
         """
+        self.events += 1
+        self.last_mid += 1
+        args = msg.event.args()
+        qids = []
+        indices = []
+        infos = []
+        buffer = []
+        #prepare everything for receiving reply
+        for e, i in zip(args, msg.event.indices()):
+            type = e.name
+            entry = (e.dpid, e.data)
+            info = None
+            if type in ["FlowMod", "ofp_flow_mod"]:
+                info = FlowModInfo(entry)
+            elif type in ['Rule', 'rule', 'ofp_rule']:
+                info = RuleInfo(entry)
+            else:
+                raise TypeError('Invalid record type')
+            qid = self._get_qid()
+            qids.append(qid)
+            infos.append(info)
+            indices.append(i)
+            self.qid_mid[qid] = self.last_mid
+            buffer.append(ReQuery(info, qid))
+            self.generated += 1
+        conn_name = self.names.get(con, str(con))
+        minfo = MessageInfo(infos, qids, indices, msg.event)
+        self.pending[self.last_mid] = (minfo, conn_name)
+        #after all, send our queries
+        self._send_queries(buffer)
+
+    def process_message(self, msg, con):
         try:
             if isinstance(msg, LogMessage):
-                self.events += 1
-                self.last_mid += 1
-                args = msg.event.args()
-                qids = []
-                indices = []
-                infos = []
-                buffer = []
-                #prepare everything for receiving reply
-                for e, i in zip(args, msg.event.indices()):
-                    type = e.name
-                    entry = (e.dpid, e.data)
-                    info = None
-                    if type in ["FlowMod", "ofp_flow_mod"]:
-                        info = FlowModInfo(entry)
-                    elif type in ['Rule', 'rule', 'ofp_rule']:
-                        info = RuleInfo(entry)
-                    else:
-                        raise TypeError('Invalid record type')
-                    qid = self._get_qid()
-                    qids.append(qid)
-                    infos.append(info)
-                    indices.append(i)
-                    self.qid_mid[qid] = self.last_mid
-                    buffer.append(ReQuery(info, qid))
-                    self.generated += 1
-                conn_name = self.names.get(con, str(con))
-                minfo = MessageInfo(infos, qids, indices, msg.event)
-                self.pending[self.last_mid] = (minfo, conn_name)
-                #after all, send our queries
-                self._send_queries(buffer)
+                self.process_log_message(msg, con)
             elif isinstance(msg, HelloMessage):
                 self.names[con] = msg.name
             else:
@@ -180,6 +183,40 @@ class LogServer(PythonMessageServer):
         self.last_qid += 1
         return self.last_qid
 
+    def process_query_reply(self, res):
+        code = res.code
+        qid = res.qid
+        mid = self.qid_mid.get(qid, None)
+        if mid is not None and mid in self.pending:
+            found = False if len(
+                [value for type, value in code
+                 if value == 'Not found']
+                ) > 0 else True
+            if not found:
+                minfo, conn_name = self.pending[mid]
+                if minfo.get_query_count(qid) <= MAX_ATTEMPTS:
+                    new_qid = self._get_qid()
+                    minfo.change_qid(qid, new_qid)
+                    self.qid_mid[new_qid] = mid
+                    self.queue.appendleft(ReQuery(
+                        minfo.infos[new_qid], new_qid))
+                    self.empty_response += 1
+                    minfo.inc_query_count(new_qid)
+                else:
+                    try:
+                        minfo.set_code(qid, code)
+                        if minfo.filled():
+                            self._log_message(mid)
+                    except Exception as e:
+                        log.debug(e)
+            else:
+                try:
+                    self.pending[mid][0].set_code(qid, code)
+                    if self.pending[mid][0].filled():
+                        self._log_message(mid)
+                except Exception as e:
+                    log.debug(e)
+
     def check_pending(self):
         """
         Read replies. Fill call stack.
@@ -199,38 +236,7 @@ class LogServer(PythonMessageServer):
             return False
         for res in ress:
             if isinstance(res, QueryReply):
-                code = res.code
-                qid = res.qid
-                mid = self.qid_mid.get(qid, None)
-                if mid is not None and mid in self.pending:
-                    found = False if len(
-                            [value for type, value in code
-                             if value == 'Not found']
-                            ) > 0 else True
-                    if not found:
-                        minfo, conn_name = self.pending[mid]
-                        if minfo.get_query_count(qid) <= MAX_ATTEMPTS:
-                            new_qid = self._get_qid()
-                            minfo.change_qid(qid, new_qid)
-                            self.qid_mid[new_qid] = mid
-                            self.queue.appendleft(ReQuery(
-                                minfo.infos[new_qid], new_qid))
-                            self.empty_response += 1
-                            minfo.inc_query_count(new_qid)
-                        else:
-                            try:
-                                minfo.set_code(qid, code)
-                                if minfo.filled():
-                                    self._log_message(mid)
-                            except Exception as e:
-                                log.debug(e)
-                    else:
-                        try:
-                            self.pending[mid][0].set_code(qid, code)
-                            if self.pending[mid][0].filled():
-                                self._log_message(mid)
-                        except Exception as e:
-                            log.debug(e)
-            elif res is None:
-                pass
+                self.process_query_reply(res)
+            elif res is not None:
+                log.debug("Unknown message: %s" % str(res))
         return len(ress)

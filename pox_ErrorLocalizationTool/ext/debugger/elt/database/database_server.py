@@ -103,5 +103,3 @@ class DatabaseServer(PythonMessageServer):
             except TimeoutException:
                 log.info('Unable to send. Retry')
         return True
-
-

@@ -17,6 +17,7 @@ INTERVAL = 1
 COOLDOWN = 0.01
 log = app_logging.getLogger("Message Server")
 
+
 class PythonMessageServer(Task):
     """
     Base class for our servers.

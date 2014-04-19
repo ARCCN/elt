@@ -10,6 +10,7 @@ def multiwordReplace(text, wordDic):
     the associated value, return the changed text
     """
     rc = re.compile('|'.join(map(re.escape, wordDic)))
+
     def translate(match):
         return wordDic[match.group(0)]
     return rc.sub(translate, text)
@@ -87,7 +88,6 @@ class XmlFlowMod(ET.Element):
                     elem = ET.Element(field)
                     elem.text = 'None'
                     self.append(elem)
-                pass
         self.append(XmlMatch(flow_mod.match))
         self.append(XmlActions(flow_mod.actions))
 
@@ -117,26 +117,6 @@ class XmlInfo(ET.Element):
             self.append(ET.Element('Empty'))
         self.append(XmlCode(code))
 
-'''
-class XmlEntry(ET.Element):
-    """
-    FlowMod/Rule + Code
-    """
-    def __init__(self, entry):
-        ET.Element.__init__(self, 'entry')
-        name = ET.Element('name')
-        if isinstance(info, FlowModInfo):
-            self.append(XmlFlowMod(info))
-            name.text = 'ofp_flow_mod'
-            self.append(name)
-        elif isinstance(info, RuleInfo):
-            self.append(XmlRule(info))
-            name.text = 'rule'
-            self.append(name)
-        else:
-            self.append(ET.Element('Empty'))
-        self.append(XmlCode(code))
-'''
 
 class XmlEntryGroup(ET.Element):
     def __init__(self, entry_group, children):
@@ -195,11 +175,12 @@ class XmlReport:
             for se in tmp:
                 e.remove(se)
             subelements.append(tmp)
-        f = open(name, 'w')
-        f.write(multiwordReplace(ET.tostring(self.result), {
-            '&gt;': '>',
-            '&lt;': '<',
-            '&amp;': '&'
+
+        with open(name, 'w') as f:
+            f.write(multiwordReplace(ET.tostring(self.result), {
+                '&gt;': '>',
+                '&lt;': '<',
+                '&amp;': '&'
             }))
         # Restore subelements.
         index = 0
@@ -223,7 +204,3 @@ class XmlReport:
         # Cheat. Store strings instead of objects.
         self.events[s].append(ET.tostring(xml))
         return True
-
-
-
-

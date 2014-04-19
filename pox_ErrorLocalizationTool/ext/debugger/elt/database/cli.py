@@ -5,7 +5,6 @@ from .database_client import DatabaseClient
 from .database import Database
 
 
-
 class CLI:
     def __init__(self):
         self.db_client = DatabaseClient(mode='rw', connect=False)
@@ -59,6 +58,7 @@ class CLI:
         h += "\tdb_client.reconnect()   Try to connect to DB.\n"
         h += "\tdb_client.close()       Stop DB server.\n"
         print h
+
 
 def db_cli():
     cli = CLI()

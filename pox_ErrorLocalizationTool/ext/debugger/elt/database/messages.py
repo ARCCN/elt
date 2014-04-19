@@ -5,6 +5,7 @@ import pox.openflow.libopenflow_01 as of
 from ..interaction import ofp_flow_mod, ofp_rule
 from ..message_server import Message, ClosingMessage
 
+
 class FlowModMessage(Message):
     """
     FlowMod info to be stored to Database.
@@ -50,6 +51,7 @@ class FlowModQuery(Message):
             self.data.__setstate__(d['data'])
         if "qid" in d:
             self.qid = d['qid']
+
 
 class RuleQuery(Message):
     """
@@ -97,6 +99,5 @@ class QueryReply(Message):
                     self.code.append((type, c))
                 else:
                     self.code.append((type, [tuple(row) for row in c]))
-            #[('ADD', [(module, line), (module, line)]), ('MODIFY', 'Not found')]
-
-
+            # [('ADD', [(module, line), (module, line)]),
+            #  ('MODIFY', 'Not found')]

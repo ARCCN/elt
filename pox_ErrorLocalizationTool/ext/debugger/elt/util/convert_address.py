@@ -35,5 +35,3 @@ def ip_to_uint(addr):
 
 def uint_to_ip(addr):
     return IPAddr(addr)
-
-

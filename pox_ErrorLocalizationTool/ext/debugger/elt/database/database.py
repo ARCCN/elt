@@ -14,7 +14,7 @@ from .database_utility import *
 from .caches import *
 from .messages import FlowModMessage, FlowModQuery, RuleQuery, QueryReply
 from .query_creator import QueryCreator
-
+from .query_logging import LoggingConnection
 
 # Database connection defaults.
 USER = 'user'
@@ -24,49 +24,6 @@ DATABASE = 'POX_proxy'
 #Logging
 log = app_logging.getLogger("Database")
 ENABLE_LOGGING = False
-
-
-class LoggingCursor:
-    def __init__(self, cur, log_file):
-        self.cur = cur
-        self.log_file = log_file
-
-    def __getattr__(self, name):
-        if name == "cur":
-            return self.cur
-        if name == "execute":
-            return self.execute
-        else:
-            return getattr(self.cur, name)
-
-    def __setattr__(self, name, value):
-        if name == "cur":
-            self.__dict__[name] = value
-        elif name == "execute":
-            self.__dict__[name] = value
-        else:
-            return setattr(self.cur, name, value)
-
-    def execute(self, query, args=None):
-        s = str(query)
-        if s[-1] == ';':
-            self.log_file.write(s + "\n")
-        else:
-            self.log_file.write(s + ";\n")
-        #log_file.flush()
-        return self.cur.execute(query, args)
-
-
-class LoggingConnection:
-    def __init__(self, con, log_file):
-        self.con = con
-        self.log_file = log_file
-
-    def cursor(self):
-        return LoggingCursor(self.con.cursor(), self.log_file)
-
-    def close(self):
-        self.con.close()
 
 
 class Database:
@@ -206,13 +163,13 @@ class Database:
         if id is None:
             return 'Not found'
         if self.con:
-            query = ("SELECT module, line FROM CodeEntries JOIN "
-                     "CodePatternsToCodeEntries ON CodeEntries.ID = "
-                     "CodePatternsToCodeEntries.codeentry_ID JOIN "
-                     "FlowMods on FlowMods.codepat_ID = "
-                     "CodePatternsToCodeEntries.codepat_ID AND "
-                     "FlowMods.ID = %s order by "
-                     "CodePatternsToCodeEntries.ID;") % (id)
+            query = "".join(["SELECT module, line FROM CodeEntries JOIN "
+                             "CodePatternsToCodeEntries ON CodeEntries.ID = "
+                             "CodePatternsToCodeEntries.codeentry_ID JOIN "
+                             "FlowMods on FlowMods.codepat_ID = "
+                             "CodePatternsToCodeEntries.codepat_ID AND "
+                             "FlowMods.ID = %s order by "
+                             "CodePatternsToCodeEntries.ID;"]) % (id)
             cur = self._get_cursor()
             cur.execute(query)
             rows = cur.fetchall()
@@ -384,7 +341,7 @@ class Database:
         query = insert_flow_mods(
             match_ID, params_ID, dpid, actionpat_id, codepat_id)
         query = query.replace('None', 'NULL')
-        self._get_id_by_query(query)
+        self._get_cursor().execute(query)
 
     def _save_data(self, message):
         """
@@ -456,28 +413,27 @@ class Database:
         query = ""
         if match_ID is not None:
             query = "".join([
-                         "SELECT max(FlowMods.ID) FROM FlowMods ",
-                         "JOIN FlowModParams ON ",
-                         "FlowMods.params_ID = FlowModParams.ID AND ",
-                         "match_ID <=> %d AND ",
-                         "dpid <=> %d AND ",
-                         "actionpat_ID <=> %s AND ",
-                         "command = %d AND priority = %d",
-                         ]) % (
-                    match_ID, dpid, actionpat_id, command, priority)
+                "SELECT max(FlowMods.ID) FROM FlowMods ",
+                "JOIN FlowModParams ON ",
+                "FlowMods.params_ID = FlowModParams.ID AND ",
+                "match_ID <=> %d AND ",
+                "dpid <=> %d AND ",
+                "actionpat_ID <=> %s AND ",
+                "command = %d AND priority = %d",
+                ]) % (
+                match_ID, dpid, actionpat_id, command, priority)
         else:
             tmp = select_flow_match(match, fields='ID', args=None)
             tmp = tmp[(tmp.find('WHERE') + 6):tmp.find('LIMIT')]
             query += "".join([
-                          "SELECT max(FlowMods.ID) From FlowMods",
-                          " JOIN FlowMatch ON FlowMods.match_ID=FlowMatch.ID"
-                          " AND ",
-                          tmp,
-                          " AND dpid <=> %d AND actionpat_ID <=> %s ",
-                          "JOIN FlowModParams ON ",
-                          "FlowMods.params_ID = FlowModParams.ID AND ",
-                          "command = %d AND priority = %d"]) % (
-                        dpid, actionpat_id, command, priority)
+                "SELECT max(FlowMods.ID) From FlowMods",
+                " JOIN FlowMatch ON FlowMods.match_ID=FlowMatch.ID"
+                " AND ", tmp,
+                " AND dpid <=> %d AND actionpat_ID <=> %s ",
+                "JOIN FlowModParams ON ",
+                "FlowMods.params_ID = FlowModParams.ID AND ",
+                "command = %d AND priority = %d"]) % (
+                dpid, actionpat_id, command, priority)
 
         query = query.replace('None', 'NULL')
         cur = self._get_cursor()
@@ -500,14 +456,13 @@ class Database:
                          " ON FlowMods.params_ID = FlowModParams.ID AND",
                          " match_ID = %d AND dpid = %d AND",
                          " command = %d AND priority = %d"]) % (
-                         match_ID, dpid,
-                         of.ofp_flow_mod_command_rev_map["OFPFC_ADD"],
-                         priority)
+            match_ID, dpid, of.ofp_flow_mod_command_rev_map["OFPFC_ADD"],
+            priority)
         cur = self._get_cursor()
         if len(additionals) > 0:
             query = query.replace(
-                    "FlowMods.ID",
-                    "FlowMods.ID, " + ", ".join(additionals))
+                "FlowMods.ID",
+                "FlowMods.ID, " + ", ".join(additionals))
             cur.execute(query)
             return cur.fetchall()
         cur.execute(query)
@@ -543,7 +498,7 @@ class Database:
         if strict is not None:
             cmd = "OFPFC_MODIFY_STRICT" if strict else "OFPFC_MODIFY"
             params_cond = "command = %d" % (
-                    of.ofp_flow_mod_command_rev_map[cmd])
+                of.ofp_flow_mod_command_rev_map[cmd])
 
         else:
             params_cond = "command in (%d, %d)" % (
@@ -555,7 +510,7 @@ class Database:
 
         query = ""
         if match_ID is None and match is not None and not wider:
-             match_ID = self.matches.find(match)
+            match_ID = self.matches.find(match)
 
         if match_ID is None:
             query = "".join(["SELECT FlowMods.ID FROM FlowMods ",
@@ -571,13 +526,14 @@ class Database:
 
                 # HINT: OF 1.0: subnet mask is in wildcards.
                 #       it must be greater or equal.
-                match_cond = " (~wildcards & %d = 0) " % ( match.wildcards &
-                        ~of.OFPFW_NW_SRC_MASK & ~of.OFPFW_NW_DST_MASK)
+                match_cond = " (~wildcards & %d = 0) " % (
+                    match.wildcards & ~of.OFPFW_NW_SRC_MASK &
+                    ~of.OFPFW_NW_DST_MASK)
                 match_cond += ("AND (wildcards & %d >= %d) " * 2) % (
-                        of.OFPFW_NW_SRC_MASK,
-                        match.wildcards & of.OFPFW_NW_SRC_MASK,
-                        of.OFPFW_NW_DST_MASK,
-                        match.wildcards & of.OFPFW_NW_DST_MASK)
+                    of.OFPFW_NW_SRC_MASK,
+                    match.wildcards & of.OFPFW_NW_SRC_MASK,
+                    of.OFPFW_NW_DST_MASK,
+                    match.wildcards & of.OFPFW_NW_DST_MASK)
                 # Force to use index.
                 # TODO: nw_src, nw_dst lookup is incorrect.
                 #       we have to match by mask.
@@ -617,18 +573,15 @@ class Database:
                                        match_cond])
 
                 query = query.replace(
-                        "FlowMods JOIN FlowModParams ON"
-                        " FlowMods.params_ID = FlowModParams.ID",
-                        "FlowMods JOIN FlowMatch "
-                        "ON FlowMods.match_ID = FlowMatch.ID")
+                    "FlowMods JOIN FlowModParams ON"
+                    " FlowMods.params_ID = FlowModParams.ID",
+                    "FlowMods JOIN FlowMatch "
+                    "ON FlowMods.match_ID = FlowMatch.ID")
                 query = query.replace(
-                        "AND command",
-                        "".join(["AND ", match_cond, " JOIN FlowModParams ON ",
-                                 "FlowMods.params_ID = FlowModParams.ID",
-                                 " AND command"]))
-                '''
-                query += match_query
-                '''
+                    "AND command",
+                    "".join(["AND ", match_cond, " JOIN FlowModParams ON ",
+                             "FlowMods.params_ID = FlowModParams.ID",
+                             " AND command"]))
             elif match is not None and not wider:
                 tmp = select_flow_match(match, fields='ID', args=None)
                 tmp = tmp[(tmp.find('WHERE') + 6):tmp.find('LIMIT')]
@@ -652,100 +605,14 @@ class Database:
 
         cur = self._get_cursor()
 
-        def f6(cur, query):
-            return cur.execute(query)
-        def f7(cur, query):
-            return cur.execute(query)
-        def f8(cur, query):
-            if wider:
-                f6(cur, query)
-            else:
-                f7(cur, query)
-
         if len(additionals) > 0:
             query = query.replace(
-                    "(FlowMods.ID)",
-                    "(FlowMods.ID), " + ", ".join(additionals))
-            #cur.execute(query)
-            f8(cur, query)
+                "(FlowMods.ID)",
+                "(FlowMods.ID), " + ", ".join(additionals))
+            cur.execute(query)
             return cur.fetchall()
-        #cur.execute(query)
-        f8(cur, query)
-        return [id for id, in cur.fetchall()]
-
-# Get variuos data pieces for given flowmod_ids.
-
-    def _get_action_patterns(self, flowmod_ids):
-        if len(flowmod_ids) == 0:
-            return []
-        query = "SELECT actionpat_ID FROM (select 1 as num, %d as ID " % (
-                    flowmod_ids[0])
-        query += "".join(["UNION ALL SELECT %d, %d " % (num, fm)
-                          for num, fm in enumerate(flowmod_ids[1:], start=2)])
-        query += ") SearchSet NATURAL JOIN FlowMods order by num;"
-        cur = self._get_cursor()
         cur.execute(query)
         return [id for id, in cur.fetchall()]
-
-    def _get_matches(self, flowmod_ids):
-        if len(flowmod_ids) == 0:
-            return []
-        query = "SELECT match_ID FROM (select 1 as num, %d as ID " % (
-                    flowmod_ids[0])
-        query += "".join(["UNION ALL SELECT %d, %d " % (num, fm)
-                          for num, fm in enumerate(flowmod_ids[1:], start=2)])
-        query += ") SearchSet NATURAL JOIN FlowMods order by num;"
-        cur = self._get_cursor()
-        cur.execute(query)
-        return [id for id, in cur.fetchall()]
-
-    def _get_commands(self, flowmod_ids):
-        if len(flowmod_ids) == 0:
-            return []
-        query = ("SELECT FlowModParams.command FROM" +
-                " (select 1 as num, %d as ID ") % (
-                    flowmod_ids[0])
-        query += "".join(["UNION ALL SELECT %d, %d " % (num, fm)
-                          for num, fm in enumerate(flowmod_ids[1:], start=2)])
-        query += ") SearchSet NATURAL JOIN FlowMods "
-        query += "JOIN FlowModParams on FlowMods.params_ID = FlowModParams.ID "
-        query += "ORDER BY num;"
-        cur = self._get_cursor()
-        cur.execute(query)
-        return [id for id, in cur.fetchall()]
-
-
-    def _get_command(self, flowmod_id):
-        query = "".join(["SELECT FlowModParams.command FROM FlowMods JOIN",
-                         " FlowModParams ON FlowMods.params_ID =",
-                         " FlowModParams.ID and FlowMods.ID=%d"]) % flowmod_id
-        cur = self._get_cursor()
-        cur.execute(query)
-        return cur.fetchall()[0][0]
-
-
-# Utility to create matches from data in db.
-
-    def _select_match_rev(self, match_ID):
-        query = "SELECT * FROM FlowMatch WHERE ID = %d" % match_ID
-        cur = self._get_cursor(mdb.cursors.DictCursor)
-        cur.execute(query)
-        return self._create_match(cur.fetchall()[0])
-
-    def _create_match(self, d):
-        m = of.ofp_match()
-        for attr in ["wildcards", "in_port", "dl_vlan", "dl_vlan_pcp",
-                     "dl_type", "nw_tos", "nw_proto", "tp_src", "tp_dst"]:
-            setattr(m, attr, d.get(attr))
-        for ip in ["nw_src", "nw_dst"]:
-            x = d.get(ip)
-            if x is not None:
-                setattr(m, ip, uint_to_ip(x))
-        for mac in ["dl_src", "dl_dst"]:
-            x = d.get(mac)
-            if x is not None:
-                setattr(m, mac, int_to_eth(x))
-        return m
 
     def _find_rule(self, message):
         """
@@ -762,13 +629,12 @@ class Database:
         priority = message.data.priority
         null_result = [("OFPFC_ADD", None)]
 
-
         match_ID = self._find_match(match)
         if match_ID is None:
             return null_result
         adds = sorted(self._find_adds(match_ID, dpid, priority,
                                       additionals=["actionpat_ID"]),
-                          key=lambda tup: tup[0])
+                      key=lambda tup: tup[0])
         actionpat_ID = self._find_action_pattern(actions)
 
         if len(adds) == 0:
@@ -778,9 +644,9 @@ class Database:
 
             # tuple of tuples: (ID, actionpat_ID, command)
             match_mods = self._find_modifies(
-                    None, dpid, priority, strict=None, single=None,
-                    match_ID=match_ID,
-                    additionals=["actionpat_ID", "command"])
+                None, dpid, priority, strict=None, single=None,
+                match_ID=match_ID,
+                additionals=["actionpat_ID", "command"])
 
             # No chances to install rule.
             if len(match_mods) == 0:
@@ -810,8 +676,9 @@ class Database:
                           of.ofp_flow_mod_command_rev_map["OFPFC_MODIFY"])
                          for x in good_mod_ids if x is not None]
 
-            good_strict_mods = [tup for tup in good_adds if tup[2] ==
-                    of.ofp_flow_mod_command_rev_map["OFPFC_MODIFY_STRICT"]]
+            good_strict_mods = [tup for tup in good_adds
+                                if tup[2] == of.ofp_flow_mod_command_rev_map[
+                                    "OFPFC_MODIFY_STRICT"]]
             good_mods.extend(good_strict_mods)
 
             if len(good_mods) == 0:
@@ -831,64 +698,6 @@ class Database:
                      match_mods[0][0]),
                     (of.ofp_flow_mod_command_map[max_mod[2]],
                      max_mod[0])]
-
-            '''
-            #OLD stuff
-            mod_add_ids = self._find_modifies(None, dpid, priority,
-                                              strict=None, single=None,
-                                              match_ID=match_ID)
-            # No chances to install rule.
-            if len(mod_add_ids) == 0:
-                return null_result
-
-            mod_add_ids = sorted(mod_add_ids)
-            mod_add_actionpats = self._get_action_patterns(mod_add_ids)
-
-            # As-is flow_mod/add
-            good_adds = [id for id, ap in zip(mod_add_ids, mod_add_actionpats)
-                         if ap == actionpat_ID]
-
-            # We should probably pick the first
-            # flow_mod/modify as preferred add.
-            # First mod is good -> return.
-            if mod_add_ids[0] in good_adds:
-                return [(of.ofp_flow_mod_command_map[
-                    self._get_command(mod_add_ids[0])], mod_add_ids[0])]
-
-            # We treat only the first flow_mod/modify as add.
-            # Maybe we need more complex heuristic.
-
-            # Now we take the last flow_mod/modify as modify.
-            good_mods = self._find_modifies(actionpat_ID, dpid, priority,
-                                               strict=False, single='max',
-                                               match=match, wider=True)
-
-            good_add_commands = self._get_commands(good_adds)
-            good_strict_mods = [id for id, c in zip(
-                good_adds, good_add_commands)
-                if c == of.ofp_flow_mod_command_rev_map["OFPFC_MODIFY_STRICT"]]
-            good_mods.extend(good_strict_mods)
-
-            if len(good_mods) == 0:
-                # Return the first modify with good actions.
-                if len(good_adds) > 0:
-                    return [(of.ofp_flow_mod_command_map[
-                        self._get_command(good_adds[0])], good_adds[0])]
-                else:
-                    return null_result
-
-            max_mod = max(good_mods)
-            command = ("OFPFC_MODIFY_STRICT" if max_mod in good_strict_mods
-                       else "OFPFC_MODIFY")
-
-            # We will pick the first modify as 'add'
-            # and the last modify as 'modify'.
-            # First 'add' modify cannot be good here.
-            return [(of.ofp_flow_mod_command_map[
-                        self._get_command(mod_add_ids[0])], mod_add_ids[0]),
-                    (command, max_mod)]
-            '''
-
         else:
             # We have adds. Do not treat flow_mod/modify as 'add'.
             # As-is flow_mod/add
@@ -900,14 +709,14 @@ class Database:
             # Last add is not good -> last can be modified to good.
             # We only need the last good modify.
 
-            good_mod_ids = self._find_modifies(actionpat_ID, dpid,priority,
+            good_mod_ids = self._find_modifies(actionpat_ID, dpid, priority,
                                                strict=False, single='max',
                                                match=match, wider=True)
             good_mod_ids = [x for x in good_mod_ids if x is not None]
 
             good_strict_mod_ids = self._find_modifies(
-                    actionpat_ID, dpid, priority, strict=True,
-                    single='max', match_ID=match_ID)
+                actionpat_ID, dpid, priority, strict=True,
+                single='max', match_ID=match_ID)
             good_strict_mod_ids = [x for x in good_strict_mod_ids
                                    if x is not None]
 
@@ -954,5 +763,3 @@ class Database:
             cur.execute(query)
             rows = cur.fetchall()
             return rows
-
-

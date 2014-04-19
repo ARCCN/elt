@@ -5,7 +5,7 @@ import sys
 class FilterLevel:
     """ Process only messages with/without given values. """
 
-    def __init__(self, is_good = True, values = []):
+    def __init__(self, is_good=True, values=[]):
         self.is_good = is_good
         self.values = values
 
@@ -25,7 +25,8 @@ def getLogger(name):
     hnd2.setFormatter(fmt2)
     log.addHandler(hnd2)
     hnd1 = logging.StreamHandler(sys.stdout)
-    fmt1 = logging.Formatter(fmt='%(name)-20s %(levelname)-8s %(filename)s:%(lineno)s %(message)s')
+    fmt1 = logging.Formatter(fmt=('%(name)-20s %(levelname)-8s' +
+                                  '%(filename)s:%(lineno)s %(message)s'))
     hnd1.setLevel(logging.NOTSET)
     hnd1.addFilter(FilterLevel(False, [logging.INFO]))
     hnd1.setFormatter(fmt1)

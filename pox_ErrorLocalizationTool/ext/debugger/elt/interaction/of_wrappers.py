@@ -34,7 +34,7 @@ class ofp_flow_mod(of.ofp_flow_mod):
         if not isinstance(fm, of.ofp_flow_mod):
             return
         flow_mod = ofp_flow_mod(match=fm.match, actions=fm.actions,
-                          command=fm.command, priority=fm.priority)
+                                command=fm.command, priority=fm.priority)
         return flow_mod
 
     def __setstate__(self, d):
@@ -79,7 +79,7 @@ class ofp_flow_mod(of.ofp_flow_mod):
 class ofp_rule(ofp_flow_mod):
     def __init__(self, match=None, actions=None, priority=None):
         ofp_flow_mod.__init__(self, match=match, actions=actions,
-                                 priority=priority)
+                              priority=priority)
         self.name = 'rule'
 
     @staticmethod
@@ -92,10 +92,8 @@ class ofp_rule(ofp_flow_mod):
 
     def __getstate__(self):
         d = ofp_flow_mod.__getstate__(self)
-        try:
+        if "command" in d:
             del d["command"]
-        except:
-            pass
         return d
 
 
@@ -111,13 +109,13 @@ class ofp_match(of.ofp_match):
         for k, v in d.items():
             if k != 'wildcards':
                 setattr(self, k, v)
-        if d.get("nw_src", None) != None:
+        if d.get("nw_src", None) is not None:
             self.nw_src = IPAddr(d["nw_src"])
-        if d.get("nw_dst", None) != None:
+        if d.get("nw_dst", None) is not None:
             self.nw_dst = IPAddr(d["nw_dst"])
-        if d.get("dl_src", None) != None:
+        if d.get("dl_src", None) is not None:
             self.dl_src = EthAddr(d["dl_src"])
-        if d.get("dl_dst", None) != None:
+        if d.get("dl_dst", None) is not None:
             self.dl_dst = EthAddr(d["dl_dst"])
         try:
             if d['wildcards'] != self.wildcards:
@@ -133,6 +131,7 @@ class ofp_match(of.ofp_match):
                 d[k[1:]] = getattr(self, k[1:])
             else:
                 d[k] = getattr(self, k)
+
         def get_str(x):
             t = None if x is None else x.toStr()
             return t

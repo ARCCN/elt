@@ -1,5 +1,7 @@
 import sys
+
 from ..util import app_logging
+
 
 log = app_logging.getLogger("Instantiate")
 
@@ -28,5 +30,3 @@ def instantiate(d, module=__name__, cls_param='_name'):
         for k, v in d.items():
             setattr(obj, k, v)
     return obj
-
-

@@ -4,7 +4,10 @@ from modulefinder import ModuleFinder
 import pox.openflow.libopenflow_01 as of
 
 from .flow_table import TaggedFlowTable
-from ..util import profile
+from ..util import app_logging, profile
+
+
+log = app_logging.getLogger("FlowTableController")
 
 
 class FlowTableController():
@@ -17,7 +20,6 @@ class FlowTableController():
         self.apps = {}
         self.apps_rev = {}
         self.read_config()
-        self.frm = 0
 
     def read_config(self):
         """
@@ -30,14 +32,15 @@ class FlowTableController():
         if (self.config is None or
                 not isinstance(self.config, basestring)):
             return
-        # map: app -> modules
-        f = open(self.config, 'r')
+
         finder = ModuleFinder()
+        # map: app -> modules
         apps = None
-        try:
+        with open(self.config, 'r') as f:
             apps = json.load(f)
-        except Exception as e:
-            print e
+        if apps is None:
+            log.debug("Apps are empty. Try setting modules in config: %s" % (
+                self.config))
         f.close()
         i = 0
         if not isinstance(apps, list):
@@ -54,12 +57,12 @@ class FlowTableController():
                     finder.run_script(module)
                     modules = [m.__file__.replace('.pyo', '.py')
                                for m in finder.modules.values()
-                               if hasattr(m, "__file__") and
-                                  isinstance(m.__file__, basestring) and
-                                  not m.__file__.startswith('/usr')]
+                               if (hasattr(m, "__file__") and
+                                   isinstance(m.__file__, basestring) and
+                                   not m.__file__.startswith('/usr'))]
                     self.apps[i].update(modules)
                 except Exception as e:
-                    print e
+                    log.debug(str(e))
             i += 1
 
         # Reverse map: module -> apps
@@ -76,6 +79,7 @@ class FlowTableController():
         """
         Check for errors on FlowTable model.
         """
+        # TODO: Deal with exact matches in OF 1.0.
         flow_mod.flags |= of.OFPFF_SEND_FLOW_REM
 
         if dpid not in self.flow_tables:
@@ -85,11 +89,8 @@ class FlowTableController():
             flow_mod, self.get_apps(module))
 
     def process_flow_removed(self, dpid, flow_rem):
-        #TODO: Something with VLAN's
-        #TODO: OVS changes priority
         if dpid not in self.flow_tables:
             return
-        self.frm += 1
         self.flow_tables[dpid].process_flow_removed(flow_rem)
 
     def handle_CompetitionError(self, event):

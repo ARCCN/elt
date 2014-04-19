@@ -22,15 +22,18 @@ from ..util import profile
 from .proxy_controller import ProxyController
 
 
+proxy = None
+
+
 class ProxiedConnection (Connection):
 
     """
     Log sent messages to cli
     """
 
-    def __init__(self, sock, proxy):
+    def __init__(self, sock):  # , proxy):
         super(ProxiedConnection, self).__init__(sock)
-        self.msg_id = 0
+        global proxy
         self.proxy = proxy
 
     def send(self, data):
@@ -49,67 +52,6 @@ class ProxiedConnection (Connection):
             self.save_info(data)
             # HINT: Debuggers can modify the message
         super(ProxiedConnection, self).send(data)
-
-    def read(self):
-        """
-        Read data from this connection.  Generally this is just called by the
-        main OpenFlow loop below.
-
-        Note: This function will block if data is not available.
-        """
-        d = self.sock.recv(2048)
-        if len(d) == 0:
-            return False
-        self.buf += d
-        buf_len = len(self.buf)
-
-        offset = 0
-        while buf_len - offset >= 8:  # 8 bytes is minimum OF message size
-            # We pull the first four bytes of the OpenFlow header off by hand
-            # (using ord) to find the version/length/type so that we can
-            # correctly call libopenflow to unpack it.
-
-            ofp_type = ord(self.buf[offset + 1])
-
-            if ord(self.buf[offset]) != of.OFP_VERSION:
-                if ofp_type == of.OFPT_HELLO:
-                    # We let this through and hope the other side switches
-                    # down.
-                    pass
-                else:
-                    log.warning("Bad OpenFlow version (0x%02x) \
-                                 on connection %s"
-                                % (ord(self.buf[offset]), self))
-                    return False  # Throw connection away
-
-            msg_length = ord(self.buf[offset + 2]
-                             ) << 8 | ord(self.buf[offset + 3])
-
-            if buf_len - offset < msg_length:
-                break
-
-            new_offset, msg = unpackers[ofp_type](self.buf, offset)
-            assert new_offset - offset == msg_length
-            offset = new_offset
-
-            try:
-                h = handlers[ofp_type]
-                if (of.ofp_type_map[ofp_type] == 'OFPT_FLOW_REMOVED' and
-                        (msg.reason == 0 or msg.reason == 1)):  # timeouts
-                    self.proxy.process_flow_removed(self.dpid, msg)
-                h(self, msg)
-            except:
-                log.exception("%s: Exception while handling \
-                               OpenFlow message:\n" +
-                              "%s %s", self, self,
-                              ("\n" + str(self) + " ").
-                              join(str(msg).split('\n')))
-                continue
-
-        if offset != 0:
-            self.buf = self.buf[offset:]
-
-        return True
 
     def save_info(self, data):
         #~1 ms without querying database
@@ -140,106 +82,40 @@ class ProxiedConnection (Connection):
             data.data = payload
 
 
-class Proxied_OF_01_Task (OpenFlow_01_Task):
+def decorate_flow_removed(func):
+    """
+    We must process FlowRemoveds first.
+    But just once.
+    """
+    if func.func_name == 'proxy_wrapper':
+        return func
 
+    def proxy_wrapper(con, msg):
+        if msg.reason == 0 or msg.reason == 1:  # timeouts
+            con.proxy.process_flow_removed(con.dpid, msg)
+        func(con, msg)
+    return proxy_wrapper
+
+
+class Proxied_OF_01_Task (OpenFlow_01_Task):
+    """
+    We change openflow.of_01.Connection to ProxiedConnection.
+    Also we process OFPFT_FLOW_REMOVED first.
+    """
     def __init__(self, port=6633, address='0.0.0.0', do_proxy=False, **kw):
         super(Proxied_OF_01_Task, self).__init__(port, address)
         self.do_proxy = do_proxy
         if do_proxy:
             self.proxy = ProxyController(**kw)
             core.addListener(pox.core.GoingDownEvent, self._handle_DownEvent)
+            handlers[of.OFPT_FLOW_REMOVED] = decorate_flow_removed(
+                handlers[of.OFPT_FLOW_REMOVED])
+            global proxy
+            proxy = self.proxy
+            pox.openflow.of_01.Connection = ProxiedConnection
 
     def _handle_DownEvent(self, event):
         self.proxy.close()
-
-    def run(self):
-        # List of open sockets/connections to select on
-        sockets = []
-
-        listener = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        listener.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        listener.bind((self.address, self.port))
-        listener.listen(16)
-        sockets.append(listener)
-
-        log.debug("Listening on %s:%s" %
-                  (self.address, self.port))
-
-        if self.do_proxy:
-            log.info("Running proxied version of OpenFlow_01_Task")
-
-        con = None
-        while core.running:
-            try:
-                while True:
-                    con = None
-                    rlist, wlist, elist = yield Select(sockets, [],
-                                                       sockets, 5)
-                    if (len(rlist) == 0 and len(wlist) == 0 and
-                            len(elist) == 0):
-                        if not core.running:
-                            break
-
-                    for con in elist:
-                        if con is listener:
-                            raise RuntimeError("Error on listener socket")
-                        else:
-                            try:
-                                con.close()
-                            except:
-                                pass
-                            try:
-                                sockets.remove(con)
-                            except:
-                                pass
-
-                    timestamp = time.time()
-                    for con in rlist:
-                        if con is listener:
-                            new_sock = listener.accept()[0]
-                            if pox.openflow.debug.pcap_traces:
-                                new_sock = wrap_socket(new_sock)
-                            new_sock.setblocking(0)
-                            # Note that instantiating a Connection
-                            # object fires a
-                            # ConnectionUp event (after negotation has
-                            # completed)
-                            if self.do_proxy:
-                                newcon = ProxiedConnection(
-                                    new_sock, self.proxy)
-                            else:
-                                newcon = Connection(new_sock)
-                            sockets.append(newcon)
-                        else:
-                            con.idle_time = timestamp
-                            if con.read() is False:
-                                con.close()
-                                sockets.remove(con)
-            except exceptions.KeyboardInterrupt:
-                break
-            except:
-                doTraceback = True
-                if sys.exc_info()[0] is socket.error:
-                    if sys.exc_info()[1][0] == ECONNRESET:
-                        con.info("Connection reset")
-                        doTraceback = False
-
-                if doTraceback:
-                    log.exception("Exception reading connection " + str(con))
-
-                if con is listener:
-                    log.error("Exception on OpenFlow listener.  Aborting.")
-                    break
-                try:
-                    con.close()
-                except:
-                    pass
-                try:
-                    sockets.remove(con)
-                except:
-                    pass
-
-        log.debug("No longer listening for connections")
 
 
 def launch(port=6633, address="0.0.0.0", **kw):

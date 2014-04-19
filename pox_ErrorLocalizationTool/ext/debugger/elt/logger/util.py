@@ -24,6 +24,7 @@ class FlowModInfo:
         return (str(self.dpid) + '\n' + str(self.match) +
                 '\n' + str(self.actions))
 
+
 class RuleInfo:
     def __init__(self, entry):
         dpid, rule = entry
@@ -43,8 +44,8 @@ class MessageInfo():
     def __init__(self, infos, qids, indices, event):
         if len(infos) != len(qids) or len(qids) != len(indices):
             raise Exception('Wrong length')
-        self.code = {} #qid -> code
-        self.infos = {} #qid -> info
+        self.code = {}  # qid -> code
+        self.infos = {}  # qid -> info
         self.qids = qids
         self.indices = indices
         self.indices_to_qids = {}
@@ -133,5 +134,3 @@ class ReQuery(Message):
     def __init__(self, info, qid):
         self.info = info
         self.qid = qid
-
-

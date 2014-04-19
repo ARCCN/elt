@@ -27,12 +27,12 @@ for iter in "";
 do
     log="stress_test$iter.log"
     touch $log
-    for size in 2;
+    for size in 4;
     do
         echo "*******" >> $log
         echo $size >> $log
         echo "*******" >> $log
-        for len in 1;
+        for len in 5;
         do
             echo ------- >> $log
             echo $len >> $log

@@ -1,6 +1,7 @@
 from ..network_error import NetworkError, Entry, EntryGroup
 from ..interaction import ofp_flow_mod
 
+
 class CompetitionError(NetworkError):
     """
     Common ancestor for all competition errors.
@@ -27,7 +28,7 @@ class FlowMasked(CompetitionError):
         d["entry_groups"].append(EntryGroup(
             name="Masked",
             desc="These entries have lower priority",
-            entries = list(self.masked_entries)))
+            entries=list(self.masked_entries)))
         return d
 
     def log(self):
@@ -38,7 +39,7 @@ class FlowMasked(CompetitionError):
         s.append("\nCode:\n%CODE\n")
         s.append("Masked:\n")
         s.append("".join([str(entry) + "\nCode:\n%CODE\n"
-                      for entry in self.masked_entries]))
+                          for entry in self.masked_entries]))
         args = [self.masking_entry]
         args.extend(self.masked_entries)
         return ("".join(s), args)
@@ -63,7 +64,7 @@ class FlowDeleted(CompetitionError):
         d["entry_groups"].append(EntryGroup(
             name="Deleted",
             desc="These entries were deleted",
-            entries = list(self.deleted_entries)))
+            entries=list(self.deleted_entries)))
         return d
 
     def log(self):
@@ -74,7 +75,7 @@ class FlowDeleted(CompetitionError):
         s.append("\nCode:\n%CODE\n")
         s.append("Deleted:\n")
         s.append("".join([str(entry) + "\nCode:\n%CODE\n"
-                      for entry in self.deleted_entries]))
+                          for entry in self.deleted_entries]))
         args = [self.match_entry]
         args.extend(self.deleted_entries)
         return ("".join(s), args)
@@ -99,7 +100,7 @@ class FlowModified(CompetitionError):
         d["entry_groups"].append(EntryGroup(
             name="Old",
             desc="Matching entries before modification",
-            entries = list(self.old_entries)))
+            entries=list(self.old_entries)))
         return d
 
     def log(self):
@@ -133,7 +134,7 @@ class FlowUndefined(CompetitionError):
         d["entry_groups"].append(EntryGroup(
             name="Old",
             desc="These entries were installed before",
-            entries = list(self.old_entries)))
+            entries=list(self.old_entries)))
         return d
 
     def log(self):
@@ -158,7 +159,7 @@ class FakeError(NetworkError):
         if flow_mod is not None:
             self.entry_groups.append(EntryGroup(
                 name="Fake Group", desc="No comments",
-                entries = [Entry(self.flow_mod, dpid)]))
+                entries=[Entry(self.flow_mod, dpid)]))
 
     def log(self):
         s = []
@@ -167,4 +168,3 @@ class FakeError(NetworkError):
         s.append(str(self.flow_mod))
         s.append("\nCode:\n%CODE\n")
         return ("".join(s))
-

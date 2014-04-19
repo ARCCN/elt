@@ -15,7 +15,6 @@ class ProxyController:
     """
 
     def __init__(self, **kw):
-        #EventMixin.__init__(self)
         self.db = DatabaseClient(mode='w')
         #self.log = LogClient(name="ProxyController")
         self.debuggers = {}
@@ -29,13 +28,12 @@ class ProxyController:
                 self, mult=kw["fake_debugger"]
                 )] = LogClient(name="Proxy.FakeDeb")
             print "Fake Debugger is up!", kw["fake_debugger"]
-        #core.register("flow_mod_proxy", self)
         self.flowmods = 0
-        # self.f = open('ProxyController.stats', 'w')
 
     def close(self):
-        #self.f.close()
-        pass
+        f = open('ProxyController.stats', 'w')
+        f.write("FlowMods: %d\n" % self.flowmods)
+        f.close()
 
     def add_flow_mod(self, dpid, flow_mod, code_entries):
         """
@@ -45,8 +43,6 @@ class ProxyController:
         """
 
         self.flowmods += 1
-        #self.f.write('FlowMods: %d\n' % self.flowmods)
-        #self.f.flush()
         flow_mod.unpack(flow_mod.pack())
         try:
             self.db.add_flow_mod(dpid, flow_mod, code_entries)

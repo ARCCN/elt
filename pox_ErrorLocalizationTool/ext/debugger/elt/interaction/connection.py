@@ -39,12 +39,10 @@ class JSONPickler(object):
 
 
 def _json_dumps(obj):
-    #return jsonpickle.encode(obj, unpicklable=False)
     return json.dumps(obj, separators=(',', ':'), default=_get_dict)
 
 
 def _json_load(f):
-    #print len(f)
     j = json.JSONDecoder(object_hook=instantiate)
     pos = f.tell()
     s = f.read()
@@ -73,7 +71,7 @@ SEEK_CUR = 1
 SEEK_END = 2
 STRIP_LENGTH = 10000
 
-
+'''
 import cStringIO
 
 
@@ -146,6 +144,7 @@ class ReadableBuffer1:
         e = self.buf.tell()
         self.buf.seek(c, SEEK_START)
         return e - c
+'''
 
 
 class ReadableBuffer:
@@ -251,7 +250,8 @@ class ConnectionFactory(object):
         self.pickler = pickler
 
     def create_connection(self, socket):
-        return SimpleConnection(socket, load=self.pickler.load, dumps=self.pickler.dumps)
+        return SimpleConnection(socket, load=self.pickler.load,
+                                dumps=self.pickler.dumps)
 
 
 class SimpleConnection:

@@ -115,7 +115,8 @@ class Proxied_OF_01_Task (OpenFlow_01_Task):
             pox.openflow.of_01.Connection = ProxiedConnection
 
     def _handle_DownEvent(self, event):
-        self.proxy.close()
+        if self.do_proxy:
+            self.proxy.close()
 
 
 def launch(port=6633, address="0.0.0.0", **kw):

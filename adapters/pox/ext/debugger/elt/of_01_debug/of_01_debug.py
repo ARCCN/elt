@@ -7,7 +7,8 @@ loading standard openflow.of_01
 """
 import inspect
 
-from pox.openflow.of_01 import (unpackers, Connection, of, core, handlers,
+from pox.openflow.of_01 import (Connection, of, core, deferredSender,
+                                DeferredSender, log,
                                 OpenFlow_01_Task)
 import pox.core
 
@@ -23,17 +24,26 @@ class ProxiedConnection (Connection):
     Log sent messages to cli
     """
 
-    def __init__(self, sock):  # , proxy):
+    def __init__(self, sock):
         super(ProxiedConnection, self).__init__(sock)
         global proxy
         self.proxy = proxy
+
+    def __setattr__(self, name, value):
+        """
+        We proxify handlers.
+        """
+        self.__dict__[name] = value
+        if name == "handlers":
+            self.handlers[of.OFPT_FLOW_REMOVED] = decorate_flow_removed(
+                self.handlers[of.OFPT_FLOW_REMOVED])
 
     def send(self, data):
         if isinstance(data, of.ofp_header):
             pass
         elif type(data) is bytes:
             ofp_type = ord(data[1])
-            data = unpackers[ofp_type](data, 0)[1]
+            data = self.unpackers[ofp_type](data, 0)[1]
         else:
             super(ProxiedConnection, self).send(data)
             return
@@ -94,14 +104,14 @@ class Proxied_OF_01_Task (OpenFlow_01_Task):
     We change openflow.of_01.Connection to ProxiedConnection.
     Also we process OFPFT_FLOW_REMOVED first.
     """
-    def __init__(self, port=6633, address='0.0.0.0', do_proxy=False, **kw):
-        super(Proxied_OF_01_Task, self).__init__(port, address)
+    def __init__(self, port=6633, address='0.0.0.0', ssl_key=None,
+                 ssl_cert=None, ssl_ca_cert=None, do_proxy=False, **kw):
+        super(Proxied_OF_01_Task, self).__init__(port, address, ssl_key,
+                                                 ssl_cert, ssl_ca_cert)
         self.do_proxy = do_proxy
         if do_proxy:
             self.proxy = ProxyController(**kw)
             core.addListener(pox.core.GoingDownEvent, self._handle_DownEvent)
-            handlers[of.OFPT_FLOW_REMOVED] = decorate_flow_removed(
-                handlers[of.OFPT_FLOW_REMOVED])
             global proxy
             proxy = self.proxy
             pox.openflow.of_01.Connection = ProxiedConnection
@@ -111,10 +121,37 @@ class Proxied_OF_01_Task (OpenFlow_01_Task):
             self.proxy.close()
 
 
-def launch(port=6633, address="0.0.0.0", **kw):
-    if core.hasComponent('of_01'):
+def launch(port=6633, address="0.0.0.0", name=None,
+           private_key=None, certificate=None, ca_cert=None,
+           __INSTANCE__=None, **kw):
+    """
+    Start a proxied (!!!) listener for OpenFlow connections
+
+    If you want to enable SSL, pass private_key/certificate/ca_cert in
+    reasonable combinations and pointing to reasonable key/cert files.
+    These have the same meanings as with Open vSwitch's old test controller,
+    but they are more flexible (e.g., ca-cert can be skipped).
+    """
+    if name is None:
+        basename = "of_01"
+        counter = 1
+        name = basename
+    while core.hasComponent(name):
+        counter += 1
+        name = "%s-%s" % (basename, counter)
+
+    if core.hasComponent(name):
+        log.warn("of_01 '%s' already started", name)
         return None
-    l = Proxied_OF_01_Task(
-        port=int(port), address=address, do_proxy=True, **kw)
-    core.register("of_01", l)
+
+    if not pox.openflow.of_01.deferredSender:
+        pox.openflow.of_01.deferredSender = DeferredSender()
+
+    if of._logger is None:
+        of._logger = core.getLogger('libopenflow_01')
+
+    l = Proxied_OF_01_Task(port=int(port), address=address,
+                           ssl_key=private_key, ssl_cert=certificate,
+                           ssl_ca_cert=ca_cert, do_proxy=True, **kw)
+    core.register(name, l)
     return l

@@ -26,7 +26,7 @@ log = app_logging.getLogger("Database")
 ENABLE_LOGGING = False
 
 
-class Database:
+class Database(object):
     """
     Interacts with mysql server.
     Can process specific kinds of messages.

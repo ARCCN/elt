@@ -1,4 +1,4 @@
-class LoggingCursor:
+class LoggingCursor(object):
     def __init__(self, cur, log_file):
         self.cur = cur
         self.log_file = log_file
@@ -28,7 +28,7 @@ class LoggingCursor:
         return self.cur.execute(query, args)
 
 
-class LoggingConnection:
+class LoggingConnection(object):
     def __init__(self, con, log_file):
         self.con = con
         self.log_file = log_file

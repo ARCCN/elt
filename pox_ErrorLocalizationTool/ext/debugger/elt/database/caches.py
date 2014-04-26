@@ -23,7 +23,7 @@ class LimitedSizeDict(OrderedDict):
                 self.popitem(last=False)
 
 
-class TableCache:
+class TableCache(object):
 
     """
     Base class for caching a table.

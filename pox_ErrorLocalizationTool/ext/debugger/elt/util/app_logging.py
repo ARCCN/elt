@@ -2,7 +2,7 @@ import logging
 import sys
 
 
-class FilterLevel:
+class FilterLevel(object):
     """ Process only messages with/without given values. """
 
     def __init__(self, is_good=True, values=[]):

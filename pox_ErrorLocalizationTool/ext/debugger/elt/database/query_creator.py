@@ -1,7 +1,7 @@
 from .database_utility import get_action_params, insert_table
 
 
-class QueryCreator:
+class QueryCreator(object):
     """
     We put here complex queries.
     """

@@ -5,7 +5,7 @@ from xml_report import XmlReport
 LOG_DIR = "event_logs/"
 
 
-class TextLogger:
+class TextLogger(object):
     def __init__(self, filename=LOG_DIR + "events.log"):
         """
         That's where we are writing.
@@ -37,7 +37,7 @@ class TextLogger:
         pass
 
 
-class XmlLogger:
+class XmlLogger(object):
     def __init__(self):
         self.conn_to_report = {}
 

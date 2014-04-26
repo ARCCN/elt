@@ -18,7 +18,7 @@ PORT = 5522
 log = app_logging.getLogger("Database Client")
 
 
-class DatabaseClient:
+class DatabaseClient(object):
     """
     Connects to Database. Supports flowmod addition and retrieving.
     Supports sync/async queries.

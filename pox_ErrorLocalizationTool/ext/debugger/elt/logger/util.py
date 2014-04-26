@@ -8,7 +8,7 @@ log = app_logging.getLogger('Log Utils')
 code = re.compile('%CODE')
 
 
-class FlowModInfo:
+class FlowModInfo(object):
     """
     All we need to retrieve FlowMod from Database.
     """
@@ -25,7 +25,7 @@ class FlowModInfo:
                 '\n' + str(self.actions))
 
 
-class RuleInfo:
+class RuleInfo(object):
     def __init__(self, entry):
         dpid, rule = entry
         self.dpid = dpid
@@ -34,7 +34,7 @@ class RuleInfo:
         self.priority = rule.priority
 
 
-class MessageInfo():
+class MessageInfo(object):
     """
     Utility for a single error message.
     Has multiple text <parts> with call stacks between them.

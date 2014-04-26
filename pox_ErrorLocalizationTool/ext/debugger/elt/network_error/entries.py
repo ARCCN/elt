@@ -8,7 +8,7 @@ def show_entry(entry):
         entry.match, repr(entry.actions), str(entry.buffer_id))
 
 
-class Entry:
+class Entry(object):
     def __init__(self, data=None, dpid=None):
         self.data = data
         self.dpid = dpid
@@ -36,7 +36,7 @@ class Entry:
         return e
 
 
-class EntryGroup:
+class EntryGroup(object):
     def __init__(self, name="", desc="", entries=None):
         self.name = name
         self.desc = desc

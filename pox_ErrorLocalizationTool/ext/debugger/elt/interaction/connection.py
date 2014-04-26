@@ -71,83 +71,8 @@ SEEK_CUR = 1
 SEEK_END = 2
 STRIP_LENGTH = 10000
 
-'''
-import cStringIO
 
-
-class ReadableBuffer1:
-    """
-    File-like interface for sequence.
-    Supports state save/load (position only), read and append.
-    Can strip first part by appending.
-    Set frozen=True before using seek/tell.
-    """
-    def __init__(self, s=None):
-        self.buf = cStringIO.StringIO()
-        if s is not None:
-            self.buf.write(s)
-        self.buf.seek(0)
-        self.spos = 0
-        self._frozen = False
-
-    def read(self, n=-1):
-        return self.buf.read(n)
-
-    def readline(self):
-        return self.buf.readline()
-
-    def append(self, s):
-        x = self.buf.tell()
-        self.buf.seek(0, SEEK_END)
-        self.buf.write(s)
-        self.buf.seek(x, SEEK_START)
-
-        if not self._frozen and x > STRIP_LENGTH:
-            self._strip_prefix()
-
-    def _strip_prefix(self):
-        s = self.buf.read()
-        self.buf.close()
-        self.buf = cStringIO.StringIO()
-        self.buf.write(s)
-        self.buf.seek(0)
-
-    def savestate(self):
-        self.spos = self.buf.tell()
-
-    def loadstate(self):
-        self.buf.seek(self.spos)
-
-    def seek(self, pos, whence=SEEK_START):
-        self.buf.seek(pos, whence)
-
-    def tell(self):
-        return self.buf.tell()
-
-    @property
-    def frozen(self):
-        return self._frozen
-
-    @frozen.setter
-    def frozen(self, frozen):
-        if isinstance(frozen, bool):
-            self._frozen = frozen
-            return
-        raise TypeError('Frozen must be bool')
-
-    def getvalue(self):
-        return self.buf.getvalue()
-
-    def __len__(self):
-        c = self.buf.tell()
-        self.buf.seek(0, SEEK_END)
-        e = self.buf.tell()
-        self.buf.seek(c, SEEK_START)
-        return e - c
-'''
-
-
-class ReadableBuffer:
+class ReadableBuffer(object):
     """
     File-like interface for sequence.
     Supports state save/load, read and append.
@@ -254,7 +179,7 @@ class ConnectionFactory(object):
                                 dumps=self.pickler.dumps)
 
 
-class SimpleConnection:
+class SimpleConnection(object):
     """
     Wrapper for a socket.
     Supports asyncronious object send/recv with provided serializers.

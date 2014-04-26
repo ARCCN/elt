@@ -148,7 +148,7 @@ class XmlEvent(ET.Element):
             self.append(XmlEntryGroup(entry_group, xml_entries))
 
 
-class XmlReport:
+class XmlReport(object):
 
     def __init__(self, filename, conn_name):
         self.filename = filename

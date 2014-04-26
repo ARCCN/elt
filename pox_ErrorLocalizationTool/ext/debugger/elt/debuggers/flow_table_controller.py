@@ -10,7 +10,7 @@ from ..util import app_logging, profile
 log = app_logging.getLogger("FlowTableController")
 
 
-class FlowTableController():
+class FlowTableController(object):
 
     def __init__(self, proxy, config=None):
         self.proxy = proxy

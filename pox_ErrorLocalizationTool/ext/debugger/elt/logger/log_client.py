@@ -12,7 +12,7 @@ log = app_logging.getLogger('Log Client')
 LOG_PORT = 5523
 
 
-class LogClient:
+class LogClient(object):
     """
     The only thing I can is sending errors to log.
     """

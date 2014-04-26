@@ -3,10 +3,13 @@ from pox.lib.revent import EventMixin
 from ..database import DatabaseClient
 from ..debuggers import FlowTableController, FakeDebugger
 from ..logger import LogClient
-from ..util import profile
+from ..util import profile, app_logging
 
 
-class ProxyController:
+log = app_logging.getLogger('ProxyController')
+
+
+class ProxyController(object):
 
     """
     Main class for debugging CompetitionErrors and error localization.
@@ -22,12 +25,13 @@ class ProxyController:
             self.debuggers[FlowTableController(
                 self, kw["flow_table_controller"]
                 )] = LogClient(name="Proxy.FlowTable")
-            print "Flow Table Controller is up!", kw["flow_table_controller"]
+            log.info("Flow Table Controller is up! %s" % (
+                kw["flow_table_controller"]))
         if "fake_debugger" in kw:
             self.debuggers[FakeDebugger(
                 self, mult=kw["fake_debugger"]
                 )] = LogClient(name="Proxy.FakeDeb")
-            print "Fake Debugger is up!", kw["fake_debugger"]
+            log.info("Fake Debugger is up! %s" % kw["fake_debugger"])
         self.flowmods = 0
 
     def close(self):

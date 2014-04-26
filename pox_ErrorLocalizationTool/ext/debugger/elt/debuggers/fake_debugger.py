@@ -3,7 +3,7 @@ import random
 from .competition_errors import FakeError
 
 
-class FakeDebugger():
+class FakeDebugger(object):
 
     def __init__(self, proxy, mult=0.1):
         self.proxy = proxy

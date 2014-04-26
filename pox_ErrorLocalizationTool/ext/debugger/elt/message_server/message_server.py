@@ -16,7 +16,7 @@ COOLDOWN = 0.01
 log = app_logging.getLogger("Message Server")
 
 
-class PythonMessageServer():
+class PythonMessageServer(object):
     """
     Base class for our servers.
     Supports queues/immediate processing.
@@ -101,7 +101,6 @@ class PythonMessageServer():
                     for con in rlist:
                         if con is listener:
                             new_sock = listener.accept()[0]
-                            log.info('accept %s' % str(new_sock))
                             try:
                                 self.add_connection(new_sock)
                             except:
@@ -197,10 +196,6 @@ class PythonMessageServer():
         Called on receiving an object.
         """
         self.received += 1
-        #if self.received % 1000 == 0:
-        #    log.info('Received %-8d Queue %-8d Buffer %-8d' % (
-        #        self.received, len(self.queue),
-        #        len(con.buffer)))
         if not isinstance(obj, Message):
             raise TypeError('obj is not Message')
         if isinstance(obj, ClosingMessage):

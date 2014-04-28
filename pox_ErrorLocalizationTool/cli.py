@@ -1,8 +1,10 @@
 #!/usr/bin/python
 
-from ext.debugger.elt import db_cli
-from subprocess import Popen
 import sys
+sys.path.append("server/")
+
+from server.ext.debugger.elt import db_cli
+from subprocess import Popen
 import code
 import os
 from threading import Timer
@@ -83,14 +85,14 @@ def db_console():
 
 def start_db():
     global db
-    p = Popen(("python", "-m", "ext.debugger.utility.start_db_server"),
+    p = Popen(("python", "-m", "server.utility.start_db_server"),
               stdout=open("/dev/null", "w"))
     start(p)
     db.append(p)
 
 def stop_db():
     global db
-    p = Popen(("python", "-m", "ext.debugger.utility.stop_db_server"))
+    p = Popen(("python", "-m", "server.utility.stop_db_server"))
     db.append(p)
 
 def kill_db():
@@ -104,14 +106,14 @@ def kill_db():
 
 def start_log():
     global log
-    p = Popen(("python", "-m", "ext.debugger.utility.start_log_server"),
+    p = Popen(("python", "-m", "server.utility.start_log_server"),
               stdout=open("/dev/null", "w"))
     start(p)
     log.append(p)
 
 def stop_log():
     global log
-    p = Popen(("python", "-m", "ext.debugger.utility.stop_log_server"))
+    p = Popen(("python", "-m", "server.utility.stop_log_server"))
     log.append(p)
 
 def kill_log():
@@ -127,13 +129,13 @@ def kill_log():
 def start_pox(args=""):
     global pox
     if isinstance(args, tuple):
-        p = Popen(("./pox.py", ) + args)
+        p = Popen(("adapters/pox/pox.py", ) + args)
     elif isinstance(args, basestring):
         args = [a for a in args.split(" ") if a != ""]
-        args = ["./pox.py"] + args
+        args = ["adapters/pox/pox.py"] + args
         p = Popen(args)
     elif isinstance(args, list):
-        args = ["./pox.py"] + args
+        args = ["adapters/pox/pox.py"] + args
         p = Popen(args)
     else:
         raise Exception("Invalid args format")

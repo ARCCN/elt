@@ -6,18 +6,10 @@ NOTE: You should load this module first to avoid
 loading standard openflow.of_01
 """
 import inspect
-import time
-import sys
-import socket
-from errno import ECONNRESET
-import exceptions
 
 from pox.openflow.of_01 import (unpackers, Connection, of, core, handlers,
-                                wrap_socket, log, OpenFlow_01_Task, Select)
+                                OpenFlow_01_Task)
 import pox.core
-import pox.openflow.debug
-
-from ..util import profile
 
 from .proxy_controller import ProxyController
 

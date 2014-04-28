@@ -1,14 +1,11 @@
 import numbers
-import socket
 import MySQLdb as mdb
 import MySQLdb.cursors
 
 import pox.openflow.libopenflow_01 as of
-from pox.lib.recoco.recoco import Exit
 
-from ..message_server import Message, PythonMessageServer
-from ..interaction import SimpleConnection, TimeoutException
-from ..util import app_logging, profile, uint_to_ip, int_to_eth
+from ..message_server import Message
+from ..util import app_logging
 
 from .database_utility import *
 from .caches import *

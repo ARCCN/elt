@@ -1,9 +1,7 @@
-from pox.lib.revent import EventMixin
-
 from ..database import DatabaseClient
 from ..debuggers import FlowTableController, FakeDebugger
 from ..logger import LogClient
-from ..util import profile, app_logging
+from ..util import app_logging
 
 
 log = app_logging.getLogger('ProxyController')

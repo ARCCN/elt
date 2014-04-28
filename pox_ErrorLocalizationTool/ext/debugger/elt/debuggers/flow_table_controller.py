@@ -4,7 +4,7 @@ from modulefinder import ModuleFinder
 import pox.openflow.libopenflow_01 as of
 
 from .flow_table import TaggedFlowTable
-from ..util import app_logging, profile
+from ..util import app_logging
 
 
 log = app_logging.getLogger("FlowTableController")

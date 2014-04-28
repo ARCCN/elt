@@ -10,7 +10,7 @@ from pox.openflow.flow_table import (TableEntry, FlowTable,
                                      FlowTableModification)
 import pox.openflow.libopenflow_01 as of
 
-from ..util import profile, ip_to_uint
+from ..util import ip_to_uint
 
 from .competition_errors import (FlowMasked, FlowModified,
                                  FlowUndefined, FlowDeleted)

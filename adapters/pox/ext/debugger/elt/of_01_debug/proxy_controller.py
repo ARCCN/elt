@@ -55,7 +55,6 @@ class ProxyController(object):
             d.process_flow_mod(dpid, flow_mod, code_entries[0][0])
 
     def process_flow_removed(self, dpid, flow_rem):
-        print 'FLowRemoved!'
         for d in self.debuggers:
             d.process_flow_removed(dpid, flow_rem)
 

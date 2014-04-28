@@ -112,10 +112,12 @@ class ofp_match(of.ofp_match):
         if m is None:
             of.ofp_match.__init__(self)
             return
+        self._locked = False
         for k, v in m.__dict__.items():
             setattr(self, k, v)
 
     def __setstate__(self, d):
+        self._locked = False
         for k, v in d.items():
             if k != 'wildcards':
                 setattr(self, k, v)
@@ -137,7 +139,9 @@ class ofp_match(of.ofp_match):
     def __getstate__(self):
         d = {}
         for k in self.__dict__.keys():
-            if k.startswith('_'):
+            if k == "_locked":
+                continue
+            elif k.startswith('_'):
                 d[k[1:]] = getattr(self, k[1:])
             else:
                 d[k] = getattr(self, k)

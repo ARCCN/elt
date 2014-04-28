@@ -1,20 +1,17 @@
 # Copyright 2011 James McCauley
 # Copyright 2008 (C) Nicira, Inc.
 #
-# This file is part of POX.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at:
 #
-# POX is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+#     http://www.apache.org/licenses/LICENSE-2.0
 #
-# POX is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with POX.  If not, see <http://www.gnu.org/licenses/>.
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 # This file is derived from the packet library in NOX, which was
 # developed by Nicira, Inc.
@@ -105,6 +102,7 @@ class ipv4(packet_base):
 
     def parse(self, raw):
         assert isinstance(raw, bytes)
+        self.next = None # In case of unfinished parsing
         self.raw = raw
         dlen = len(raw)
         if dlen < ipv4.MIN_LEN:
@@ -121,6 +119,9 @@ class ipv4(packet_base):
         self.flags = self.frag >> 13
         self.frag  = self.frag & 0x1fff
 
+        self.dstip = IPAddr(self.dstip)
+        self.srcip = IPAddr(self.srcip)
+
         if self.v != ipv4.IPv4:
             self.msg('(ip parse) warning IP version %u not IPv4' % self.v)
             return
@@ -135,9 +136,6 @@ class ipv4(packet_base):
             self.msg('(ip parse) warning IP header %u longer than len %u' \
                         % (self.hl, self.iplen))
             return
-
-        self.dstip = IPAddr(self.dstip)
-        self.srcip = IPAddr(self.srcip)
 
         # At this point, we are reasonably certain that we have an IP
         # packet
@@ -179,4 +177,3 @@ class ipv4(packet_base):
                            (self.flags << 13) | self.frag, self.ttl,
                            self.protocol, self.csum, self.srcip.toUnsigned(),
                            self.dstip.toUnsigned())
-

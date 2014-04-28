@@ -1,22 +1,19 @@
-# Copyright 2011 James McCauley
+# Copyright 2011,2012,2013 James McCauley
 #
-# This file is part of POX.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at:
 #
-# POX is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+#     http://www.apache.org/licenses/LICENSE-2.0
 #
-# POX is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with POX.  If not, see <http://www.gnu.org/licenses/>.
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """
-Classes for addresses of various types.
+Classes and utilities for addresses of various types.
 """
 
 from __future__ import print_function
@@ -105,22 +102,27 @@ class EthAddr (object):
         # Convert to 6 raw bytes.
         addr = b''.join((chr(int(addr[x*2:x*2+2], 16)) for x in range(0,6)))
       else:
-        raise RuntimeError("Expected ethernet address string to be 6 raw bytes or some hex")
+        raise RuntimeError("Expected ethernet address string to be 6 raw "
+                           "bytes or some hex")
       self._value = addr
     elif isinstance(addr, EthAddr):
       self._value = addr.toRaw()
-    elif type(addr) == list or (hasattr(addr, '__len__') and len(addr) == 6 and hasattr(addr, '__iter__')):
+    elif type(addr) == list or (hasattr(addr, '__len__') and len(addr) == 6
+          and hasattr(addr, '__iter__')):
       self._value = b''.join( (chr(x) for x in addr) )
     elif addr is None:
       self._value = b'\x00' * 6
     else:
-      raise RuntimeError("Expected ethernet address to be a string of 6 raw bytes or some hex")
+      raise RuntimeError("Expected ethernet address to be a string of 6 raw "
+                         "bytes or some hex")
 
   def isBridgeFiltered (self):
     """
-    Returns True if this is IEEE 802.1D MAC Bridge Filtered MAC Group Address,
-    01-80-C2-00-00-00 to 01-80-C2-00-00-0F. MAC frames that have a destination MAC address
-    within this range are not relayed by MAC bridges conforming to IEEE 802.1D
+    Checks if address is an IEEE 802.1D MAC Bridge Filtered MAC Group Address
+
+    This range is 01-80-C2-00-00-00 to 01-80-C2-00-00-0F. MAC frames that
+    have a destination MAC address within this range are not relayed by
+    bridges conforming to IEEE 802.1D
     """
     return  ((ord(self._value[0]) == 0x01)
     	and (ord(self._value[1]) == 0x80)
@@ -164,6 +166,10 @@ class EthAddr (object):
     return self.isMulticast()
 
   def toRaw (self):
+    return self.raw
+
+  @property
+  def raw (self):
     """
     Returns the address as a 6-long bytes object.
     """
@@ -190,6 +196,7 @@ class EthAddr (object):
     return self.toStr()
 
   def __cmp__ (self, other):
+    #TODO: Revisit this and other __cmp__ in Python 3.4
     try:
       if type(other) == EthAddr:
         other = other._value
@@ -197,15 +204,9 @@ class EthAddr (object):
         pass
       else:
         other = EthAddr(other)._value
-      if self._value == other:
-        return 0
-      if self._value < other:
-        return -1
-      if self._value > other:
-        return -1
-      raise RuntimeError("Objects can not be compared?")
+      return cmp(self._value, other)
     except:
-      return -other.__cmp__(self)
+      return -cmp(other, self)
 
   def __hash__ (self):
     return self._value.__hash__()
@@ -227,10 +228,12 @@ class IPAddr (object):
   Represents an IPv4 address.
   """
   def __init__ (self, addr, networkOrder = False):
-    """ Can be initialized with several formats.
-        If addr is an int/long, then it is assumed to be in host byte order
-        unless networkOrder = True
-        Stored in network byte order as a signed int
+    """
+    Initialize using several possible formats
+
+    If addr is an int/long, then it is assumed to be in host byte order
+    unless networkOrder = True
+    Stored in network byte order as a signed int
     """
 
     # Always stores as a signed network-order int
@@ -265,6 +268,10 @@ class IPAddr (object):
     return struct.unpack("i", struct.pack("I", v))[0]
 
   def toRaw (self):
+    return self.raw
+
+  @property
+  def raw (self):
     """
     Returns the address as a four-character byte string.
     """
@@ -306,6 +313,22 @@ class IPAddr (object):
 
     return (self.toUnsigned() & ~((1 << (32-b))-1)) == n.toUnsigned()
 
+  @property
+  def is_multicast (self):
+    return ((self.toSigned(networkOrder = False) >> 24) & 0xe0) == 0xe0
+
+  @property
+  def multicast_ethernet_address (self):
+    """
+    Returns corresponding multicast EthAddr
+
+    Assumes this is, in fact, a multicast IP address!
+    """
+    if not self.is_multicast:
+      raise RuntimeError("No multicast EthAddr for non-multicast IPAddr!")
+    n = self.toUnsigned(networkOrder = False) & 0x7fffff
+    return EthAddr("01005e" + ("%06x" % (n)))
+
   def __str__ (self):
     return self.toStr()
 
@@ -331,6 +354,316 @@ class IPAddr (object):
     if hasattr(self, '_value'):
       raise TypeError("This object is immutable")
     object.__setattr__(self, a, v)
+
+
+class IPAddr6 (object):
+  """
+  Represents an IPv6 address.
+  """
+  @classmethod
+  def from_raw (cls, raw):
+    return cls(raw, raw=True)
+
+  @classmethod
+  def from_num (cls, num):
+    o = b''
+    for i in xrange(16):
+      o = chr(num & 0xff) + o
+      num >>= 8
+    return cls.from_raw(o)
+
+  def __init__ (self, addr = None, raw = False, network_order = False):
+    # When we move to Python 3, we can use bytes to infer raw.
+    if addr is None and isinstance(raw, (bytes,bytearray)):
+      addr = raw
+      raw = True
+    if addr is None:
+      return self.UNDEFINED
+    if isinstance(addr, unicode) or (isinstance(addr, bytes) and not raw):
+      ip4part = None
+      if '.' in addr:
+        addr,ip4part = addr.rsplit(':',1)
+        if '.' in addr:
+          raise RuntimeError('IPv4-compatible representation unimplemented')
+        if ':' in ip4part:
+          raise RuntimeError('Bad address format')
+        addr += ':0:0'
+
+      segs = addr.split(':')
+      if addr.count('::') > 1:
+        raise RuntimeError("Bad address format " + str(addr))
+      if len(segs) < 3 or len(segs) > 8:
+        raise RuntimeError("Bad address format " + str(addr))
+
+      p = ([],[])
+      side = 0
+      for i,s in enumerate(segs):
+        if len(s) == 0:
+          #if side != 0:
+            #if i != len(segs)-1:
+            #  raise RuntimeError("Bad address format " + str(addr))
+          side = 1
+          continue
+        s = int(s,16)
+        if s < 0 or s > 0xffff:
+          raise RuntimeError("Bad address format " + str(addr))
+        p[side].append(s)
+
+      o = p[0] + ([0] * (8-len(p[0])-len(p[1]))) + p[1]
+
+      v = b''
+      for b in o:
+        v += struct.pack('!H', b)
+
+      if ip4part is not None:
+        v = v[:-4] + IPAddr(ip4part).toRaw()
+
+      self._value = v
+    elif isinstance(addr, type(self)):
+      self._value = addr._value
+    elif isinstance(addr, IPAddr):
+      #FIXME: This is hacky.
+      self._value = IPAddr6("::ffff:0:0:" + str(addr))
+    elif isinstance(addr, bytearray):
+      self._value = bytes(addr)
+    elif isinstance(addr, bytes):
+      self._value = addr
+    else:
+      raise RuntimeError("Unexpected IP address format")
+
+  @property
+  def raw (self):
+    return self._value
+
+  @property
+  def ipv4 (self):
+    return self.to_ipv4(check_ipv4=False)
+
+  def to_ipv4 (self, check_ipv4 = True):
+    """
+    Only makes sense if this address is ipv4 mapped/compatible
+    """
+    if check_ipv4:
+      if not self.is_ipv4:
+        raise RuntimeError('Not an IPv4ish IPv6 address')
+    return IPAddr(self._value[-4:])
+
+  @property
+  def num (self):
+    o = 0
+    for b in self._value:
+      o = (o << 8) | ord(b)
+    return o
+
+  @property
+  def is_multicast (self):
+    return self.in_network('ff00::/8')
+
+  @property
+  def is_global_unicast (self):
+    return self.in_network('2000::/3')
+
+  @property
+  def is_unique_local_unicast (self):
+    return self.in_network('fc00::/7')
+
+  @property
+  def is_link_unicast (self):
+    return self.in_network('fe80::/10')
+
+  @property
+  def is_ipv4 (self):
+    return self.in_network('::/80')
+
+  @property
+  def is_ipv4_compatible (self):
+    return self.in_network('::/96')
+
+  @property
+  def is_ipv4_mapped (self):
+    return self.in_network('::ffff:0:0/96')
+
+  @property
+  def is_reserved (self):
+    #TODO
+    raise RuntimeError("Not implemented")
+
+  @staticmethod
+  def netmask_to_cidr (dq):
+    """
+    Takes a netmask as either an IPAddr or a string, and returns the number
+    of network bits.  e.g., 255.255.255.0 -> 24
+    Raise exception if subnet mask is not CIDR-compatible.
+    """
+    if isinstance(dq, basestring):
+      dq = IPAddr6(dq)
+    v = dq.num
+    c = 0
+    while v & (1<<127):
+      c += 1
+      v <<= 1
+    v = v & ((1<<128)-1)
+    if v != 0:
+      raise RuntimeError("Netmask %s is not CIDR-compatible" % (dq,))
+    return c
+
+  @staticmethod
+  def cidr_to_netmask (bits):
+    """
+    Takes a number of network bits, and returns the corresponding netmask
+    as an IPAddr6.
+    """
+    v = (1 << bits) - 1
+    v = v << (128-bits)
+    return IPAddr6.from_num(v)
+
+  @staticmethod
+  def parse_cidr (addr_and_net, allow_host = False):
+    """
+    Parses addr/netbits or addr/netmask
+
+    Returns (IPAddr6,netbits)
+    """
+    addr = addr_and_net
+    def check (r0, r1):
+      a = r0.num
+      b = r1
+      if (not allow_host) and (a & ((1<<b)-1)):
+        raise RuntimeError("Host part of CIDR address is not zero (%s)"
+                           % (addr,))
+      return (r0,128-r1)
+    addr = addr.split('/', 2)
+    if len(addr) == 1:
+      return check(IPAddr6(addr[0]), 0)
+    try:
+      wild = 128-int(addr[1])
+    except:
+      # Maybe they passed a netmask
+      m = IPAddr6(addr[1]).num
+      b = 0
+      while m & (1<<127):
+        b += 1
+        m <<= 1
+      if m & ((1<<127)-1) != 0:
+        raise RuntimeError("Netmask " + str(addr[1])
+                           + " is not CIDR-compatible")
+      wild = 128-b
+      assert wild >= 0 and wild <= 128
+      return check(IPAddr6(addr[0]), wild)
+    assert wild >= 0 and wild <= 128
+    return check(IPAddr6(addr[0]), wild)
+
+  def in_network (self, network, netmask = None):
+    """
+    Returns True if this address is in the specified network.
+
+    network can be specified as:
+    IPAddr6 with numeric netbits or netmask in netmask parameter
+    textual network with numeric netbits or netmask in netmask parameter
+    textual network with netbits or netmask separated by a slash
+    tuple of textual address and numeric netbits
+    tuple of IPAddr6 and numeric netbits
+    """
+    if type(network) is not tuple:
+      if netmask is not None:
+        network = str(network) + "/" + str(netmask)
+      n,b = self.parse_cidr(network)
+    else:
+      n,b = network
+      if type(n) is not IPAddr6:
+        n = IPAddr6(n)
+
+    return (self.num & ~((1 << (128-b))-1)) == n.num
+
+  def to_str (self, zero_drop = True, section_drop = True, ipv4 = None):
+
+    o = [ord(lo) | (ord(hi)<<8) for hi,lo in
+         (self._value[i:i+2] for i in xrange(0,16,2))]
+
+    if (ipv4 is None and self.is_ipv4_mapped) or ipv4:
+      ip4part = o[-2:]
+      o[-2:] = [1,1]
+      def finalize (s):
+        s = s.rsplit(':',2)[0]
+        return s + ":" + str(IPAddr(self.raw[-4:]))
+    else:
+      def finalize (s):
+        return s
+
+    if zero_drop:
+      def fmt (n):
+        return ':'.join('%x' % (b,) for b in n)
+    else:
+      def fmt (n):
+        return ':'.join('%04x' % (b,) for b in n)
+
+    if section_drop:
+      z = [] # [length,pos] of zero run
+      run = None
+      for i,b in enumerate(o):
+        if b == 0:
+          if run is None:
+            run = [1,i]
+            z.append(run)
+          else:
+            run[0] += 1
+        else:
+          run = None
+
+      if len(z):
+        # Sloppy!
+        max_len = max([length for length,pos in z])
+        if max_len > 1:
+          z = [pos for length,pos in z if length == max_len]
+          z.sort()
+          pos = z[0]
+          return finalize('::'.join((fmt(o[:pos]),fmt(o[pos+max_len:]))))
+
+    return finalize(fmt(o))
+
+  def __str__ (self):
+    return self.to_str()
+
+  def __cmp__ (self, other):
+    if other is None: return 1
+    try:
+      if not isinstance(other, type(self)):
+        other = type(self)(other)
+      return cmp(self._value, other._value)
+    except:
+      return -cmp(other,self)
+
+  def __hash__ (self):
+    return self._value.__hash__()
+
+  def __repr__ (self):
+    return type(self).__name__ + "('" + self.to_str() + "')"
+
+  def __len__ (self):
+    return 16
+
+  def __setattr__ (self, a, v):
+    if hasattr(self, '_value'):
+      raise TypeError("This object is immutable")
+    object.__setattr__(self, a, v)
+
+  def set_mac (self, eth):
+    e = list(EthAddr(eth).toTuple())
+    e[0] ^= 2
+    e[3:3] = [0xff,0xfe]
+    e = ''.join(chr(b) for b in e)
+    return IPAddr6.from_raw(self._value[:8]+e)
+
+
+IPAddr6.UNDEFINED = IPAddr6('::')
+IPAddr6.ALL_NODES_LINK_LOCAL = IPAddr6('ff02::1')
+IPAddr6.ALL_ROUTERS_LINK_LOCAL = IPAddr6('ff02::2')
+IPAddr6.ALL_NODES_INTERFACE_LOCAL = IPAddr6('ff01::1')
+IPAddr6.ALL_ROUTERS_INTERFACE_LOCAL = IPAddr6('ff01::2')
+#ff02::1:3 link local multicast name resolution
+#ff02::1:ff00:0/104 solicited-node
+#ff02::2:ff00:0/104 node information query
+
 
 
 def netmask_to_cidr (dq):
@@ -390,7 +723,7 @@ def parse_cidr (addr, infer=True, allow_host=False):
       # All bits in wildcarded part are 0, so we'll use the wildcard
       return check(addr, b)
     else:
-      # Some bits in the wildcarded part were set, so we'll assume it was a host
+      # Some bits in the wildcarded part are set, so we'll assume it's a host
       return check(addr, 0)
   try:
     wild = 32-int(addr[1])
@@ -457,4 +790,3 @@ if __name__ == '__main__':
     print([parse_cidr(x)[1]==24 for x in
            ["192.168.101.0","192.168.102.0/24","1.1.168.103/255.255.255.0"]])
   code.interact(local=locals())
-

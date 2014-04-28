@@ -141,7 +141,7 @@ class ofp_match(of.ofp_match):
         for k in self.__dict__.keys():
             if k == "_locked":
                 continue
-            if k.startswith('_'):
+            elif k.startswith('_'):
                 d[k[1:]] = getattr(self, k[1:])
             else:
                 d[k] = getattr(self, k)

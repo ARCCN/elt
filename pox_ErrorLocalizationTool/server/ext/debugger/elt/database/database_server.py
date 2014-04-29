@@ -1,5 +1,6 @@
 import socket
 import sys
+from ConfigParser import ConfigParser
 
 from ..message_server import Message, PythonMessageServer
 from ..interaction import (SimpleConnection, TimeoutException,
@@ -10,15 +11,16 @@ from .messages import FlowModMessage, FlowModQuery, RuleQuery, QueryReply
 from .database import Database
 
 
-BUFFER_SIZE = 1
+BUFFER_SIZE = 5
 PORT = 5522
+CONFIG = ["server/config/config.cfg", "config/config.cfg"]
 #Logging
 log = app_logging.getLogger("Database Server")
 
 
 class DatabaseServer(PythonMessageServer):
 
-    def __init__(self, port=PORT, **kw):
+    def __init__(self, **kw):
         """
         We want to wait 0.0s each turn.
         Every turn we process BUFFER_SIZE messages.
@@ -27,9 +29,26 @@ class DatabaseServer(PythonMessageServer):
         self.check_iter = 0
         factory = ConnectionFactory(instantiator=Instantiator(
             module='ext.debugger.elt.database.messages'))
+        self.config = ConfigParser()
+        log.info("Read config: %s" % (self.config.read(CONFIG)))
+        cooldown = 0.0
+        interval = 1
+        self.buffer_size = BUFFER_SIZE
+        port = PORT
+        if self.config.has_option("database_server", "cooldown"):
+            cooldown = self.config.getfloat("database_server", "cooldown")
+        if self.config.has_option("database_server", "interval"):
+            interval = self.config.getint("database_server", "interval")
+        if self.config.has_option("database_server", "buffer_size"):
+            self.buffer_size = self.config.getint("database_server",
+                                                  "buffer_size")
+        if self.config.has_option("database_server", "port"):
+            port = self.config.getint("database_server", "port")
+
         PythonMessageServer.__init__(self, port=port, enqueue=True,
-                                     single_queue=True, cooldown=0.0,
-                                     interval=1, connection_factory=factory)
+                                     single_queue=True, cooldown=cooldown,
+                                     interval=interval,
+                                     connection_factory=factory)
 
     def close(self):
         """
@@ -51,8 +70,8 @@ class DatabaseServer(PythonMessageServer):
         if self.single_queue:
             if len(self.queue) == 0:
                 return False
-            pool = (len(self.queue) if len(self.queue) < BUFFER_SIZE
-                    else BUFFER_SIZE)
+            pool = (len(self.queue) if len(self.queue) < self.buffer_size
+                    else self.buffer_size)
             for i in xrange(pool):
                 msg, con = self.queue.popleft()
                 self.process_message(msg, con)
@@ -73,8 +92,8 @@ class DatabaseServer(PythonMessageServer):
 
         if len(self.clients[con]) == 0:
             return
-        pool = (len(self.clients[con]) if len(self.clients[con]) < BUFFER_SIZE
-                else BUFFER_SIZE)
+        pool = (len(self.clients[con]) if len(self.clients[con]) <
+                self.buffer_size else self.buffer_size)
         queue = self.clients[con][:pool]
         self.clients[con] = self.clients[con][pool:]
         results = self.db.flush_buffer(queue)

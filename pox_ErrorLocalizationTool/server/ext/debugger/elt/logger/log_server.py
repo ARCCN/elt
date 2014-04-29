@@ -1,5 +1,6 @@
 import time
 import sys
+from ConfigParser import ConfigParser
 
 from ..message_server import PythonMessageServer
 from ..util import profile, app_logging
@@ -12,9 +13,10 @@ from .loggers import TextLogger, XmlLogger
 
 
 BUFFER_SIZE = 10
-MAX_ATTEMPTS = 3
+QUERY_ATTEMPTS = 3
 log = app_logging.getLogger('Log Server')
-LOG_PORT = 5523
+PORT = 5523
+CONFIG = ["server/config/config.cfg", "config/config.cfg"]
 
 
 class LogServer(PythonMessageServer):
@@ -23,7 +25,7 @@ class LogServer(PythonMessageServer):
     Uses DatabaseClient to retrieve FlowMod call stack.
     Uses asynchronious querying to save resources.
     """
-    def __init__(self, port=LOG_PORT, logger=None, log_file='LogServer.log'):
+    def __init__(self, logger=None, log_file='LogServer.log'):
         self.db_client = DatabaseClient(mode='rw')
         if logger is None:
             #self.log = TextLogger(log_file)
@@ -42,9 +44,30 @@ class LogServer(PythonMessageServer):
         self.empty_response = 0
         factory = ConnectionFactory(instantiator=Instantiator(
             module='ext.debugger.elt.logger.messages'))
+        self.config = ConfigParser()
+        log.info("Read config: %s" % (self.config.read(CONFIG)))
+        cooldown = 0.0
+        interval = 1
+        self.buffer_size = BUFFER_SIZE
+        port = PORT
+        self.query_attempts = QUERY_ATTEMPTS
+        if self.config.has_option("log_server", "cooldown"):
+            cooldown = self.config.getfloat("log_server", "cooldown")
+        if self.config.has_option("log_server", "interval"):
+            interval = self.config.getint("log_server", "interval")
+        if self.config.has_option("log_server", "buffer_size"):
+            self.buffer_size = self.config.getint("log_server",
+                                                  "buffer_size")
+        if self.config.has_option("log_server", "port"):
+            port = self.config.getint("log_server", "port")
+        if self.config.has_option("log_server", "query_attempts"):
+            self.query_attempts = self.config.getint("log_server",
+                                                     "query_attempts")
+
         PythonMessageServer.__init__(self, port, enqueue=True,
-                                     single_queue=True, cooldown=0.0,
-                                     interval=1, connection_factory=factory)
+                                     single_queue=True, cooldown=cooldown,
+                                     interval=interval,
+                                     connection_factory=factory)
 
     def close(self):
         while self.enqueue and self.check_waiting_messages() is True:
@@ -79,8 +102,8 @@ class LogServer(PythonMessageServer):
 
         if self.single_queue:
             self.check_iter += 1
-            pool = (len(self.queue) if len(self.queue) < BUFFER_SIZE
-                    else BUFFER_SIZE)
+            pool = (len(self.queue) if len(self.queue) < self.buffer_size
+                    else self.buffer_size)
             if self.check_iter % 100 == 0:
                 log.info('Received %-8d Queue %-8d Pending %-8d' % (
                     self.received, len(self.queue), len(self.pending)))
@@ -193,7 +216,7 @@ class LogServer(PythonMessageServer):
                 ) > 0 else True
             if not found:
                 minfo, conn_name = self.pending[mid]
-                if minfo.get_query_count(qid) <= MAX_ATTEMPTS:
+                if minfo.get_query_count(qid) <= self.query_attempts:
                     new_qid = self._get_qid()
                     minfo.change_qid(qid, new_qid)
                     self.qid_mid[new_qid] = mid

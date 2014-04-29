@@ -4,6 +4,7 @@ import socket
 import select
 import time
 from collections import deque
+from ConfigParser import ConfigParser
 
 from ..interaction import SimpleConnection, ConnectionFactory
 from ..util import app_logging, profile
@@ -13,7 +14,10 @@ from .messages import Message, ClosingMessage
 
 INTERVAL = 1
 COOLDOWN = 0.01
+IDLE_SLEEP = 0.001
+LAST_SOCKET_FIRST = True
 log = app_logging.getLogger("Message Server")
+CONFIG = ["server/config/config.cfg", "config/config.cfg"]
 
 
 class PythonMessageServer(object):
@@ -41,6 +45,16 @@ class PythonMessageServer(object):
         if connection_factory is None:
             connection_factory = ConnectionFactory()
         self.connection_factory = connection_factory
+        self.config = ConfigParser()
+        log.info("Read config: %s" % (self.config.read(CONFIG)))
+        self.idle_sleep = IDLE_SLEEP
+        self.last_socket_first = LAST_SOCKET_FIRST
+        if self.config.has_option("message_server", "idle_sleep"):
+            self.idle_sleep = self.config.getfloat("message_server",
+                                                   "idle_sleep")
+        if self.config.has_option("message_server", "last_socket_first"):
+            self.last_socket_first = self.config.getboolean(
+                    "message_server", "last_socket_first")
         self.run()
 
     def dummy_select(self, r, w, e, cooldown):
@@ -129,7 +143,7 @@ class PythonMessageServer(object):
                             try:
                                 if (self.check_waiting_messages() is False and
                                         to_sleep):
-                                    time.sleep(0.01)
+                                    time.sleep(self.idle_sleep)
                             except Exception as e:
                                 log.debug(str(e))
 
@@ -161,7 +175,10 @@ class PythonMessageServer(object):
 
     def add_connection(self, skt):
         c = self.connection_factory.create_connection(skt)
-        self.sockets.append(c)
+        if self.last_socket_first:
+            self.sockets.insert(0, c)
+        else:
+            self.sockets.append(c)
         self.clients[c] = []
 
     def close(self):

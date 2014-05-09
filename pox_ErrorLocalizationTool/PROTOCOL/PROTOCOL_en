@@ -1,0 +1,166 @@
+Common structures in JSON.
+
+<rule>:
+{
+ "name":"rule",
+ "priority":<int>,
+ "match":<match>,
+ "actions":[<action>,<action>, ...],
+ "hard_timeout":<int>, # optional
+ "idle_timeout":<int>, # optional
+ "out_port":<int>, # optional
+ "version":<int>, # optional
+ "flags":<int> # optional
+}
+
+
+<flow_mod>:
+{
+ "name":"ofp_flow_mod",
+ "command":<int>,
+ "priority":<int>,
+ "match":<match>,
+ "actions":[<action>,<action>, ...],
+ "hard_timeout":<int>, # optional
+ "idle_timeout":<int>, # optional
+ "out_port":<int>, # optional
+ "version":<int>, # optional
+ "flags":<int> # optional
+ }
+
+<match>:
+{
+ wildcards:<int>,
+ in_port:<int>/null, # optional
+ dl_type:<int>/null, # optional
+ dl_src:<MAC as string>/null, # optional
+ dl_dst:<MAC as string>/null, # optional
+ dl_vlan:<int>/null, # optional
+ dl_vlan_pcp:<int>/null, # optional
+ nw_src:<IP as string>/null, # optional
+ nw_dst:<IP as string>/null, # optional
+ nw_tos:<int>/null, # optional
+ nw_proto:<int>/null, # optional
+ tp_src:<int>/null, # optional
+ tp_dst:<int>/null, #optional
+}
+
+
+<action>:
+{
+ "type":<int>,
+ <type-dependent values>
+}
+#include ELT_COMMON_PROTOCOL
+
+###############################################################################
+
+FlowModMessage: Store data into database.
+
+{
+ "dpid":<int>,
+ "data":<flow_mod>,
+ "code_entries":<call_stack>,
+ "_name":"FlowModMessage"
+}
+
+<call_stack>:
+[<code_entry>,<code_entry>, ...]
+
+<code_entry>:
+[<module_name (string)>, <line_number (int)>]
+
+
+EXAMPLE:
+
+{"dpid":1,"data":{"name":"ofp_flow_mod","hard_timeout":0,"out_port":65535,"priority":10000,"idle_timeout":0,"version":1,"command":2,"actions":[{"max_len":0,"type":0,"port":1}],"flags":0,"match":{"wildcards":3678433,"dl_type":34525,"nw_dst":null,"dl_vlan_pcp":null,"dl_src":"86:4d:b6:63:47:4f","nw_proto":null,"nw_tos":null,"tp_dst":null,"tp_src":null,"dl_dst":"33:33:00:00:00:16","dl_vlan":65535,"nw_src":null,"in_port":null}},"code_entries":[["/home/lantame/SDN/ELT/pox_ErrorLocalizationTool/ext/debugger/controllers/interrupter.py",35],["/home/lantame/SDN/ELT/pox_ErrorLocalizationTool/pox/lib/revent/revent.py",159],["/home/lantame/SDN/ELT/pox_ErrorLocalizationTool/pox/lib/revent/revent.py",281],["/home/lantame/SDN/ELT/pox_ErrorLocalizationTool/pox/lib/revent/revent.py",234],["/home/lantame/SDN/ELT/pox_ErrorLocalizationTool/pox/openflow/of_01.py",178]],"_name":"FlowModMessage"}
+
+###############################################################################
+
+FlowModQuery: retrieve call stack for flow_mod.
+
+{
+ "qid":<int>, # -1 = doesn't matter
+ "dpid":<int>,
+ "data":<flow_mod>,
+ "_name":"FlowModQuery"
+}
+
+
+EXAMPLE:
+
+{"qid":5,"dpid":1,"data":{"name":"ofp_flow_mod","hard_timeout":0,"out_port":65535,"priority":1000,"idle_timeout":0,"version":1,"command":0,"actions":[{"max_len":0,"type":0,"port":1}],"flags":0,"match":{"wildcards":3145920,"dl_type":2054,"nw_dst":"10.0.0.1","dl_vlan_pcp":null,"dl_src":"16:48:89:95:25:59","nw_proto":2,"nw_tos":null,"tp_dst":null,"tp_src":null,"dl_dst":"66:4e:5f:da:3c:99","dl_vlan":65535,"nw_src":"10.0.0.3","in_port":3}},"_name":"FlowModQuery"}
+
+###############################################################################
+
+RuleQuery: retrieve call stack(-s) for flow_mods in rule.
+
+{
+ "qid":<int>, # -1 = doesn't matter
+ "dpid":<int>,
+ "data":<rule>,
+ "_name":"RuleQuery"
+}
+
+
+EXAMPLE:
+
+{"qid":26,"dpid":1,"data":{"name":"rule","hard_timeout":0,"out_port":65535,"priority":100,"idle_timeout":0,"version":1,"actions":[{"max_len":0,"type":0,"port":1}],"flags":0,"match":{"wildcards":1048577,"dl_type":2048,"nw_dst":"10.0.0.4","dl_vlan_pcp":null,"dl_src":"9e:f3:e8:bb:54:1a","nw_proto":1,"nw_tos":0,"tp_dst":0,"tp_src":0,"dl_dst":"9e:fe:0e:2f:ff:61","dl_vlan":65535,"nw_src":"10.0.0.2","in_port":null}},"_name":"RuleQuery"}
+
+###############################################################################
+
+QueryReply: call stack for FlowModQuery / RuleQuery.
+
+{
+ "qid":<int>, # equal to query
+ "code":[<fm_code>,<fm_code>, ...],
+ "_name":"QueryReply"
+}
+
+<fm_code>:
+[<"OFPFC_*" (string)>,<call_stack>]
+
+
+EXAMPLE:
+
+{"qid":26,"code":[["OFPFC_ADD",[["/home/lantame/SDN/ELT/pox_ErrorLocalizationTool/ext/debugger/controllers/interrupter.py",35],["/home/lantame/SDN/ELT/pox_ErrorLocalizationTool/pox/lib/revent/revent.py",159],["/home/lantame/SDN/ELT/pox_ErrorLocalizationTool/pox/lib/revent/revent.py",281],["/home/lantame/SDN/ELT/pox_ErrorLocalizationTool/pox/lib/revent/revent.py",234],["/home/lantame/SDN/ELT/pox_ErrorLocalizationTool/pox/openflow/of_01.py",178]]]],"_name":"QueryReply"}
+
+###############################################################################
+#include ELT_COMMON_PROTOCOL
+
+###############################################################################
+
+LogMessage: Send a report about error.
+
+{
+ "event":<event>,
+ "_name":"LogMessage"
+}
+
+<event>:
+{
+ "_name":<string>, # optional
+ "desc":<string>, # optional
+ "time":"DD.MM.YYYY hh:mm:ss.sss", # optional
+ "entry_groups":[<entry_group>,<entry_group>, ...]
+}
+
+<entry_group>:
+{
+ "name":<string>, # Optional
+ "desc":<string>, # Optional
+ "entries":[<entry>,<entry>, ...] # Optional
+}
+
+<entry>:
+{
+ "dpid":<int>,
+ "data":<flow_mod>|<rule>
+}
+
+
+EXAMPLE
+
+{"event":{"entry_groups":[{"entries":[{"data":{"name":"ofp_flow_mod","hard_timeout":0,"out_port":65535,"priority":1000,"idle_timeout":0,"version":1,"command":0,"actions":[{"max_len":0,"type":0,"port":4}],"flags":0,"match":{"wildcards":3145920,"dl_type":2054,"nw_dst":"10.0.0.4","dl_vlan_pcp":null,"dl_src":"66:4e:5f:da:3c:99","nw_proto":1,"nw_tos":null,"tp_dst":null,"tp_src":null,"dl_dst":"9e:fe:0e:2f:ff:61","dl_vlan":65535,"nw_src":"10.0.0.1","in_port":1}},"dpid":1}],"name":"Added","desc":"This entry was just added"},{"entries":[{"data":{"name":"rule","hard_timeout":0,"out_port":65535,"priority":1000,"idle_timeout":0,"version":1,"actions":[{"max_len":0,"type":0,"port":1}],"flags":0,"match":{"wildcards":2097345,"dl_type":2054,"nw_dst":"10.0.0.4","dl_vlan_pcp":0,"dl_src":"66:4e:5f:da:3c:99","nw_proto":1,"nw_tos":null,"tp_dst":null,"tp_src":null,"dl_dst":"9e:fe:0e:2f:ff:61","dl_vlan":65535,"nw_src":"10.0.0.1","in_port":null}},"dpid":1}],"name":"Old","desc":"These entries were installed before"}],"desc":"No description","time":"14.04.2014 21:29:43.624","_name":"FlowUndefined"},"_name":"LogMessage"}
+
+###############################################################################

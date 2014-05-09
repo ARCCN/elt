@@ -1,5 +1,6 @@
 import time
 import socket
+from ConfigParser import ConfigParser
 
 import pox.openflow.libopenflow_01 as of
 
@@ -16,6 +17,7 @@ from .messages import FlowModMessage, FlowModQuery, RuleQuery, QueryReply
 PORT = 5522
 #Logging
 log = app_logging.getLogger("Database Client")
+CONFIG = ["server/config/config.cfg", "config/config.cfg"]
 
 
 class DatabaseClient(object):
@@ -23,11 +25,18 @@ class DatabaseClient(object):
     Connects to Database. Supports flowmod addition and retrieving.
     Supports sync/async queries.
     """
-    def __init__(self, port=PORT, mode='w', connect=True):
-        self.port = port
+    def __init__(self, mode='w', connect=True):
         self.connection_factory = ConnectionFactory(
             instantiator=Instantiator(
                 module="ext.debugger.elt.database.messages"))
+
+        self.config = ConfigParser()
+        log.info("Read config: %s" % (self.config.read(CONFIG)))
+        port = PORT
+        if self.config.has_option("database_client", "port"):
+            port = self.config.getint("database_client", "port")
+
+        self.port = port
         self.connection = None
         if connect:
             while self.reconnect() is False:

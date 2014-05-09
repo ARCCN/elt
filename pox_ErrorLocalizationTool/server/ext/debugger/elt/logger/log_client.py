@@ -1,5 +1,6 @@
 import socket
 import time
+from ConfigParser import ConfigParser
 
 from ..message_server import ClosingMessage
 from ..interaction import Instantiator, ConnectionFactory
@@ -8,21 +9,28 @@ from ..util import app_logging
 from .messages import HelloMessage, LogMessage
 
 
+PORT = 5523
 log = app_logging.getLogger('Log Client')
-LOG_PORT = 5523
+CONFIG = ["server/config/config.cfg", "config/config.cfg"]
 
 
 class LogClient(object):
     """
     The only thing I can is sending errors to log.
     """
-    def __init__(self, port=LOG_PORT, name="", connect=True):
-        self.port = port
-        self.name = name
+    def __init__(self, name="", connect=True):
         self.connection_factory = ConnectionFactory(
             instantiator=Instantiator(
                 module="ext.debugger.elt.logger.messages"))
 
+        self.config = ConfigParser()
+        log.info("Read config: %s" % (self.config.read(CONFIG)))
+        port = PORT
+        if self.config.has_option("log_client", "port"):
+            port = self.config.getint("log_client", "port")
+
+        self.port = port
+        self.name = name
         self.connection = None
         if connect:
             while self.reconnect() is False:

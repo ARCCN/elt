@@ -1,6 +1,7 @@
 import numbers
 import MySQLdb as mdb
 import MySQLdb.cursors
+from ConfigParser import ConfigParser
 
 import pox.openflow.libopenflow_01 as of
 
@@ -21,6 +22,7 @@ DATABASE = 'POX_proxy'
 #Logging
 log = app_logging.getLogger("Database")
 ENABLE_LOGGING = False
+CONFIG = ["server/config/database_config.cfg", "config/database_config.cfg"]
 
 
 class Database(object):
@@ -32,12 +34,24 @@ class Database(object):
     SIMPLE = 0
     DICTIONARY = 1
 
-    def __init__(self, domain=DOMAIN, user=USER,
-                 password=PASSWORD, table_name=DATABASE):
-        self.user = user
-        self.domain = domain
-        self.password = password
-        self.table_name = table_name
+    def __init__(self):
+        self.user = USER
+        self.domain = DOMAIN
+        self.password = PASSWORD
+        self.table_name = DATABASE
+
+        self.config = ConfigParser()
+        log.info("Read config: %s" % (self.config.read(CONFIG)))
+
+        if self.config.has_option("database", "user"):
+            self.user = self.config.get("database", "user")
+        if self.config.has_option("database", "domain"):
+            self.domain = self.config.get("database", "domain")
+        if self.config.has_option("database", "password"):
+            self.password = self.config.get("database", "password")
+        if self.config.has_option("database", "database"):
+            self.table_name = self.config.get("database", "database")
+
         self.connect()
         self.create_tables()
         self.tick_id = 0

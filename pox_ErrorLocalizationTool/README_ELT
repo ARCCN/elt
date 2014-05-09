@@ -3,7 +3,8 @@ Application Research Center for Computer Networks (ARCCN)
 
 -------------------------------------------------------------------------------
 
-Error Localization Tool for POX controller (POX_ELT).
+Error Localization Tool (ELT).
+POX adapter for ELT.
 
 -------------------------------------------------------------------------------
 
@@ -36,10 +37,12 @@ LogServer and Database protocol definition:
 Textual interface using JSON.
 Structure definitions and examples can be found in
 
-README/
+PROTOCOL/
     ELT_COMMON_PROTOCOL
     ELT_DB_PROTOCOL
     ELT_LOG_PROTOCOL
+    PROTOCOL_ru (compilation)
+    PROTOCOL_en (compilation)
 
 -------------------------------------------------------------------------------
 
@@ -69,36 +72,50 @@ Language:
     Python 2.7+
 
 Packages:
+    MySQL
     MySQLdb-python
     POX
+    Mininet (for scenarios and emulation)
 
 Others:
     We need a MySQL Database.
+    You can create it with CREATE DATABASE command in MySQL CLI.
 
     By default, we try to connect as:
     user=       'user'
     domain=     'localhost'
     password=   '1234'
-    table_name= 'POX_proxy'
+    table_name= 'POX_proxy' <- This is database name.
 
-    You can change it in elt/database/database.py.
+    You can change it in elt/database/database.py or config file.
+
+-------------------------------------------------------------------------------
+
+Configuration files:
+
+Server part:
+    server/config/config.cfg
+    server/config/database_config.cfg
+
+Client part:
+    adapters/pox/config/config.cfg
 
 -------------------------------------------------------------------------------
 
 Usage:
 
 1.  Start Database server:
-    python -m ext.debugger.utility.start_db_server
+    python -m utility.start_db_server
 
 2.  Start Logger server (has Database client, needs Database server running):
-    python -m ext.debugger.utility.start_log_server
+    python -m utility.start_log_server
 
 3.  Run controller with ProxyController (needs Database and Logger servers):
     We put a proxy on Connection so our module should be loaded first.
     ./pox.py ext.debugger.elt.of_01_debug <...>
 
 4.  Safely stop servers:
-    python -m ext.debugger.utility.stop_log_server
-    python -m ext.debugger.utility.stop_db_server
+    python -m utility.stop_log_server
+    python -m utility.stop_db_server
 
-Or you can just run ./stress_test.sh.
+Or you can just run scripts/elt_scripts/stress_test.sh (needs sudo for Mininet).

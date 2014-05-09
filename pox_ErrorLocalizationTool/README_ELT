@@ -99,6 +99,7 @@ Server part:
 
 Client part:
     adapters/pox/config/config.cfg
+    adapters/pox/config/flow_table_config.cfg <- Competing application classes.
 
 -------------------------------------------------------------------------------
 

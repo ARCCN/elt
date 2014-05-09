@@ -7,9 +7,9 @@ All right reserved.
 
 <b>Error Localization Tool</b> - tool for controller application error localization given the wrong FlowMod message or rule.
 Operates by storing FlowMods to database. Designed for SDN, POX. Requiers MySQL.<br>
-<a href=http://github.com/ARCCN/elt/blob/master/pox_ErrorLocalizationTool/README_ELT>See README</a><br>
-<a href=http://github.com/ARCCN/elt/blob/master/pox_ErrorLocalizationTool/protocol/PROTOCOL_en>Protocol spec</a><br>
-<a href=http://github.com/ARCCN/elt/blob/master/pox_ErrorLocalizationTool/plugins/eclipse>Eclipse plugin to view log reports</a><br>
+<a href=http://github.com/ARCCN/elt/blob/master/README_ELT>See README</a><br>
+<a href=http://github.com/ARCCN/elt/blob/master/protocol/PROTOCOL_en>Protocol spec</a><br>
+<a href=http://github.com/ARCCN/elt/blob/master/plugins/eclipse>Eclipse plugin to view log reports</a><br>
 Contains adapter for POX version: 0.1.0.<br>
 Contains POX version: None.
 

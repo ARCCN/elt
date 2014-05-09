@@ -10,8 +10,10 @@ from .messages import HelloMessage, LogMessage
 
 
 PORT = 5523
+ADDRESS = "0.0.0.0"
 log = app_logging.getLogger('Log Client')
-CONFIG = ["pox/config/config.cfg", "config/config.cfg"]
+CONFIG = ["adapters/pox/config/config.cfg",
+          "pox/config/config.cfg", "config/config.cfg"]
 
 
 class LogClient(object):
@@ -23,13 +25,16 @@ class LogClient(object):
             instantiator=Instantiator(
                 module="ext.debugger.elt.logger.messages"))
 
+        self.port = PORT
+        self.address = ADDRESS
+
         self.config = ConfigParser()
         log.info("Read config: %s" % (self.config.read(CONFIG)))
-        port = PORT
         if self.config.has_option("log_client", "port"):
-            port = self.config.getint("log_client", "port")
+            self.port = self.config.getint("log_client", "port")
+        if self.config.has_option("log_client", "address"):
+            self.address = self.config.get("log_client", "address")
 
-        self.port = port
         self.name = name
         self.connection = None
         if connect:
@@ -57,7 +62,7 @@ class LogClient(object):
     def reconnect(self):
         try:
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            s.connect(('0.0.0.0', self.port))
+            s.connect((self.address, self.port))
             self.connection = self.connection_factory.create_connection(s)
 
             self.connection.send(HelloMessage(self.name))

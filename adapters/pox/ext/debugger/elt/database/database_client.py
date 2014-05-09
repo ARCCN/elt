@@ -15,9 +15,11 @@ from .messages import FlowModMessage, FlowModQuery, RuleQuery, QueryReply
 
 # Client-server interaction defaults.
 PORT = 5522
+ADDRESS = "0.0.0.0"
 #Logging
 log = app_logging.getLogger("Database Client")
-CONFIG = ["pox/config/config.cfg", "config/config.cfg"]
+CONFIG = ["adapters/pox/config/config.cfg",
+          "pox/config/config.cfg", "config/config.cfg"]
 
 
 class DatabaseClient(object):
@@ -30,13 +32,16 @@ class DatabaseClient(object):
             instantiator=Instantiator(
                 module="ext.debugger.elt.database.messages"))
 
+        self.port = PORT
+        self.address = ADDRESS
+
         self.config = ConfigParser()
         log.info("Read config: %s" % (self.config.read(CONFIG)))
-        port = PORT
         if self.config.has_option("database_client", "port"):
-            port = self.config.getint("database_client", "port")
+            self.port = self.config.getint("database_client", "port")
+        if self.config.has_option("database_client", "address"):
+            self.address = self.config.get("database_client", "address")
 
-        self.port = port
         self.connection = None
         if connect:
             while self.reconnect() is False:
@@ -128,7 +133,7 @@ class DatabaseClient(object):
     def reconnect(self):
         try:
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            s.connect(('0.0.0.0', self.port))
+            s.connect((self.address, self.port))
             self.connection = self.connection_factory.create_connection(s)
             log.info('DBClient: Connection established.')
             return True

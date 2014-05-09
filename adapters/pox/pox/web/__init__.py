@@ -1,4 +1,4 @@
-# Copyright 2011 James McCauley
+# Copyright 2012 James McCauley
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,8 +13,11 @@
 # limitations under the License.
 
 """
-This is the POX network controller framework.
+This just launches the webcore component.
 
-Presently, this basically means it's a framework for writing OpenFlow
-controllers, some utilities, and some examples.
+Possibly, webcore should just be moved here.
 """
+
+def launch (address='', port=8000, static=False):
+  import pox.web.webcore as wc
+  wc.launch(address, port, static)

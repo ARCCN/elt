@@ -1,3 +1,5 @@
+###############################################################################
+
 Common structures in JSON.
 
 <rule>:
@@ -51,8 +53,8 @@ Common structures in JSON.
  "type":<int>,
  <type-dependent values>
 }
-#include ELT_COMMON_PROTOCOL
 
+###############################################################################
 ###############################################################################
 
 FlowModMessage: Store data into database.
@@ -126,8 +128,6 @@ EXAMPLE:
 {"qid":26,"code":[["OFPFC_ADD",[["/home/lantame/SDN/ELT/pox_ErrorLocalizationTool/ext/debugger/controllers/interrupter.py",35],["/home/lantame/SDN/ELT/pox_ErrorLocalizationTool/pox/lib/revent/revent.py",159],["/home/lantame/SDN/ELT/pox_ErrorLocalizationTool/pox/lib/revent/revent.py",281],["/home/lantame/SDN/ELT/pox_ErrorLocalizationTool/pox/lib/revent/revent.py",234],["/home/lantame/SDN/ELT/pox_ErrorLocalizationTool/pox/openflow/of_01.py",178]]]],"_name":"QueryReply"}
 
 ###############################################################################
-#include ELT_COMMON_PROTOCOL
-
 ###############################################################################
 
 LogMessage: Send a report about error.

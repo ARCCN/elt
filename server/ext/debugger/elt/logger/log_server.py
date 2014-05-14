@@ -33,26 +33,34 @@ class LogServer(PythonMessageServer):
             self.log = XmlLogger()
         else:
             self.log = logger
+        self._clear_stats()
         self.names = {}
         self.pending = {}  # mid -> (MessageInfo, conn_name)
         self.qid_mid = {}
         self.last_qid = 0
         self.last_mid = 0
-        self.check_iter = 0
-        self.events = 0
-        self.generated = 0
-        self.total_sent = 0
-        self.empty_response = 0
         factory = ConnectionFactory(instantiator=Instantiator(
             module='ext.debugger.elt.logger.messages'))
-        self.config = ConfigParser()
-        log.info("Read config: %s" % (self.config.read(CONFIG)))
+
+        self._set_defaults()
+        self._read_config()
+
+        PythonMessageServer.__init__(self, self.port, enqueue=True,
+                                     single_queue=True, cooldown=self.cooldown,
+                                     interval=self.interval,
+                                     connection_factory=factory)
+
+    def _set_defaults(self):
         self.cooldown = 0.0
         self.interval = 1
         self.buffer_size = BUFFER_SIZE
         self.port = PORT
         self.query_attempts = QUERY_ATTEMPTS
         self.status_interval = STATUS_INTERVAL
+
+    def _read_config(self):
+        self.config = ConfigParser()
+        log.info("Read config: %s" % (self.config.read(CONFIG)))
         if self.config.has_option("log_server", "cooldown"):
             self.cooldown = self.config.getfloat("log_server", "cooldown")
         if self.config.has_option("log_server", "interval"):
@@ -69,10 +77,12 @@ class LogServer(PythonMessageServer):
             self.status_interval = self.config.getint("log_server",
                                                       "status_interval")
 
-        PythonMessageServer.__init__(self, self.port, enqueue=True,
-                                     single_queue=True, cooldown=self.cooldown,
-                                     interval=self.interval,
-                                     connection_factory=factory)
+    def _clear_stats(self):
+        self.check_iter = 0
+        self.events = 0
+        self.generated = 0
+        self.total_sent = 0
+        self.empty_response = 0
 
     def close(self):
         while self.enqueue and self.check_waiting_messages() is True:

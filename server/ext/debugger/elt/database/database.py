@@ -35,11 +35,27 @@ class Database(object):
     DICTIONARY = 1
 
     def __init__(self):
+        self._set_defaults()
+        self._read_config()
+        self._clear_stats()
+
+        self.connect()
+        self.create_tables()
+        self.actions = ActionsCache()
+        self.code_entries = CodeEntriesCache()
+        self.action_patterns = ActionPatternsToActionsCache()
+        self.code_patterns = CodePatternsToCodeEntriesCache()
+        self.params = FlowModParamsCache()
+        self.matches = FlowMatchCache()
+        self._closing = False
+
+    def _set_defaults(self):
         self.user = USER
         self.domain = DOMAIN
         self.password = PASSWORD
         self.table_name = DATABASE
 
+    def _read_config(self):
         self.config = ConfigParser()
         log.info("Read config: %s" % (self.config.read(CONFIG)))
 
@@ -52,19 +68,11 @@ class Database(object):
         if self.config.has_option("database", "database"):
             self.table_name = self.config.get("database", "database")
 
-        self.connect()
-        self.create_tables()
+    def _clear_stats(self):
         self.tick_id = 0
         self.saves = 0
         self.flow_mods = 0
         self.rules = 0
-        self.actions = ActionsCache()
-        self.code_entries = CodeEntriesCache()
-        self.action_patterns = ActionPatternsToActionsCache()
-        self.code_patterns = CodePatternsToCodeEntriesCache()
-        self.params = FlowModParamsCache()
-        self.matches = FlowMatchCache()
-        self._closing = False
 
 # Public interfaces
 

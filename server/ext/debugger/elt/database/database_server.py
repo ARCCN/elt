@@ -26,16 +26,28 @@ class DatabaseServer(PythonMessageServer):
         Every turn we process BUFFER_SIZE messages.
         """
         self.db = Database(**kw)
-        self.check_iter = 0
+        self._clear_stats()
         factory = ConnectionFactory(instantiator=Instantiator(
             module='ext.debugger.elt.database.messages'))
-        self.config = ConfigParser()
-        log.info("Read config: %s" % (self.config.read(CONFIG)))
+
+        self._set_defaults()
+        self._read_config()
+
+        PythonMessageServer.__init__(self, port=self.port, enqueue=True,
+                                     single_queue=True, cooldown=self.cooldown,
+                                     interval=self.interval,
+                                     connection_factory=factory)
+
+    def _set_defaults(self):
         self.cooldown = 0.0
         self.interval = 1
         self.buffer_size = BUFFER_SIZE
         self.port = PORT
         self.status_interval = STATUS_INTERVAL
+
+    def _read_config(self):
+        self.config = ConfigParser()
+        log.info("Read config: %s" % (self.config.read(CONFIG)))
         if self.config.has_option("database_server", "cooldown"):
             self.cooldown = self.config.getfloat("database_server", "cooldown")
         if self.config.has_option("database_server", "interval"):
@@ -49,10 +61,8 @@ class DatabaseServer(PythonMessageServer):
             self.status_interval = self.config.getint("database_server",
                                                       "status_interval")
 
-        PythonMessageServer.__init__(self, port=self.port, enqueue=True,
-                                     single_queue=True, cooldown=self.cooldown,
-                                     interval=self.interval,
-                                     connection_factory=factory)
+    def _clear_stats(self):
+        self.check_iter = 0
 
     def close(self):
         """

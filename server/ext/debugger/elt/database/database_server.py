@@ -12,9 +12,9 @@ from .database import Database
 
 
 BUFFER_SIZE = 5
+STATUS_INTERVAL = 1000
 PORT = 5522
 CONFIG = ["server/config/config.cfg", "config/config.cfg"]
-#Logging
 log = app_logging.getLogger("Database Server")
 
 
@@ -31,23 +31,27 @@ class DatabaseServer(PythonMessageServer):
             module='ext.debugger.elt.database.messages'))
         self.config = ConfigParser()
         log.info("Read config: %s" % (self.config.read(CONFIG)))
-        cooldown = 0.0
-        interval = 1
+        self.cooldown = 0.0
+        self.interval = 1
         self.buffer_size = BUFFER_SIZE
-        port = PORT
+        self.port = PORT
+        self.status_interval = STATUS_INTERVAL
         if self.config.has_option("database_server", "cooldown"):
-            cooldown = self.config.getfloat("database_server", "cooldown")
+            self.cooldown = self.config.getfloat("database_server", "cooldown")
         if self.config.has_option("database_server", "interval"):
-            interval = self.config.getint("database_server", "interval")
+            self.interval = self.config.getint("database_server", "interval")
         if self.config.has_option("database_server", "buffer_size"):
             self.buffer_size = self.config.getint("database_server",
                                                   "buffer_size")
         if self.config.has_option("database_server", "port"):
-            port = self.config.getint("database_server", "port")
+            self.port = self.config.getint("database_server", "port")
+        if self.config.has_option("database_server", "status_interval"):
+            self.status_interval = self.config.getint("database_server",
+                                                      "status_interval")
 
-        PythonMessageServer.__init__(self, port=port, enqueue=True,
-                                     single_queue=True, cooldown=cooldown,
-                                     interval=interval,
+        PythonMessageServer.__init__(self, port=self.port, enqueue=True,
+                                     single_queue=True, cooldown=self.cooldown,
+                                     interval=self.interval,
                                      connection_factory=factory)
 
     def close(self):
@@ -76,7 +80,7 @@ class DatabaseServer(PythonMessageServer):
                 msg, con = self.queue.popleft()
                 self.process_message(msg, con)
             self.check_iter += 1
-            if self.check_iter % 1000 == 0:
+            if self.check_iter % self.status_interval == 0:
                 log.info('Received %-8d Queue %-8d' % (
                     self.received, len(self.queue)))
             return True

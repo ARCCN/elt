@@ -14,9 +14,10 @@ from .loggers import TextLogger, XmlLogger
 
 BUFFER_SIZE = 10
 QUERY_ATTEMPTS = 3
-log = app_logging.getLogger('Log Server')
+STATUS_INTERVAL = 1000
 PORT = 5523
 CONFIG = ["server/config/config.cfg", "config/config.cfg"]
+log = app_logging.getLogger('Log Server')
 
 
 class LogServer(PythonMessageServer):
@@ -46,27 +47,31 @@ class LogServer(PythonMessageServer):
             module='ext.debugger.elt.logger.messages'))
         self.config = ConfigParser()
         log.info("Read config: %s" % (self.config.read(CONFIG)))
-        cooldown = 0.0
-        interval = 1
+        self.cooldown = 0.0
+        self.interval = 1
         self.buffer_size = BUFFER_SIZE
-        port = PORT
+        self.port = PORT
         self.query_attempts = QUERY_ATTEMPTS
+        self.status_interval = STATUS_INTERVAL
         if self.config.has_option("log_server", "cooldown"):
-            cooldown = self.config.getfloat("log_server", "cooldown")
+            self.cooldown = self.config.getfloat("log_server", "cooldown")
         if self.config.has_option("log_server", "interval"):
-            interval = self.config.getint("log_server", "interval")
+            self.interval = self.config.getint("log_server", "interval")
         if self.config.has_option("log_server", "buffer_size"):
             self.buffer_size = self.config.getint("log_server",
                                                   "buffer_size")
         if self.config.has_option("log_server", "port"):
-            port = self.config.getint("log_server", "port")
+            self.port = self.config.getint("log_server", "port")
         if self.config.has_option("log_server", "query_attempts"):
             self.query_attempts = self.config.getint("log_server",
                                                      "query_attempts")
+        if self.config.has_option("log_server", "status_interval"):
+            self.status_interval = self.config.getint("log_server",
+                                                      "status_interval")
 
-        PythonMessageServer.__init__(self, port, enqueue=True,
-                                     single_queue=True, cooldown=cooldown,
-                                     interval=interval,
+        PythonMessageServer.__init__(self, self.port, enqueue=True,
+                                     single_queue=True, cooldown=self.cooldown,
+                                     interval=self.interval,
                                      connection_factory=factory)
 
     def close(self):
@@ -104,7 +109,7 @@ class LogServer(PythonMessageServer):
             self.check_iter += 1
             pool = (len(self.queue) if len(self.queue) < self.buffer_size
                     else self.buffer_size)
-            if self.check_iter % 100 == 0:
+            if self.check_iter % self.status_interval == 0:
                 log.info('Received %-8d Queue %-8d Pending %-8d' % (
                     self.received, len(self.queue), len(self.pending)))
             if pool == 0:

@@ -1,5 +1,6 @@
 import time
 import sys
+import os
 from ConfigParser import ConfigParser
 
 from ..message_server import PythonMessageServer
@@ -17,6 +18,7 @@ QUERY_ATTEMPTS = 3
 STATUS_INTERVAL = 1000
 PORT = 5523
 CONFIG = ["server/config/config.cfg", "config/config.cfg"]
+LOG_DIR = "data/event_logs/"
 log = app_logging.getLogger('Log Server')
 
 
@@ -27,13 +29,17 @@ class LogServer(PythonMessageServer):
     Uses asynchronious querying to save resources.
     """
     def __init__(self, logger=None, log_file='LogServer.log'):
+        self._clear_stats()
+        self._set_defaults()
+        self._read_config()
+
         self.db_client = DatabaseClient(mode='rw')
         if logger is None:
-            #self.log = TextLogger(log_file)
-            self.log = XmlLogger()
+            # self.log = TextLogger(os.path.join(self.log_dir, log_file))
+            self.log = XmlLogger(self.log_dir)
         else:
             self.log = logger
-        self._clear_stats()
+
         self.names = {}
         self.pending = {}  # mid -> (MessageInfo, conn_name)
         self.qid_mid = {}
@@ -41,9 +47,6 @@ class LogServer(PythonMessageServer):
         self.last_mid = 0
         factory = ConnectionFactory(instantiator=Instantiator(
             module='ext.debugger.elt.logger.messages'))
-
-        self._set_defaults()
-        self._read_config()
 
         PythonMessageServer.__init__(self, self.port, enqueue=True,
                                      single_queue=True, cooldown=self.cooldown,
@@ -57,6 +60,7 @@ class LogServer(PythonMessageServer):
         self.port = PORT
         self.query_attempts = QUERY_ATTEMPTS
         self.status_interval = STATUS_INTERVAL
+        self.log_dir = LOG_DIR
 
     def _read_config(self):
         self.config = ConfigParser()
@@ -76,6 +80,8 @@ class LogServer(PythonMessageServer):
         if self.config.has_option("log_server", "status_interval"):
             self.status_interval = self.config.getint("log_server",
                                                       "status_interval")
+        if self.config.has_option("log_server", "log_dir"):
+            self.log_dir = self.config.get("log_server", "log_dir")
 
     def _clear_stats(self):
         self.check_iter = 0

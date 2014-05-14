@@ -1,12 +1,9 @@
 import logging
+import os
 from xml_report import XmlReport
 
-
-LOG_DIR = "data/event_logs/"
-
-
 class TextLogger(object):
-    def __init__(self, filename=LOG_DIR + "events.log"):
+    def __init__(self, filename):
         """
         That's where we are writing.
         """
@@ -38,13 +35,14 @@ class TextLogger(object):
 
 
 class XmlLogger(object):
-    def __init__(self):
+    def __init__(self, log_dir):
         self.conn_to_report = {}
+        self.log_dir = log_dir
 
     def log_event(self, conn_name, minfo):
         if conn_name not in self.conn_to_report:
             self.conn_to_report[conn_name] = XmlReport(
-                LOG_DIR + conn_name + ".xml", conn_name)
+                os.path.join(self.log_dir, conn_name + ".xml"), conn_name)
         self.conn_to_report[conn_name].add_event(minfo)
 
     def flush(self):

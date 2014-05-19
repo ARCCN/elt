@@ -7,10 +7,11 @@ class TextLogger(object):
         """
         That's where we are writing.
         """
-        self.log = logging.getLogger("LogServer")
+        self.log = logging.getLogger("EventLog")
         self.log.setLevel(logging.DEBUG)
         hdlr = logging.FileHandler(filename)
         self.log.addHandler(hdlr)
+        self.filename = filename
 
     def info(self, s):
         self.log.info(s)
@@ -33,6 +34,9 @@ class TextLogger(object):
     def flush(self):
         pass
 
+    def flushs(self):
+        return open(self.filename, "r").read()
+
 
 class XmlLogger(object):
     def __init__(self, log_dir):
@@ -48,3 +52,7 @@ class XmlLogger(object):
     def flush(self):
         for v in self.conn_to_report.values():
             v.flush()
+
+    def flushs(self):
+        return {conn_name: report.flushs() for
+                conn_name, report in self.conn_to_report.items()}

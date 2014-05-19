@@ -166,6 +166,10 @@ class XmlReport(object):
     def flush(self, name=None):
         if name is None:
             name = self.filename
+        with open(name, 'w') as f:
+            f.write(self.flushs())
+
+    def flushs(self):
         subelements = []
         for s, e in self.events.items():
             tmp = list(e)
@@ -176,17 +180,18 @@ class XmlReport(object):
                 e.remove(se)
             subelements.append(tmp)
 
-        with open(name, 'w') as f:
-            f.write(multiwordReplace(ET.tostring(self.result), {
-                '&gt;': '>',
-                '&lt;': '<',
-                '&amp;': '&'
-            }))
+        report = (multiwordReplace(ET.tostring(self.result), {
+                    '&gt;': '>',
+                    '&lt;': '<',
+                    '&amp;': '&'
+                }))
         # Restore subelements.
         index = 0
         for s, e in self.events.items():
             e.extend(subelements[index])
             index += 1
+
+        return report
 
     def add_event(self, minfo):
         s = minfo.event.name

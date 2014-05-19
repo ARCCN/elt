@@ -32,6 +32,5 @@ if __name__ == '__main__':
     val = val.replace('.', '\.')
     fn = sys.argv[1]
     data = get_data(fn, val)
-    for a,b,c,d in data:
-        print a,b,c,d
-
+    for a, b, c, d in data:
+        print a, b, c, d

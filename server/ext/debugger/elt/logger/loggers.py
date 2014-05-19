@@ -2,6 +2,7 @@ import logging
 import os
 from xml_report import XmlReport
 
+
 class TextLogger(object):
     def __init__(self, filename):
         """

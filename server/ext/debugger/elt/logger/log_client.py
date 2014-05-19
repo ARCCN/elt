@@ -85,7 +85,7 @@ class LogClient(object):
         if isinstance(msg.report, dict):
             for k, v in msg.report.items():
                 open(os.path.join(self.log_dir, k), "w").write(
-                        bz2.decompress(base64.decodestring(v)))
+                    bz2.decompress(base64.decodestring(v)))
 
     def get_log(self, fmt="bz2/base64"):
         self.connection.send(ReportQuery(fmt))
@@ -98,4 +98,3 @@ class LogClient(object):
             raise Exception("Unexpected report reply")
 
         return msg
-

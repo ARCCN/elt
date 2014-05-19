@@ -16,13 +16,14 @@ pox = []
 mn = []
 timer = None
 
+
 debug_sample = [
-        "ext.debugger.elt.of_01_debug",
-        "--fake_debugger=0.1",
-        "--flow_table_controller=config/flow_table_config.cfg",
-        "forwarding.l2_learning",
-        "forwarding.l3_learning"
-        ]
+    "ext.debugger.elt.of_01_debug",
+    "--fake_debugger=0.1",
+    "--flow_table_controller=config/flow_table_config.cfg",
+    "forwarding.l2_learning",
+    "forwarding.l3_learning"
+    ]
 
 
 def timer_callback():
@@ -37,7 +38,7 @@ def check_status():
 
     terminated = []
     for p in db + log + pox + mn:
-        if p.poll() != None:
+        if p.poll() is not None:
             p.wait()
             print p.pid, "executed with code", p.returncode
             terminated.append(p)
@@ -61,11 +62,13 @@ def status():
     s += "".join(["\t" + str(p.pid) + "\n" for p in mn])
     print s
 
+
 def kill_all():
     kill_mn()
     kill_pox()
     kill_log()
     kill_db()
+
 
 def stop_all():
     stop_mn()
@@ -78,10 +81,12 @@ def start(p):
     print "successfully started with pid:", p.pid
     return p
 
+
 def db_console():
     db_cli()
     sys.ps1 = "POX_ELT>"
     sys.ps2 = "..."
+
 
 def start_db():
     global db
@@ -90,10 +95,12 @@ def start_db():
     start(p)
     db.append(p)
 
+
 def stop_db():
     global db
     p = Popen(("python", "-m", "server.utility.stop_db_server"))
     db.append(p)
+
 
 def kill_db():
     global db
@@ -111,10 +118,12 @@ def start_log():
     start(p)
     log.append(p)
 
+
 def stop_log():
     global log
     p = Popen(("python", "-m", "server.utility.stop_log_server"))
     log.append(p)
+
 
 def kill_log():
     check_status()
@@ -142,6 +151,7 @@ def start_pox(args=""):
     start(p)
     pox.append(p)
 
+
 def kill_pox():
     global pox
     for p in pox:
@@ -149,6 +159,7 @@ def kill_pox():
     for p in pox:
         p.wait()
     pox = []
+
 
 def stop_pox():
     kill_pox()
@@ -170,8 +181,10 @@ def start_mn(args=""):
     start(p)
     mn.append(p)
 
+
 def stop_mn():
     kill_mn()
+
 
 def kill_mn():
     global mn
@@ -185,6 +198,7 @@ def kill_mn():
 def create_locals():
     l = globals()
     return l
+
 
 def create_message():
     s = "Welcome to Error Localization Tool\n"
@@ -206,6 +220,7 @@ def create_message():
     s += "\tstop_mn()\n"
     s += "\tkill_mn()\n\n"
     return s
+
 
 def cli_main():
     timer_callback()

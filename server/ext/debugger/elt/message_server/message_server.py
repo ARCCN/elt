@@ -54,7 +54,7 @@ class PythonMessageServer(object):
                                                    "idle_sleep")
         if self.config.has_option("message_server", "last_socket_first"):
             self.last_socket_first = self.config.getboolean(
-                    "message_server", "last_socket_first")
+                "message_server", "last_socket_first")
         self.run()
 
     def dummy_select(self, r, w, e, cooldown):

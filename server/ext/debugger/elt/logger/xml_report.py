@@ -181,10 +181,10 @@ class XmlReport(object):
             subelements.append(tmp)
 
         report = (multiwordReplace(ET.tostring(self.result), {
-                    '&gt;': '>',
-                    '&lt;': '<',
-                    '&amp;': '&'
-                }))
+            '&gt;': '>',
+            '&lt;': '<',
+            '&amp;': '&'
+            }))
         # Restore subelements.
         index = 0
         for s, e in self.events.items():

@@ -1,8 +1,10 @@
 #!/usr/bin/python
 
-from ext.debugger.elt.database import db_cli
-from subprocess import Popen
 import sys
+sys.path.append("server/")
+
+from server.ext.debugger.elt.database import db_cli
+from subprocess import Popen
 import code
 import os
 from threading import Timer
@@ -14,13 +16,14 @@ pox = []
 mn = []
 timer = None
 
+
 debug_sample = [
-        "ext.debugger.elt.of_01_debug",
-        "--fake_debugger=0.1",
-        "--flow_table_controller=config/flow_table_config.cfg",
-        "forwarding.l2_learning",
-        "forwarding.l3_learning"
-        ]
+    "ext.debugger.elt.of_01_debug",
+    "--fake_debugger=0.1",
+    "--flow_table_controller=config/flow_table_config.cfg",
+    "forwarding.l2_learning",
+    "forwarding.l3_learning"
+    ]
 
 
 def timer_callback():
@@ -35,7 +38,7 @@ def check_status():
 
     terminated = []
     for p in db + log + pox + mn:
-        if p.poll() != None:
+        if p.poll() is not None:
             p.wait()
             print p.pid, "executed with code", p.returncode
             terminated.append(p)
@@ -59,11 +62,13 @@ def status():
     s += "".join(["\t" + str(p.pid) + "\n" for p in mn])
     print s
 
+
 def kill_all():
     kill_mn()
     kill_pox()
     kill_log()
     kill_db()
+
 
 def stop_all():
     stop_mn()
@@ -76,22 +81,26 @@ def start(p):
     print "successfully started with pid:", p.pid
     return p
 
+
 def db_console():
     db_cli()
     sys.ps1 = "POX_ELT>"
     sys.ps2 = "..."
 
+
 def start_db():
     global db
-    p = Popen(("python", "-m", "ext.debugger.utility.start_db_server"),
+    p = Popen(("python", "-m", "server.utility.start_db_server"),
               stdout=open("/dev/null", "w"))
     start(p)
     db.append(p)
 
+
 def stop_db():
     global db
-    p = Popen(("python", "-m", "ext.debugger.utility.stop_db_server"))
+    p = Popen(("python", "-m", "server.utility.stop_db_server"))
     db.append(p)
+
 
 def kill_db():
     global db
@@ -104,15 +113,17 @@ def kill_db():
 
 def start_log():
     global log
-    p = Popen(("python", "-m", "ext.debugger.utility.start_log_server"),
+    p = Popen(("python", "-m", "server.utility.start_log_server"),
               stdout=open("/dev/null", "w"))
     start(p)
     log.append(p)
 
+
 def stop_log():
     global log
-    p = Popen(("python", "-m", "ext.debugger.utility.stop_log_server"))
+    p = Popen(("python", "-m", "server.utility.stop_log_server"))
     log.append(p)
+
 
 def kill_log():
     check_status()
@@ -127,18 +138,19 @@ def kill_log():
 def start_pox(args=""):
     global pox
     if isinstance(args, tuple):
-        p = Popen(("./pox.py", ) + args)
+        p = Popen(("adapters/pox/pox.py", ) + args)
     elif isinstance(args, basestring):
         args = [a for a in args.split(" ") if a != ""]
-        args = ["./pox.py"] + args
+        args = ["adapters/pox/pox.py"] + args
         p = Popen(args)
     elif isinstance(args, list):
-        args = ["./pox.py"] + args
+        args = ["adapters/pox/pox.py"] + args
         p = Popen(args)
     else:
         raise Exception("Invalid args format")
     start(p)
     pox.append(p)
+
 
 def kill_pox():
     global pox
@@ -147,6 +159,7 @@ def kill_pox():
     for p in pox:
         p.wait()
     pox = []
+
 
 def stop_pox():
     kill_pox()
@@ -168,8 +181,10 @@ def start_mn(args=""):
     start(p)
     mn.append(p)
 
+
 def stop_mn():
     kill_mn()
+
 
 def kill_mn():
     global mn
@@ -183,6 +198,7 @@ def kill_mn():
 def create_locals():
     l = globals()
     return l
+
 
 def create_message():
     s = "Welcome to Error Localization Tool\n"
@@ -204,6 +220,7 @@ def create_message():
     s += "\tstop_mn()\n"
     s += "\tkill_mn()\n\n"
     return s
+
 
 def cli_main():
     timer_callback()

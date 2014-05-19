@@ -21,33 +21,36 @@ import re
 import sys
 import getopt
 
-def chunks( l, n ):
-    "Divide list l into chunks of size n - thanks Stackoverflow"
-    return [ l[ i: i + n ] for i in range( 0, len( l ), n ) ]
 
-def startpings( host, targetips ):
+def chunks(l, n):
+    "Divide list l into chunks of size n - thanks Stackoverflow"
+    return [l[i: i + n] for i in range(0, len(l), n)]
+
+
+def startpings(host, targetips):
     "Tell host to repeatedly ping targets"
 
-    targetips = ' '.join( targetips )
+    targetips = ' '.join(targetips)
 
     # BL: Not sure why loopback intf isn't up!
-    host.cmd( 'ifconfig lo up' )
+    host.cmd('ifconfig lo up')
 
     # Simple ping loop
-    cmd = ( '( ping -c1 10.0.0.1 > /dev/null;'
-            ' for ip in %s; do ' % targetips +
-            '  ping -c1 $ip;'
-            ' done;'
-            ' echo Q ) &'
-            )
+    cmd = ('( ping -c1 10.0.0.1 > /dev/null;'
+           ' for ip in %s; do ' % targetips +
+           '  ping -c1 $ip;'
+           ' done;'
+           ' echo Q ) &'
+           )
     #print cmd
     '''
     print ( '*** Host %s (%s) will be pinging ips: %s' %
             ( host.name, host.IP(), targetips ) )
     '''
-    host.cmd( cmd )
+    host.cmd(cmd)
 
-def multiping( topo, chunksize, seconds):
+
+def multiping(topo, chunksize, seconds):
     "Ping subsets of size chunksize in net of size netsize"
 
     # Create network and identify subnets
@@ -58,24 +61,23 @@ def multiping( topo, chunksize, seconds):
     hosts = net.hosts
     #subnets = chunks( hosts, chunksize )
     subnets = [
-            hosts[:len(hosts)/2],
-            hosts[len(hosts)/2:]
-            ]
+        hosts[:len(hosts)/2],
+        hosts[len(hosts)/2:]
+        ]
 
     outputs = {}
     # Create polling object
-    fds = [ host.stdout.fileno() for host in hosts ]
+    fds = [host.stdout.fileno() for host in hosts]
     poller = poll()
     for fd in fds:
-        poller.register( fd, POLLIN )
+        poller.register(fd, POLLIN)
         outputs[fd] = ""
 
     # Start pings
     for i, j in [(0, 1), (1, 0)]:
-        ips = [ host.IP() for host in subnets[j] ]
+        ips = [host.IP() for host in subnets[j]]
         for host in subnets[i]:
-            startpings( host, ips )
-
+            startpings(host, ips)
 
     trans = re.compile('([0-9]+) packets transmitted')
     rec = re.compile('([0-9]+) received')
@@ -92,7 +94,7 @@ def multiping( topo, chunksize, seconds):
     while time.time() < endTime and finished < len(hosts):
         readable = poller.poll(1000)
         for fd, _mask in readable:
-            node = Node.outToNode[ fd ]
+            node = Node.outToNode[fd]
             s = node.monitor().strip()
             outputs[fd] += s
             max_index = 0
@@ -128,20 +130,24 @@ def multiping( topo, chunksize, seconds):
 
     net.stop()
 
+
 def safe_max(seq):
     if len(seq) == 0:
         return 0
     return max(seq)
+
 
 def safe_sum(seq):
     if len(seq) == 0:
         return 0
     return sum(seq)
 
+
 def avg(seq):
     if len(seq) == 0:
         return 0
     return sum(seq) / len(seq)
+
 
 class LineTopo(Topo):
     def __init__(self, k=2, h=2):
@@ -179,17 +185,20 @@ def create_topo(type="single"):
         l = type.split(',')
         return LineTopo(int(l[1]), int(l[2]))
 
-topos = {'line': (lambda(h) : LineTopo (5, h))}
+
+topos = {'line': (lambda(h): LineTopo(5, h))}
+
 
 def main():
-    setLogLevel( 'info' )
+    setLogLevel('info')
     topo = 'single,32'
     args = sys.argv[1:]
     optlist, args = getopt.getopt(args, "", ["topo="])
     for k, v in optlist:
         if k == "--topo":
             topo = v
-    multiping( topo, chunksize=4, seconds=1200 )
+    multiping(topo, chunksize=4, seconds=1200)
+
 
 if __name__ == '__main__':
     main()

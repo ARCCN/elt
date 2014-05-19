@@ -301,7 +301,7 @@ HelloMessage: Сообщить имя клиента для создания б�
 }
 
 
-EXAMPLE:
+Пример:
 
 {"name":"Proxy.FlowTable","_name":"HelloMessage"}
 
@@ -433,6 +433,52 @@ LogMessage: Сохранить сообщение об ошибке.
 	"_name":"FlowUndefined"
  },
  "_name":"LogMessage"
+}
+
+###############################################################################
+
+ReportQuery: Запросить текущее состояние отчета об ошибках.
+
+{
+ "fmt":<format>,
+ "_name":"ReportQuery"
+}
+
+<format>: "pure" | "bz2/base64"
+
+Пример:
+
+{
+ "fmt":"bz2/base64",
+ "_name":"ReportQuery"
+}
+
+###############################################################################
+
+ReportReply: Current event report.
+
+{
+ "fmt":<format>,
+ "report":<report>,
+ "_name":"ReportReply"
+}
+
+<report>:
+{
+ "<filename1>":"base64(bz2(<report1_as_string>))",
+ "<filename2>":...
+ ...
+}
+
+Пример:
+
+{
+ "fmt":"bz2/base64",
+ "report":
+ {
+    "Proxy.FlowTable.xml":"QioerenoiwJffwe=="
+ }
+ ,"_name":"ReportQuery"
 }
 
 ###############################################################################

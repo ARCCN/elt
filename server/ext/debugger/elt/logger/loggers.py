@@ -35,7 +35,7 @@ class TextLogger(object):
         pass
 
     def flushs(self):
-        return open(self.filename, "r").read()
+        return {self.filename, open(self.filename, "r").read()}
 
 
 class XmlLogger(object):
@@ -54,5 +54,5 @@ class XmlLogger(object):
             v.flush()
 
     def flushs(self):
-        return {conn_name: report.flushs() for
+        return {conn_name + ".xml": report.flushs() for
                 conn_name, report in self.conn_to_report.items()}

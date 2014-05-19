@@ -1,18 +1,22 @@
 import socket
 import time
 from ConfigParser import ConfigParser
+import bz2
+import os
+import base64
 
 from ..message_server import ClosingMessage
 from ..interaction import Instantiator, ConnectionFactory
 from ..util import app_logging
 
-from .messages import HelloMessage, LogMessage
+from .messages import HelloMessage, LogMessage, ReportQuery, ReportReply
 
 
 PORT = 5523
 ADDRESS = "0.0.0.0"
 log = app_logging.getLogger('Log Client')
 CONFIG = ["server/config/config.cfg", "config/config.cfg"]
+LOG_DIR = "data/event_logs/"
 
 
 class LogClient(object):
@@ -26,6 +30,7 @@ class LogClient(object):
 
         self.port = PORT
         self.address = ADDRESS
+        self.log_dir = LOG_DIR
 
         self.config = ConfigParser()
         log.info("Read config: %s" % (self.config.read(CONFIG)))
@@ -33,6 +38,8 @@ class LogClient(object):
             self.port = self.config.getint("log_client", "port")
         if self.config.has_option("log_client", "address"):
             self.address = self.config.get("log_client", "address")
+        if self.config.has_option("log_client", "log_dir"):
+            self.log_dir = self.config.get("log_client", "log_dir")
 
         self.name = name
         self.connection = None
@@ -72,3 +79,23 @@ class LogClient(object):
             log.info('LogClient: Unable to establish connection. ' +
                      'Try using self.reconnect()')
             return False
+
+    def save_log(self):
+        msg = self.get_log(fmt="bz2/base64")
+        if isinstance(msg.report, dict):
+            for k, v in msg.report.items():
+                open(os.path.join(self.log_dir, k), "w").write(
+                        bz2.decompress(base64.decodestring(v)))
+
+    def get_log(self, fmt="bz2/base64"):
+        self.connection.send(ReportQuery(fmt))
+        msg = None
+        while True:
+            msg = self.connection.recv()
+            if msg is not None:
+                break
+        if not isinstance(msg, ReportReply):
+            raise Exception("Unexpected report reply")
+
+        return msg
+

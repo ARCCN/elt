@@ -30,3 +30,26 @@ class LogMessage(Message):
             if isinstance(self.event, dict):
                 self.event = NetworkError()
                 self.event.__setstate__(d["event"])
+
+
+class ReportQuery(Message):
+    def __init__(self, fmt="pure"):
+        Message.__init__(self)
+        self.fmt = fmt
+
+    def __setstate__(self, d):
+        if "fmt" in d:
+            self.fmt = d["fmt"]
+
+
+class ReportReply(Message):
+    def __init__(self, report=None, fmt="pure"):
+        Message.__init__(self)
+        self.fmt = fmt
+        self.report = report
+
+    def __setstate__(self, d):
+        if "fmt" in d:
+            self.fmt = d["fmt"]
+        if "report" in d:
+            self.report = d["report"]

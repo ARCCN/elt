@@ -2,6 +2,8 @@ import time
 import sys
 import os
 from ConfigParser import ConfigParser
+import bz2
+import base64
 
 from ..message_server import PythonMessageServer
 from ..util import profile, app_logging
@@ -9,7 +11,7 @@ from ..interaction import Instantiator, ConnectionFactory
 from ..database import DatabaseClient, QueryReply
 
 from .util import FlowModInfo, RuleInfo, MessageInfo, ReQuery
-from .messages import HelloMessage, LogMessage
+from .messages import HelloMessage, LogMessage, ReportQuery, ReportReply
 from .loggers import TextLogger, XmlLogger
 
 
@@ -186,10 +188,30 @@ class LogServer(PythonMessageServer):
                 self.process_log_message(msg, con)
             elif isinstance(msg, HelloMessage):
                 self.names[con] = msg.name
+            elif isinstance(msg, ReportQuery):
+                self.send_log(msg, con)
             else:
                 raise TypeError('Unsupported message type')
         except Exception as e:
             log.debug(str(e))
+
+    def send_log(self, msg, con):
+        report = self.log.flushs()
+
+        if msg.fmt == "bz2/base64":
+            dmp = lambda s: base64.encodestring(bz2.compress(s))
+        elif msg.fmt == "pure":
+            dmp = lambda s: s
+        else:
+            con.send(ReportReply("Unknown fmt", fmt=msg.fmt))
+
+        if isinstance(report, basestring):
+            con.send(ReportReply(dmp(report), fmt=msg.fmt))
+        elif isinstance(report, dict):
+            con.send(ReportReply({k: dmp(v) for k, v in report.items()},
+                                 fmt=msg.fmt))
+        else:
+            con.send(ReportReply(dmp("Unknown report type"), fmt=msg.fmt))
 
     def _log_message(self, mid):
         """

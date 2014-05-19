@@ -130,6 +130,20 @@ EXAMPLE:
 ###############################################################################
 ###############################################################################
 
+HelloMessage: Name a client to make a more readable log.
+
+{
+ "name":<string>,
+ "_name":"HelloMessage"
+}
+
+
+EXAMPLE:
+
+{"name":"Proxy.FlowTable","_name":"HelloMessage"}
+
+###############################################################################
+
 LogMessage: Send a report about error.
 
 {

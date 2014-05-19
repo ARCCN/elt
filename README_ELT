@@ -119,4 +119,7 @@ Usage:
     python -m utility.stop_log_server
     python -m utility.stop_db_server
 
+5. Acquire current event log from Logger server:
+   python -m utility.save_log [directory_to_save_log_files, default: data/event_logs/]
+
 Or you can just run scripts/elt_scripts/stress_test.sh (needs sudo for Mininet).

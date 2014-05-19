@@ -1,4 +1,4 @@
-from ext.debugger.elt import LogServer
+from ext.debugger.elt.logger.log_server import LogServer
 import time
 
 server = LogServer()

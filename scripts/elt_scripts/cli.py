@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-from ext.debugger.elt import db_cli
+from ext.debugger.elt.database import db_cli
 from subprocess import Popen
 import sys
 import code

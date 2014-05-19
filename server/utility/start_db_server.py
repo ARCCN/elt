@@ -1,4 +1,4 @@
-from ext.debugger.elt import DatabaseServer
+from ext.debugger.elt.database import DatabaseServer
 import time
 
 server = DatabaseServer()

@@ -1,4 +1,4 @@
-from ext.debugger.elt import LogClient
+from ext.debugger.elt.logger import LogClient
 
 c = LogClient(connect=False)
 c.reconnect()

@@ -1,5 +1,5 @@
 import sys
-from ext.debugger.elt import LogClient
+from ext.debugger.elt.logger import LogClient
 
 c = LogClient(connect=True)
 if len(sys.argv) > 1:

@@ -3,7 +3,7 @@
 import sys
 sys.path.append("server/")
 
-from server.ext.debugger.elt import db_cli
+from server.ext.debugger.elt.database import db_cli
 from subprocess import Popen
 import code
 import os

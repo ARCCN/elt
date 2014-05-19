@@ -1,4 +1,4 @@
-from ext.debugger.elt import DatabaseClient
+from ext.debugger.elt.database import DatabaseClient
 
 c = DatabaseClient(connect=False)
 c.reconnect()

@@ -15,6 +15,9 @@ log = app_logging.getLogger('Connection')
 
 
 def _get_dict(obj):
+    """
+    Call __getstate__ or simply return __dict__.
+    """
     if hasattr(obj, "__getstate__"):
         r = obj.__getstate__()
     else:
@@ -23,6 +26,11 @@ def _get_dict(obj):
 
 
 class JSONPickler(object):
+    """
+    Class to dump/load our messages in JSON.
+    Supports file-like objects as input for load.
+    Dumps only to strings.
+    """
     def __init__(self, hook=instantiate):
         self.hook = hook
 
@@ -166,6 +174,9 @@ class TimeoutException(Exception):
 
 
 class ConnectionFactory(object):
+    """
+    Creates connections with given loader/dumper.
+    """
     def __init__(self, pickler=None, instantiator=None):
         if pickler is None:
             if instantiator is None:
@@ -194,6 +205,9 @@ class SimpleConnection(object):
         self.dumps = dumps
 
     def send(self, obj):
+        """
+        Encode and send an object.
+        """
         if self.dead:
             raise EOFError('Socket is closed')
         d = None
@@ -213,6 +227,10 @@ class SimpleConnection(object):
             raise TimeoutException()
 
     def recv(self):
+        """
+        Read everything from socket.
+        Try to decode 1 object and return it.
+        """
         while True:
             r = []
             w = []
@@ -245,6 +263,10 @@ class SimpleConnection(object):
                 return obj
 
     def recv_all(self):
+        """
+        Read everything from socket.
+        Try to decode all objects and return them as list.
+        """
         objs = []
         buffers = []
         while not self.dead:
@@ -283,9 +305,15 @@ class SimpleConnection(object):
                 objs.append(obj)
 
     def close(self):
+        """
+        Disconnect.
+        """
         self.socket.close()
 
     def readable(self, timeout):
+        """
+        Can we read?
+        """
         self.buffer.append("")
         if len(self.buffer) > 0:
             return True
@@ -294,14 +322,23 @@ class SimpleConnection(object):
         return False
 
     def writeable(self, timeout):
+        """
+        Can we write?
+        """
         if len(select.select([], [self.socket], [], timeout)[1]) > 0:
             return True
         return False
 
     def error(self, timeout):
+        """
+        Can we receive an error?
+        """
         if len(select.select([], [], [self.socket], timeout)[2]) > 0:
             return True
         return False
 
     def fileno(self):
+        """
+        Underlying socket.
+        """
         return self.socket.fileno()

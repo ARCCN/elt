@@ -66,6 +66,9 @@ class MessageInfo(object):
         self.code[qid] = code
 
     def filled(self):
+        """
+        Have we received all the necessary information for this message?
+        """
         filled = (self.unanswered == 0)
         if filled:
             for i, qid in enumerate(self.qids):
@@ -115,6 +118,9 @@ class MessageInfo(object):
         return text
 
     def get_data(self):
+        """
+        Return [(info, code),...]
+        """
         res = []
         for qid in self.qids:
             res.append((self.infos[qid], self.code[qid]))

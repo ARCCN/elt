@@ -17,6 +17,9 @@ def multiwordReplace(text, wordDic):
 
 
 class XmlMatch(ET.Element):
+    """
+    XML representation of ofp_match.
+    """
     def __init__(self, match):
         ET.Element.__init__(self, 'match')
         for k in ["wildcards", "in_port", "dl_src", "dl_dst",
@@ -29,6 +32,9 @@ class XmlMatch(ET.Element):
 
 
 class XmlCode(ET.Element):
+    """
+    XML representation of call stacks.
+    """
     def __init__(self, code):
         ET.Element.__init__(self, 'code')
         for t, call_stack in code:
@@ -56,6 +62,9 @@ class XmlCode(ET.Element):
 
 
 class XmlAction(ET.Element):
+    """
+    XML representation of ofp_action.
+    """
     def __init__(self, action):
         s = of.ofp_action_type_map[action.type]
         ET.Element.__init__(self, s)
@@ -66,6 +75,9 @@ class XmlAction(ET.Element):
 
 
 class XmlActions(ET.Element):
+    """
+    XML representation of list of ofp_action.
+    """
     def __init__(self, actions):
         ET.Element.__init__(self, 'actions')
         for action in actions:
@@ -73,6 +85,9 @@ class XmlActions(ET.Element):
 
 
 class XmlFlowMod(ET.Element):
+    """
+    XML representation of ofp_flow_mod
+    """
     def __init__(self, flow_mod):
         ET.Element.__init__(self, 'ofp_flow_mod')
         self.set_fields(flow_mod)
@@ -93,6 +108,9 @@ class XmlFlowMod(ET.Element):
 
 
 class XmlRule(XmlFlowMod):
+    """
+    XML representation of switch table rule.
+    """
     def __init__(self, rule):
         ET.Element.__init__(self, 'rule')
         self.set_fields(rule)
@@ -100,7 +118,7 @@ class XmlRule(XmlFlowMod):
 
 class XmlInfo(ET.Element):
     """
-    FlowMod/Rule + Code
+    XML representation of FlowMod/Rule + Code
     """
     def __init__(self, info, code):
         ET.Element.__init__(self, 'entry')
@@ -119,6 +137,9 @@ class XmlInfo(ET.Element):
 
 
 class XmlEntryGroup(ET.Element):
+    """
+    XML representation of EntryGroup.
+    """
     def __init__(self, entry_group, children):
         ET.Element.__init__(self, "entry_group")
         name = ET.Element("name")
@@ -131,6 +152,9 @@ class XmlEntryGroup(ET.Element):
 
 
 class XmlEvent(ET.Element):
+    """
+    XML representation of NetworkError.
+    """
     def __init__(self, minfo):
         ET.Element.__init__(self, "event")
         name = ET.Element("name")
@@ -149,13 +173,19 @@ class XmlEvent(ET.Element):
 
 
 class XmlReport(object):
-
+    """
+    Report for messages from one source (conn_name).
+    Writes to filename.
+    """
     def __init__(self, filename, conn_name):
         self.filename = filename
         self.conn_name = conn_name
         self.clear()
 
     def clear(self):
+        """
+        Remove collected information.
+        """
         self.result = ET.Element('client')
         name = ET.Element('name')
         name.text = self.conn_name
@@ -164,12 +194,18 @@ class XmlReport(object):
         self.events = {}
 
     def flush(self, name=None):
+        """
+        Save report to file.
+        """
         if name is None:
             name = self.filename
         with open(name, 'w') as f:
             f.write(self.flushs())
 
     def flushs(self):
+        """
+        Save report to string.
+        """
         subelements = []
         for s, e in self.events.items():
             tmp = list(e)
@@ -194,6 +230,10 @@ class XmlReport(object):
         return report
 
     def add_event(self, minfo):
+        """
+        Save report to memory.
+        Doesn't write anywhere before flush().
+        """
         s = minfo.event.name
         if s == "":
             s = "Empty"

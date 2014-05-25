@@ -33,6 +33,9 @@ class LogMessage(Message):
 
 
 class ReportQuery(Message):
+    """
+    Request log files encoded into specific format.
+    """
     def __init__(self, fmt="pure"):
         Message.__init__(self)
         self.fmt = fmt
@@ -43,6 +46,9 @@ class ReportQuery(Message):
 
 
 class ReportReply(Message):
+    """
+    Return log files encoded into specific format.
+    """
     def __init__(self, report=None, fmt="pure"):
         Message.__init__(self)
         self.fmt = fmt

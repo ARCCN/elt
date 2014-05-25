@@ -9,6 +9,9 @@ def show_entry(entry):
 
 
 class Entry(object):
+    """
+    FlowMod/Rule + dpid of target switch.
+    """
     def __init__(self, data=None, dpid=None):
         self.data = data
         self.dpid = dpid
@@ -37,6 +40,9 @@ class Entry(object):
 
 
 class EntryGroup(object):
+    """
+    Group of entries with name and description.
+    """
     def __init__(self, name="", desc="", entries=None):
         self.name = name
         self.desc = desc

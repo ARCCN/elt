@@ -78,6 +78,9 @@ class RuleQuery(Message):
 
 
 class QueryReply(Message):
+    """
+    Call stack for FM/Rule.
+    """
     def __init__(self, code=None, qid=-1):
         Message.__init__(self)
         self.code = code

@@ -15,6 +15,9 @@ log = app_logging.getLogger('Connection')
 
 
 def _get_dict(obj):
+    """
+    Call __getstate__ or simply return __dict__.
+    """
     if hasattr(obj, "__getstate__"):
         r = obj.__getstate__()
     else:
@@ -23,6 +26,11 @@ def _get_dict(obj):
 
 
 class JSONPickler(object):
+    """
+    Class to dump/load our messages in JSON.
+    Supports file-like objects as input for load.
+    Dumps only to strings.
+    """
     def __init__(self, hook=instantiate):
         self.hook = hook
 
@@ -283,9 +291,15 @@ class SimpleConnection(object):
                 objs.append(obj)
 
     def close(self):
+        """
+        Disconnect.
+        """
         self.socket.close()
 
     def readable(self, timeout):
+        """
+        Can we read?
+        """
         self.buffer.append("")
         if len(self.buffer) > 0:
             return True
@@ -294,14 +308,23 @@ class SimpleConnection(object):
         return False
 
     def writeable(self, timeout):
+        """
+        Can we write?
+        """
         if len(select.select([], [self.socket], [], timeout)[1]) > 0:
             return True
         return False
 
     def error(self, timeout):
+        """
+        Can we receive an error?
+        """
         if len(select.select([], [], [self.socket], timeout)[2]) > 0:
             return True
         return False
 
     def fileno(self):
+        """
+        Underlying socket.
+        """
         return self.socket.fileno()

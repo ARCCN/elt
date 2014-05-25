@@ -57,6 +57,9 @@ class LogClient(object):
         self.connection = None
 
     def log_event(self, event):
+        """
+        Send a message about event to Log Server.
+        """
         if not self.connection:
             raise EOFError('LogClient: Connection closed')
         try:
@@ -66,6 +69,9 @@ class LogClient(object):
                      ' Try using self.reconnect()')
 
     def reconnect(self):
+        """
+        Try to reconnect to Log Server.
+        """
         try:
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             s.connect((self.address, self.port))
@@ -81,13 +87,24 @@ class LogClient(object):
             return False
 
     def save_log(self):
+        """
+        Receive log file(-s) from Log Server.
+        Save them to self.log_dir.
+        """
         msg = self.get_log(fmt="bz2/base64")
         if isinstance(msg.report, dict):
             for k, v in msg.report.items():
-                open(os.path.join(self.log_dir, k), "w").write(
-                    bz2.decompress(base64.decodestring(v)))
+                try:
+                    open(os.path.join(self.log_dir, k), "w").write(
+                        bz2.decompress(base64.decodestring(v)))
+                except Exception as e:
+                    log.warning("Unable to save log files:\n%s" % e)
 
     def get_log(self, fmt="bz2/base64"):
+        """
+        Receive log file(-s) from Log Server.
+        Return ReportReply message.
+        """
         self.connection.send(ReportQuery(fmt))
         msg = None
         while True:

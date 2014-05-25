@@ -7,6 +7,9 @@ log = app_logging.getLogger("Instantiate")
 
 
 class Instantiator(object):
+    """
+    Store module and attribure to instantiate objects.
+    """
     def __init__(self, module=__name__, cls_param='_name'):
         self.module = module
         self.cls_param = cls_param
@@ -16,6 +19,10 @@ class Instantiator(object):
 
 
 def instantiate(d, module=__name__, cls_param='_name'):
+    """
+    Try to get from @module a class named @cls_param.
+    Them instantiate this class and fill it from d.
+    """
     obj = None
     try:
         c = d[cls_param]

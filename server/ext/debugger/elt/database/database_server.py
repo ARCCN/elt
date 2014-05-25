@@ -24,6 +24,7 @@ class DatabaseServer(PythonMessageServer):
         """
         We want to wait 0.0s each turn.
         Every turn we process BUFFER_SIZE messages.
+        Read config, clear stats, run server cycle.
         """
         self.db = Database(**kw)
         self._clear_stats()
@@ -66,7 +67,7 @@ class DatabaseServer(PythonMessageServer):
 
     def close(self):
         """
-        We have to flush pending messages before closing.
+        We have to flush pending messages before shutting down.
         """
         while self.check_waiting_messages() is True:
             pass

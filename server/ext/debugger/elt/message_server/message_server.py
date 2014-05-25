@@ -58,6 +58,11 @@ class PythonMessageServer(object):
         self.run()
 
     def dummy_select(self, r, w, e, cooldown):
+        """
+        We have to read from buffers on connections even if there is no
+        data waiting in sockets. Thus we implement simple logic
+        on top of select().
+        """
         cd = 1.0 * cooldown / (len(r) + len(w) + len(e))
         rd = []
         wr = []
@@ -82,6 +87,9 @@ class PythonMessageServer(object):
         return (rd, wr, er)
 
     def run(self):
+        """
+        Start server on given port. Accept connection, read imcoming messages.
+        """
         self.sockets = []
         listener = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.listener = listener
@@ -167,6 +175,9 @@ class PythonMessageServer(object):
                     log.debug(str(e))
 
     def remove_connection(self, con):
+        """
+        Remove and close connection.
+        """
         try:
             self.sockets.remove(con)
             con.close()
@@ -174,6 +185,9 @@ class PythonMessageServer(object):
             pass
 
     def add_connection(self, skt):
+        """
+        Wrap and add connection.
+        """
         c = self.connection_factory.create_connection(skt)
         if self.last_socket_first:
             self.sockets.insert(0, c)
@@ -203,9 +217,17 @@ class PythonMessageServer(object):
                 del self.clients[con]
 
     def check_waiting_messages(self):
+        """
+        Reimplement!
+        Read enqueued messages.
+        """
         return True
 
     def process_message(self, msg, con):
+        """
+        Reimplement!
+        Process a message from queue.
+        """
         pass
 
     def process_object(self, obj, con):

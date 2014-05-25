@@ -27,17 +27,17 @@ for iter in "";
 do
     log="stress_test$iter.log"
     touch $log
-    for size in 16;
+    for size in 8 16 32 64;
     do
         echo "*******" >> $log
         echo $size >> $log
         echo "*******" >> $log
-        for len in 3;
+        for len in 1 2 3 4 5;
         do
             echo ------- >> $log
             echo $len >> $log
             echo ------- >> $log
-            for i in 0.5;
+            for i in no 0.0 0.01 0.1 0.5;
             do
                 run_term $terminal 'python -m server.utility.start_db_server'
                 db_pid=$!

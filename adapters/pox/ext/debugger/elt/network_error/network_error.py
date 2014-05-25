@@ -16,6 +16,7 @@ data: ofp_flow_mod | ofp_rule
 
 class NetworkError(Event):
     """
+    Common ancestor for all errors processed by our system.
     Provides unpacking by name.
     """
     def __init__(self):

@@ -32,12 +32,18 @@ class TableCache(object):
     """
 
     def __init__(self, size=1000):
+        """
+        Create a cache of given maximum size.
+        """
         self.size = size
         self.dict = LimitedSizeDict(size_limit=size)
         self.hit = 0
         self.miss = 0
 
     def find(self, key):
+        """
+        Find value by key.
+        """
         x = self.dict.get(self.convert_key(key))
         if x is None:
             self.miss += 1
@@ -46,6 +52,9 @@ class TableCache(object):
         return x
 
     def add(self, key, value):
+        """
+        Insert value by key.
+        """
         self.dict[self.convert_key(key)] = value
 
     def convert_key(self, key):
@@ -53,6 +62,8 @@ class TableCache(object):
         We only need to reimplement this function
         to produce a right key from parameter.
         It is applied to all the input keys.
+        After applying this function, the keys must be correctly comparable.
+        e.g. classes are not, but tuples are.
         """
         return key
 

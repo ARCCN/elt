@@ -2,6 +2,10 @@ import struct
 
 from pox.lib.addresses import EthAddr, IPAddr
 
+"""
+Utility to convert MAC and IP to/from integers.
+"""
+
 
 def eth_to_int(addr):
     if not isinstance(addr, EthAddr):

@@ -93,6 +93,12 @@ class LogServer(PythonMessageServer):
         self.empty_response = 0
 
     def close(self):
+        """
+        Process enqueued messages.
+        Close all connections and read replies until there are no
+        pending requests.
+        Flush log files to disk. Shut down.
+        """
         while self.enqueue and self.check_waiting_messages() is True:
             pass
         for s in self.sockets:
@@ -105,6 +111,9 @@ class LogServer(PythonMessageServer):
         sys.exit(0)
 
     def flush_stats(self):
+        """
+        Save execution stats to log file.
+        """
         f = open('LogServer.stats', 'w')
         f.write('Received  %06d messages\n' % self.received)
         f.write('Of them   %06d events\n' % self.events)
@@ -183,6 +192,9 @@ class LogServer(PythonMessageServer):
         self._send_queries(buffer)
 
     def process_message(self, msg, con):
+        """
+        Call correct handler for this message.
+        """
         try:
             if isinstance(msg, LogMessage):
                 self.process_log_message(msg, con)
@@ -196,6 +208,10 @@ class LogServer(PythonMessageServer):
             log.debug(str(e))
 
     def send_log(self, msg, con):
+        """
+        Send log report(-s) to client.
+        Encode it into format requested.
+        """
         report = self.log.flushs()
 
         if msg.fmt == "bz2/base64":
@@ -249,6 +265,12 @@ class LogServer(PythonMessageServer):
         return self.last_qid
 
     def process_query_reply(self, res):
+        """
+        Save information acquired from Database Server
+        to temporary storage.
+        When all the information for this message is received,
+        save it to file.
+        """
         code = res.code
         qid = res.qid
         mid = self.qid_mid.get(qid, None)

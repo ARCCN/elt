@@ -16,6 +16,9 @@ class FilterLevel(object):
 
 
 def getLogger(name):
+    """
+    Custom format for different log levels.
+    """
     log = logging.getLogger(name)
     log.setLevel(logging.DEBUG)
     hnd2 = logging.StreamHandler(sys.stdout)

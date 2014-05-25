@@ -3,6 +3,10 @@ from pox.lib.addresses import IPAddr, EthAddr
 
 
 def instantiate_fm_or_rule(d):
+    """
+    Instantiate FM or Rule chosen by d[name].
+    Then fill it with d.
+    """
     if "name" not in d:
         return None
     if d["name"] == "ofp_flow_mod":
@@ -77,6 +81,9 @@ class ofp_flow_mod(of.ofp_flow_mod):
 
 
 class ofp_rule(ofp_flow_mod):
+    """
+    Rule is much like FlowMod but doesn't contain command.
+    """
     def __init__(self, match=None, actions=None, priority=None):
         ofp_flow_mod.__init__(self, match=match, actions=actions,
                               priority=priority)
@@ -98,6 +105,9 @@ class ofp_rule(ofp_flow_mod):
 
 
 class ofp_match(of.ofp_match):
+    """
+    Used to encode fields to text.
+    """
     def __init__(self, m=None):
         if m is None:
             of.ofp_match.__init__(self)
@@ -145,6 +155,8 @@ class ofp_match(of.ofp_match):
 def ofp_action(d):
     """
     Action factory.
+    Creates action object with appropriate type.
+    Fills it with d.
     """
     cls = of._action_type_to_class[d["type"]]
     act = cls()

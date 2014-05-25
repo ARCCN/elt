@@ -35,6 +35,9 @@ class Database(object):
     DICTIONARY = 1
 
     def __init__(self):
+        """
+        Read configs and connect to MySQL.
+        """
         self._set_defaults()
         self._read_config()
         self._clear_stats()
@@ -77,6 +80,9 @@ class Database(object):
 # Public interfaces
 
     def connect(self):
+        """
+        Connect to MySQL with given connection parameters.
+        """
         try:
             self.con = mdb.connect(self.domain, self.user,
                                    self.password, self.table_name)
@@ -89,6 +95,9 @@ class Database(object):
             return False
 
     def create_tables(self):
+        """
+        Default table structure.
+        """
         if self.con:
             cur = self._get_cursor()
             cur._defer_warnings = True
@@ -116,11 +125,17 @@ class Database(object):
             pass
 
     def disconnect(self):
+        """
+        Close connection to MySQL.
+        """
         if self.con:
             self.con.close()
             self.con = None
 
     def flush_stats(self):
+        """
+        Write execution stats to log file.
+        """
         f = open('Database.stats', 'w')
         caches = [self.actions, self.code_entries, self.action_patterns,
                   self.code_patterns, self.params, self.matches]
@@ -554,8 +569,6 @@ class Database(object):
                     of.OFPFW_NW_DST_MASK,
                     match.wildcards & of.OFPFW_NW_DST_MASK)
                 # Force to use index.
-                # TODO: nw_src, nw_dst lookup is incorrect.
-                #       we have to match by mask.
                 for f in ["in_port", "dl_src", "dl_dst", "dl_vlan",
                           "dl_vlan_pcp", "dl_type", "nw_tos", "nw_proto",
                           "nw_src", "nw_dst", "tp_src", "tp_dst"]:

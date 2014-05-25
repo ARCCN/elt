@@ -75,6 +75,9 @@ class DatabaseClient(object):
                 raise
 
     def close(self):
+        """
+        Send a message for server to shut down. Close connection.
+        """
         self.connection.send(ClosingMessage())
         self.connection.close()
         self.connection = None
@@ -98,6 +101,9 @@ class DatabaseClient(object):
         return self.query(RuleQuery(dpid, rule))
 
     def query(self, msg, async=False):
+        """
+        Query the Database Server. Wait for response if not async.
+        """
         if not self.connection:
             raise EOFError('DBClient: Connection closed')
         try:
@@ -131,6 +137,9 @@ class DatabaseClient(object):
         return self.query(RuleQuery(dpid, rule, qid), async=True)
 
     def reconnect(self):
+        """
+        Try to reconnect to Database server.
+        """
         try:
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             s.connect((self.address, self.port))

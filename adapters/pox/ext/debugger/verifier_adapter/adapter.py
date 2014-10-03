@@ -3,10 +3,21 @@ from ext.debugger.elt.network_error import NetworkError, Entry, EntryGroup
 import pox.openflow.libopenflow_01 as of
 from pox.openflow.of_01 import unpackers
 
+
+class Policy(object):
+    def __init__(self, buf=None):
+        self.buf = buf
+
+    def __str__(self):
+        if self.buf == "" or self.buf is None:
+            return "n/d"
+        return str(self.buf)
+
+
 class PolicyViolation(NetworkError):
-    def __init__(self, ofp, dpid):
+    def __init__(self, ofp, dpid, policy):
         NetworkError.__init__(self)
-        self.desc = "Verifier policy violation"
+        self.desc = "Verifier policy: %s" % str(policy)
         entries = [Entry(ofp, dpid)]
         self.entry_groups.append(EntryGroup("Faulty rule", entries=entries))
 
@@ -22,7 +33,7 @@ class Adapter(object):
 
         # from openflow.of_01
 
-        buf = event.ofp
+        buf = event.ofp.data
         offset = 0
         ofp_type = ord(buf[offset+1])
         if ord(self.buf[offset]) != of.OFP_VERSION:
@@ -34,9 +45,11 @@ class Adapter(object):
                       % (ord(buf[offset]), event.connection))
             return False # Throw connection away
 
-        _,ofp = unpackers[ofp_type](self.buf, offset)
+        offset,ofp = unpackers[ofp_type](self.buf, offset)
+        policy = Policy(buf[offset:])
 
         if ofp_type == of.OFPT_FLOW_MOD:
-            error = PolicyViolation(ofp, event.dpid)
+            error = PolicyViolation(ofp, event.dpid, policy)
             self.log.log_event(error)
+
 

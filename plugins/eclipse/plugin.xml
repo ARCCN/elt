@@ -3,25 +3,25 @@
 <plugin>
    <extension
 	      id="elt.eltview"
-	      name="ELT View"
+	      name="%extension.name"
 	      point="org.eclipse.ui.views">
 	  <view
-	         name="Log Viewer"
+	         name="%view.name"
 	         class="elt.ELTView"
 	         id="elt.ELTView">
 	  </view>
 	  <view
-	         name="Event Viewer"
+	         name="%view.name.0"
 	         class="elt.EventView"
 	         id="elt.EventView">
 	  </view>
 	  <view
-	         name="Data Viewer"
+	         name="%view.name.1"
 	         class="elt.DataView"
 	         id="elt.DataView">
 	  </view>
 	  <view
-	         name="Code Viewer"
+	         name="%view.name.2"
 	         class="elt.CodeView"
 	         id="elt.CodeView">
 	  </view>

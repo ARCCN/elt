@@ -89,11 +89,11 @@ public class EventView extends ViewPart {
 			try {
 				CodeView view = (CodeView)PlatformUI.getWorkbench().
 						getActiveWorkbenchWindow().getActivePage().
-						showView("elt.CodeView");
+						showView("org.eclipse.ui.elt.CodeView");
 				view.setCodeViewerInput(null);
 				DataView dview = (DataView)PlatformUI.getWorkbench().
 						getActiveWorkbenchWindow().getActivePage().
-						showView("elt.DataView");
+						showView("org.eclipse.ui.elt.DataView");
 				dview.setDataViewerInput(null);
 			}
 			catch(Exception e) {

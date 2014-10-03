@@ -135,7 +135,7 @@ public class ELTView extends ViewPart {
 		try {
 			EventView view = (EventView)PlatformUI.getWorkbench().
 				getActiveWorkbenchWindow().getActivePage().
-				showView("elt.EventView");
+				showView("org.eclipse.ui.elt.EventView");
 			view.setEventViewerInput(null);
 		}
 		catch(Exception e) {

@@ -18,11 +18,11 @@ public class EntrySelectionListener implements ISelectionChangedListener {
 					try {
 						CodeView cview = (CodeView)PlatformUI.getWorkbench().
 							getActiveWorkbenchWindow().getActivePage().
-							showView("elt.CodeView");
+							showView("org.eclipse.ui.elt.CodeView");
 						cview.setCodeViewerInput(Util.getChild(node, "code"));
 						DataView dview = (DataView)PlatformUI.getWorkbench().
 								getActiveWorkbenchWindow().getActivePage().
-								showView("elt.DataView");
+								showView("org.eclipse.ui.elt.DataView");
 						Node data = Util.getChild(node, "ofp_flow_mod");
 						if (data == null) {
 							data = Util.getChild(node, "rule");
@@ -36,11 +36,11 @@ public class EntrySelectionListener implements ISelectionChangedListener {
 					try {
 						CodeView cview = (CodeView)PlatformUI.getWorkbench().
 							getActiveWorkbenchWindow().getActivePage().
-							showView("elt.CodeView");
+							showView("org.eclipse.ui.elt.CodeView");
 						cview.setCodeViewerInput(null);
 						DataView dview = (DataView)PlatformUI.getWorkbench().
 								getActiveWorkbenchWindow().getActivePage().
-								showView("elt.DataView");
+								showView("org.eclipse.ui.elt.DataView");
 						dview.setDataViewerInput(null);
 					}
 					catch(Exception e) {e.printStackTrace();}

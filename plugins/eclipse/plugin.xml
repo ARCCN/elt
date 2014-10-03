@@ -3,55 +3,66 @@
 <plugin>
    <extension
 	      id="elt.eltview"
-	      name="ELT View"
+	      name="%extension.name"
 	      point="org.eclipse.ui.views">
 	  <view
-	         name="Log Viewer"
+	         name="%view.name"
 	         class="elt.ELTView"
-	         id="elt.ELTView">
+	         id="org.eclipse.ui.elt.ELTView">
 	  </view>
 	  <view
-	         name="Event Viewer"
+	         name="%view.name.0"
 	         class="elt.EventView"
-	         id="elt.EventView">
+	         id="org.eclipse.ui.elt.EventView">
 	  </view>
 	  <view
-	         name="Data Viewer"
+	         name="%view.name.1"
 	         class="elt.DataView"
-	         id="elt.DataView">
+	         id="org.eclipse.ui.elt.DataView">
 	  </view>
 	  <view
-	         name="Code Viewer"
+	         name="%view.name.2"
 	         class="elt.CodeView"
-	         id="elt.CodeView">
+	         id="org.eclipse.ui.elt.CodeView">
 	  </view>
    </extension>
+   
    <extension
          point="org.eclipse.ui.perspectiveExtensions">
       <perspectiveExtension
             targetID="*">
             <view
-                  id="elt.ELTView"
+                  id="org.eclipse.ui.elt.ELTView"
                   relative="org.eclipse.ui.navigator.ProjectExplorer"
                   relationship="stack">
 	  		</view>
 	  		<view
-		           id="elt.EventView"
+		           id="org.eclipse.ui.elt.EventView"
 		           ratio="0.65"
 		           relationship="bottom"
 		           relative="elt.ELTView">
 	  		</view>
 	  		<view
-		           id="elt.DataView"
+		           id="org.eclipse.ui.elt.DataView"
 		           ratio="0.5"
 		           relationship="right"
 		           relative="elt.ELTView">
 	  		</view>
 	  		<view
-                  id="elt.CodeView"
+                  id="org.eclipse.ui.elt.CodeView"
                   relative="org.eclipse.ui.console.ConsoleView"
                   relationship="stack">
 	  		</view>
       </perspectiveExtension>
+   </extension>
+   
+   <extension
+         point="org.eclipse.ui.perspectives">
+      <perspective
+            class="elt.ErrorPerspective"
+            fixed="false"
+            id="org.eclipse.ui.elt.ErrorPerspective"
+            name="%perspective.name">
+      </perspective>
    </extension>
 </plugin>

@@ -18,7 +18,7 @@ public class EventSelectionListener implements ISelectionChangedListener {
 					try {
 						EventView view = (EventView)PlatformUI.getWorkbench().
 							getActiveWorkbenchWindow().getActivePage().
-							showView("elt.EventView");
+							showView("org.eclipse.ui.elt.EventView");
 						view.setEventViewerInput(node);
 					}
 					catch(Exception e) {e.printStackTrace();}
@@ -28,7 +28,7 @@ public class EventSelectionListener implements ISelectionChangedListener {
 					try {
 						EventView view = (EventView)PlatformUI.getWorkbench().
 							getActiveWorkbenchWindow().getActivePage().
-							showView("elt.EventView");
+							showView("org.eclipse.ui.elt.EventView");
 						view.setEventViewerInput(null);
 					}
 					catch(Exception e) {e.printStackTrace();}

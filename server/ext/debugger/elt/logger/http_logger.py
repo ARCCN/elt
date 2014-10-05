@@ -43,7 +43,7 @@ class HttpLogger(BaseLogger):
         self.server = tornado.httpserver.HTTPServer(self.application)
         self.run()
 
-    def run(self)
+    def run(self):
         self.server.listen(self.port)
         tornado.ioloop.IOLoop.instance().start()
 

@@ -13,6 +13,7 @@ from ..database import DatabaseClient, QueryReply
 from .util import FlowModInfo, RuleInfo, MessageInfo, ReQuery
 from .messages import HelloMessage, LogMessage, ReportQuery, ReportReply
 from .loggers import TextLogger, XmlLogger
+from .http_logger import HttpLogger
 
 
 BUFFER_SIZE = 10
@@ -38,7 +39,8 @@ class LogServer(PythonMessageServer):
         self.db_client = DatabaseClient(mode='rw')
         if logger is None:
             # self.log = TextLogger(os.path.join(self.log_dir, log_file))
-            self.log = XmlLogger(self.log_dir)
+            # self.log = XmlLogger(self.log_dir)
+            self.log = HttpLogger(8080)
         else:
             self.log = logger
 

@@ -1,8 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
+	<classpathentry exported="true" kind="lib" path="jetty/plugins/org.eclipse.jetty.util_9.2.3.v20140905.jar"/>
 	<classpathentry exported="true" kind="lib" path="bin/"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.6"/>
 	<classpathentry kind="con" path="org.eclipse.pde.core.requiredPlugins"/>
 	<classpathentry kind="src" path="src"/>
+	<classpathentry kind="lib" path="jetty/plugins/org.eclipse.jetty.websocket.api_9.2.3.v20140905.jar"/>
+	<classpathentry kind="lib" path="jetty/plugins/org.eclipse.jetty.websocket.client_9.2.3.v20140905.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

@@ -11,7 +11,6 @@ import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 
 
-
 @WebSocket
 public class WSocket {
 	private final CountDownLatch closeLatch;
@@ -19,6 +18,7 @@ public class WSocket {
     @SuppressWarnings("unused")
     private Session session;
     protected IStringReceiver receiver;
+    public boolean connected = false;
     
     public WSocket(IStringReceiver receiver) {
         this.closeLatch = new CountDownLatch(1);
@@ -34,24 +34,29 @@ public class WSocket {
         //System.out.printf("Connection closed: %d - %s%n", statusCode, reason);
         this.session = null;
         this.closeLatch.countDown();
+        this.connected = false;
     }
  
     @OnWebSocketConnect
     public void onConnect(Session session) {
         System.out.printf("Got connect: %s%n", session);
         this.session = session;
+        this.connected = true;
+        /*
         try {
-        	/*
+        	
             Future<Void> fut;
             fut = session.getRemote().sendStringByFuture("Hello");
             fut.get(2, TimeUnit.SECONDS);
             fut = session.getRemote().sendStringByFuture("Thanks for the conversation.");
             fut.get(2, TimeUnit.SECONDS);
-            session.close(StatusCode.NORMAL, "I'm done");
-            */
+            
+            //session.close(StatusCode.NORMAL, "I'm done");
+            
         } catch (Throwable t) {
             t.printStackTrace();
         }
+        */
     }
  
     @OnWebSocketMessage

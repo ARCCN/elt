@@ -13,4 +13,9 @@ Require-Bundle: org.eclipse.ui,
 Bundle-RequiredExecutionEnvironment: JavaSE-1.7
 Import-Package: org.eclipse.ui.ide
 Export-Package: elt
-Bundle-ClassPath: bin/
+Bundle-ClassPath: bin/,
+ jetty/plugins/org.eclipse.jetty.websocket.api_9.2.3.v20140905.jar,
+ jetty/plugins/org.eclipse.jetty.websocket.client_9.2.3.v20140905.jar,
+ jetty/plugins/org.eclipse.jetty.websocket.common_9.2.3.v20140905.jar,
+ jetty/plugins/org.eclipse.jetty.util_9.2.3.v20140905.jar,
+ jetty/plugins/org.eclipse.jetty.io_9.2.3.v20140905.jar

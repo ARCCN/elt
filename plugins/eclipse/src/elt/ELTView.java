@@ -1,9 +1,17 @@
 package elt;
 
 import java.io.File;
+import java.io.IOException;
+import java.net.URI;
 import java.util.ArrayList;
+import java.util.concurrent.TimeUnit;
+
 import javax.swing.JFileChooser;
 import javax.swing.filechooser.FileFilter;
+import javax.xml.parsers.ParserConfigurationException;
+
+import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
+import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jface.action.Action;
 import org.eclipse.jface.action.IMenuListener;
 import org.eclipse.jface.action.IMenuManager;
@@ -16,16 +24,18 @@ import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.part.ViewPart;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
+import org.xml.sax.SAXException;
 
-public class ELTView extends ViewPart {
+public class ELTView extends ViewPart implements IStringReceiver {
 
 	protected TreeViewer treeViewer;
 	protected XMLLabelProvider labelProvider;
 	protected XMLContentProvider contentProvider;
 	protected TreeViewer eventViewer;
-	protected Action openFolderAction;
+	protected Action openFolderAction, openConnectionAction;
 	protected Document root;
 	protected String defaultPath = null;
+	protected String defaultServer = null;
 	
 	@Override
 	public void createPartControl(Composite parent) {
@@ -56,7 +66,6 @@ public class ELTView extends ViewPart {
 		// Create menu, toolbars, filters, sorters.
 		createActions();
 		createToolbar();
-		//resetViewer(getInitialInput());
 	}
 
 
@@ -77,6 +86,45 @@ public class ELTView extends ViewPart {
 				openXmlFolder();
 			}
 		};
+		openConnectionAction = new Action("Connect to logging server") {
+			public void run() {
+				openXmlConnection();
+			}
+		};
+	}
+	
+	protected void openXmlConnection() {
+		//TODO: FIX! Server address dialog.
+		String destUri = "ws://127.0.0.1:8080";
+		WebSocketClient client = new WebSocketClient();
+		WSocket socket = new WSocket(this);
+		try {
+            client.start();
+            URI echoUri = new URI(destUri);
+            ClientUpgradeRequest request = new ClientUpgradeRequest();
+            client.connect(socket, echoUri, request);
+            //System.out.printf("Connecting to : %s%n", echoUri);
+            socket.awaitClose(5, TimeUnit.SECONDS);
+        } catch (Throwable t) {
+            t.printStackTrace();
+        } finally {
+            try {
+                client.stop();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+		
+	}
+	
+	public void receiveString(String msg){
+		try {
+			root = XMLReader.appendString(root, msg);
+		} catch (SAXException e) {
+		} catch (IOException e) {
+		} catch (ParserConfigurationException e) {
+		}
+		resetViewer(root.getDocumentElement());
 	}
 	
 	protected void openXmlFolder() {
@@ -156,10 +204,12 @@ public class ELTView extends ViewPart {
 
 	protected void fillMenu(IMenuManager rootMenuManager) {
 		rootMenuManager.add(openFolderAction);
+		rootMenuManager.add(openConnectionAction);
 	}
 	
 	protected void createToolbar() {
 		IToolBarManager toolbarManager = getViewSite().getActionBars().getToolBarManager();
 		toolbarManager.add(openFolderAction);
+		toolbarManager.add(openConnectionAction);
 	}
 }

@@ -1,7 +1,11 @@
 package elt;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FilenameFilter;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -9,10 +13,13 @@ import java.util.Date;
 import java.text.SimpleDateFormat;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
+import org.xml.sax.SAXException;
 
 
 
@@ -192,5 +199,25 @@ public class XMLReader {
 		  	e.printStackTrace();
 		  	return null;
 		}
+	}
+	
+	public static Document appendString(Document target, String element) 
+			throws SAXException, IOException, ParserConfigurationException 
+	{
+		//TODO: Empty target.
+		DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
+		DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
+		if (target == null) {
+			target = dBuilder.newDocument();
+			target.appendChild(target.createElement("root"));
+		}
+		InputStream stream = new ByteArrayInputStream(
+				element.getBytes(StandardCharsets.UTF_8));
+		System.out.println(element);
+		Document doc = dBuilder.parse(stream);
+		Element elem = doc.getDocumentElement();
+		Node imported = target.importNode(elem, true);
+		target.getDocumentElement().appendChild(imported);
+		return target;
 	}
 }

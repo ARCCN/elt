@@ -2,6 +2,11 @@ from ext.debugger.elt.logger import LogClient
 from ext.debugger.elt.network_error import NetworkError, Entry, EntryGroup
 import pox.openflow.libopenflow_01 as of
 from pox.openflow.of_01 import unpackers
+from pox.core import core
+from ext.debugger.elt.interaction import ofp_flow_mod
+
+
+log = core.getLogger("VerifierAdapter")
 
 
 class Policy(object):
@@ -18,7 +23,7 @@ class PolicyViolation(NetworkError):
     def __init__(self, ofp, dpid, policy):
         NetworkError.__init__(self)
         self.desc = "Verifier policy: %s" % str(policy)
-        entries = [Entry(ofp, dpid)]
+        entries = [Entry(ofp_flow_mod.from_flow_mod(ofp), dpid)]
         self.entry_groups.append(EntryGroup("Faulty rule", entries=entries))
 
 
@@ -27,8 +32,9 @@ class Adapter(object):
         self.log = LogClient("verifier_adapter")
 
     def _handle_ErrorIn(self, event):
-        if (event.type != of.OFPET_FLOW_MOD_FAILED or
-                event.code != of.OFPFMFC_ERERM):
+        if (event.ofp.type != of.OFPET_FLOW_MOD_FAILED or
+                event.ofp.code != of.ofp_flow_mod_failed_code_rev_map[
+                    "OFPFMFC_EPERM"]):
             return
 
         # from openflow.of_01
@@ -36,16 +42,16 @@ class Adapter(object):
         buf = event.ofp.data
         offset = 0
         ofp_type = ord(buf[offset+1])
-        if ord(self.buf[offset]) != of.OFP_VERSION:
+        if ord(buf[offset]) != of.OFP_VERSION:
             if ofp_type == of.OFPT_HELLO:
-            # We let this through and hope the other side switches down.
-            pass
-        else:
-            log.warning("Bad OpenFlow version (0x%02x) on connection %s"
-                      % (ord(buf[offset]), event.connection))
-            return False # Throw connection away
+                # We let this through and hope the other side switches down.
+                pass
+            else:
+                log.warning("Bad OpenFlow version (0x%02x) on connection %s against 0x02x"
+                        % (ord(buf[offset]), event.connection, of.OFP_VERSION))
+            	return False # Throw connection away
 
-        offset,ofp = unpackers[ofp_type](self.buf, offset)
+        offset,ofp = unpackers[ofp_type](buf, offset)
         policy = Policy(buf[offset:])
 
         if ofp_type == of.OFPT_FLOW_MOD:

@@ -3,7 +3,32 @@ import os
 from xml_report import XmlReport
 
 
-class TextLogger(object):
+class BaseLogger(object):
+    """
+    Interface for loggers.
+    """
+    def log_event(self, conn_name, minfo):
+        """
+        Log error minfo from conn_name.
+        Can be buffered.
+        """
+        pass
+
+    def flush(self):
+        """
+        Now logs must be saved.
+        """
+        pass
+
+    def flushs(self):
+        """
+        Flush log files to dict: {filename: report_as_string}
+        This is used to dump error log from server.
+        """
+        pass
+
+
+class TextLogger(BaseLogger):
     """
     Error report with simple text.
     """
@@ -42,7 +67,7 @@ class TextLogger(object):
         return {self.filename, open(self.filename, "r").read()}
 
 
-class XmlLogger(object):
+class XmlLogger(BaseLogger):
     """
     Error reports as XML.
     Separate file for each message source.
@@ -74,3 +99,4 @@ class XmlLogger(object):
         """
         return {conn_name + ".xml": report.flushs() for
                 conn_name, report in self.conn_to_report.items()}
+

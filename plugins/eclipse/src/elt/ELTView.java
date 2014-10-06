@@ -24,12 +24,12 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.xml.sax.SAXException;
 
-
 public class ELTView extends ViewPart implements IGUI {
 
 	protected TreeViewer treeViewer;
 	protected XMLLabelProvider labelProvider;
 	protected XMLContentProvider contentProvider;
+	protected XmlLogComparator comparator;
 	protected TreeViewer eventViewer;
 	protected Action openFolderAction, openConnectionAction;
 	protected Document root;
@@ -51,6 +51,8 @@ public class ELTView extends ViewPart implements IGUI {
 		treeViewer.setContentProvider(contentProvider);
 		labelProvider = new XMLLabelProvider();
 		treeViewer.setLabelProvider(labelProvider);
+		comparator = new XmlLogComparator(true);
+		treeViewer.setComparator(comparator);
 		treeViewer.setUseHashlookup(true);
 		treeViewer.addSelectionChangedListener(new EventSelectionListener());
 		treeViewer.addDoubleClickListener(new TreeClickListener());
@@ -67,7 +69,6 @@ public class ELTView extends ViewPart implements IGUI {
 		createActions();
 		createToolbar();
 	}
-
 
 	@Override
 	public void setFocus() {
@@ -109,18 +110,22 @@ public class ELTView extends ViewPart implements IGUI {
 		wsThread = new Thread(new WebSocketThread(destUri, this));
 		wsThread.setDaemon(true);
 		wsThread.start();
-        //TODO: Notification.
+        //TODO: Notification about new message.
         //TODO: Message wipe to prevent Out-of-memory.
 	}
 
 	public void receiveString(String msg){
+		Document old = root;
 		try {
 			root = XMLReader.appendString(root, msg);
 		} catch (SAXException e) {
 		} catch (IOException e) {
 		} catch (ParserConfigurationException e) {
 		}
-		resetViewer(root.getDocumentElement());
+		if (old == null)
+			resetViewer(root.getDocumentElement());
+		else
+			treeViewer.refresh();
 	}
 
 	protected void openXmlFolder() {
@@ -174,6 +179,13 @@ public class ELTView extends ViewPart implements IGUI {
 		resetViewer(root.getDocumentElement());
 	}
 
+	protected void resetViewer(Node node, boolean reset) {
+		if (reset) 
+			resetViewer(node);
+		else
+			treeViewer.setInput(node);
+	}
+	
 	protected void resetViewer(Node node) {
 		treeViewer.setInput(node);
 		treeViewer.expandToLevel(2);

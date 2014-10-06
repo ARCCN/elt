@@ -1,7 +1,6 @@
 package elt;
 
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.websocket.api.Session;
@@ -42,21 +41,6 @@ public class WSocket {
         System.out.printf("Got connect: %s%n", session);
         this.session = session;
         this.connected = true;
-        /*
-        try {
-        	
-            Future<Void> fut;
-            fut = session.getRemote().sendStringByFuture("Hello");
-            fut.get(2, TimeUnit.SECONDS);
-            fut = session.getRemote().sendStringByFuture("Thanks for the conversation.");
-            fut.get(2, TimeUnit.SECONDS);
-            
-            //session.close(StatusCode.NORMAL, "I'm done");
-            
-        } catch (Throwable t) {
-            t.printStackTrace();
-        }
-        */
     }
  
     @OnWebSocketMessage

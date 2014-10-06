@@ -8,9 +8,6 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
-import java.util.Date;
-import java.text.SimpleDateFormat;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
@@ -21,9 +18,8 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
-
-
 public class XMLReader {
+	
 	public static boolean eraseBlank(Node node)
 	{
 		//System.out.print(node.getNodeName());
@@ -73,38 +69,6 @@ public class XMLReader {
 			}
 		}
 		
-		class CompareTimestamp implements Comparator<Node> {
-			public String getName(Node n) {
-				NodeList c = n.getChildNodes();
-				String name = "";
-				for (int i = 0; i < c.getLength(); i++) {
-					if (c.item(i).getNodeName().equalsIgnoreCase("name")) {
-						name = c.item(i).getTextContent();
-						return name;
-					}
-				}
-				return name;
-			}
-			
-			public int compare(Node n1, Node n2) {
-				String name1 = getName(n1);
-				String name2 = getName(n2);
-				SimpleDateFormat format = new SimpleDateFormat("dd.MM.yyyy HH:mm:ss.SSS");
-				try {
-					Date d1 = format.parse(name1);
-					Date d2 = format.parse(name2);
-					if (d1.before(d2))
-						return -1;
-					if (d2.before(d1))
-						return 1;
-					return 0;
-				}
-				catch(Exception e) {
-					return 0;
-				}
-			}
-		}
-		
 		if (to_sort.size() == 0) {
 			for (int i = 0; i < children.getLength(); ++i) {
 				Node n = children.item(i);
@@ -114,7 +78,7 @@ public class XMLReader {
 		}
 		else
 		{
-			Collections.sort(to_sort, new CompareTimestamp());
+			Collections.sort(to_sort, new CompareNodesByTimestamp());
 			not_to_sort.addAll(to_sort);
 			for (Node n: not_to_sort) {
 				node.removeChild(n);
@@ -204,7 +168,6 @@ public class XMLReader {
 	public static Document appendString(Document target, String element) 
 			throws SAXException, IOException, ParserConfigurationException 
 	{
-		//TODO: Empty target.
 		DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
 		DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
 		if (target == null) {
@@ -218,8 +181,81 @@ public class XMLReader {
 		Element elem = doc.getDocumentElement();
 		elem.normalize();
 		eraseBlank(elem);
-		Node imported = target.importNode(elem, true);
-		target.getDocumentElement().appendChild(imported);
+		// We will merge new node into existing tree.
+		Element adopter = target.getDocumentElement();
+		NodeList nodes, subnodes;
+		Node node;
+		String client = "", event_type = "";
+		Node type_node = null, adopted_parent = null;
+		// At least two iterations: client and EventType.
+		// TODO: We assume that elem has 1 "client" and 1 "EventType". 
+		// TODO: Others will be lost.
+		
+		
+		// TODO: Maybe we should use (<client>, <event_type>) index on root?
+		
+		// TODO: Bad code. Refactor.
+		node = elem;// <client/>
+		nodes = node.getChildNodes(); // <name/><event_type/>
+		for (int j = 0; j < nodes.getLength(); ++j) {
+			if (nodes.item(j).getNodeName().equalsIgnoreCase("name")) {
+				client = nodes.item(j).getTextContent();
+			} else if (nodes.item(j).getNodeName().equalsIgnoreCase("event_type")) {
+				node = nodes.item(j);
+				type_node = node;
+				subnodes = node.getChildNodes(); // <name/><event/><event/>...
+				for (int i = 0; i < subnodes.getLength(); ++i) {
+					if (subnodes.item(i).getNodeName().equalsIgnoreCase("name")) {
+						event_type = subnodes.item(i).getTextContent();
+						break;
+					}
+				}
+			}
+		}
+		
+		node = adopter;
+		nodes = adopter.getChildNodes(); // <client/><client/>...
+		for (int i = 0; i < nodes.getLength(); ++i) {
+			subnodes = nodes.item(i).getChildNodes(); // <name/><event_type/><event_type/>...
+			for (int j = 0; j < subnodes.getLength(); ++j) {
+				if (subnodes.item(j).getNodeName().equalsIgnoreCase("name") &&
+						subnodes.item(j).getTextContent().equals(client)) {
+					adopter = (Element) nodes.item(i);
+					adopted_parent = elem;
+					break;
+				}
+			}
+		}
+		if (adopter != node) { // We found our <client>.
+			node = adopter;
+			nodes = adopter.getChildNodes(); // <name/><event_type/><event_type/>...
+			for (int i = 0; i < nodes.getLength(); ++i) {
+				if (nodes.item(i).getNodeName().equalsIgnoreCase("event_type")) {
+					subnodes = nodes.item(i).getChildNodes(); // <name/><event/><event/>...
+					for (int j = 0; j < subnodes.getLength(); ++j) {
+						if (subnodes.item(j).getNodeName().equalsIgnoreCase("name") &&
+								subnodes.item(j).getTextContent().equals(event_type)) {
+							adopter = (Element) nodes.item(i);
+							adopted_parent = type_node;
+							break;
+						}
+					}
+				}
+			}
+			// We found something. adopted_parent != null -> 
+			// adopter.adopt(adopted_parent.children \ "name")
+			nodes = adopted_parent.getChildNodes();
+			for (int i = 0; i < nodes.getLength(); ++i) {
+				node = nodes.item(i);
+				if (!node.getNodeName().equalsIgnoreCase("name")) { //<event_type/> or <event/>
+					Node imported = target.importNode(node, true);
+					adopter.appendChild(imported);
+				}
+			}
+		} else {
+			Node imported = target.importNode(elem, true);
+			adopter.appendChild(imported);
+		}
 		return target;
 	}
 }

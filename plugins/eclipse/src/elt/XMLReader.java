@@ -24,7 +24,7 @@ import org.xml.sax.SAXException;
 
 
 public class XMLReader {
-	public static boolean erase_blank(Node node)
+	public static boolean eraseBlank(Node node)
 	{
 		//System.out.print(node.getNodeName());
 		if (node.getNodeName() == "#text")
@@ -44,7 +44,7 @@ public class XMLReader {
 			//System.out.print(nodes.getLength());
 			for (int i = 0; i < nodes.getLength(); ++i)
 			{
-				if (erase_blank(nodes.item(i)))
+				if (eraseBlank(nodes.item(i)))
 				{
 					remove.add(nodes.item(i));
 				}
@@ -141,7 +141,7 @@ public class XMLReader {
 				root.getDocumentElement().appendChild(imported);
 			}
 			root.getDocumentElement().normalize();
-			erase_blank(root.getDocumentElement());
+			eraseBlank(root.getDocumentElement());
 			sort(root.getDocumentElement());
 			return root;
 		} catch (Exception e) {
@@ -216,6 +216,8 @@ public class XMLReader {
 		System.out.println(element);
 		Document doc = dBuilder.parse(stream);
 		Element elem = doc.getDocumentElement();
+		elem.normalize();
+		eraseBlank(elem);
 		Node imported = target.importNode(elem, true);
 		target.getDocumentElement().appendChild(imported);
 		return target;

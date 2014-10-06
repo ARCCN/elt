@@ -52,7 +52,7 @@ def connection_ready(handlers, conn, fd, events):
     except:
         tornado.ioloop.IOLoop.instance().close()
     for s in messages:
-        for h in self.handlers:
+        for h in handlers:
             h.write_message(s)
 
 

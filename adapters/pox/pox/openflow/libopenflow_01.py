@@ -115,15 +115,15 @@ def _skip (data, offset, num):
 
 def _unpad (data, offset, num):
   (offset, o) = _read(data, offset, num)
-  assert len(o.replace("\x00", "")) == 0
+  assert len(o.replace(b"\x00", b"")) == 0
   return offset
 
 def _readzs (data, offset, length):
   (offset, d) = _read(data, offset, length)
-  d = d.split("\x00", 1)
-  #if len(d[1].replace("\x00", "")) > 0:
+  d = d.split(b"\x00", 1)
+  #if len(d[1].replace(b"\x00", b"")) > 0:
   #  raise RuntimeError("Non-zero string padding")
-  assert True if (len(d) == 1) else (len(d[1].replace("\x00", "")) == 0)
+  assert True if (len(d) == 1) else (len(d[1].replace(b"\x00", b"")) == 0)
   return (offset, d[0])
 
 def _readether (data, offset):
@@ -197,6 +197,10 @@ class ofp_base (object):
     assert (r-offset) == length, o
     return (r, o)
 
+  def clone (self):
+    # Works for any packable+unpackable ofp_base subclass.
+    # Can override if you have a better implementation
+    return type(self).unpack_new(self.pack())[1]
 
 # ----------------------------------------------------------------------
 # Class decorators
@@ -2152,7 +2156,7 @@ class ofp_features_reply (ofp_header):
         _unpack("!QLB", raw, offset)
     offset = _skip(raw, offset, 3)
     offset,(self.capabilities, self.actions) = _unpack("!LL", raw, offset)
-    portCount = (length - 32) / len(ofp_phy_port)
+    portCount = (length - 32) // len(ofp_phy_port)
     self.ports = []
     for i in xrange(0, portCount):
       p = ofp_phy_port()
@@ -3760,7 +3764,7 @@ class ofp_packet_in (ofp_header):
     return self._data
   @data.setter
   def data (self, data):
-    assert assert_type("data", data, (packet_base, str))
+    assert assert_type("data", data, (packet_base, bytes))
     if data is None:
       self._data = ''
     elif isinstance(data, packet_base):

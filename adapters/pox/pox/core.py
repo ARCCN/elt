@@ -444,7 +444,7 @@ class POXCore (EventMixin):
     """
     if callback is None:
       callback = lambda:None
-      callback.func_name = "<None>"
+      callback.__name__ = "<None>"
     if isinstance(components, basestring):
       components = [components]
     elif isinstance(components, set):
@@ -463,7 +463,7 @@ class POXCore (EventMixin):
       else:
         name += "()"
         if hasattr(callback, 'im_class'):
-          name = getattr(callback.im_class,'__name__', '') + '.' + name
+          name = getattr(callback.__self__.__class__,'__name__','')+'.'+name
       if hasattr(callback, '__module__'):
         # Is this a good idea?  If not here, we should do it in the
         # exception printing in try_waiter().
@@ -613,7 +613,7 @@ def _maybe_initialize ():
     return
   import __main__
   mod = getattr(__main__, '__file__', '')
-  if 'pydoc' in mod:
+  if 'pydoc' in mod or 'pdoc' in mod:
     initialize()
     return
 _maybe_initialize()

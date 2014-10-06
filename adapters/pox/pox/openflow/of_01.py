@@ -13,11 +13,13 @@
 # limitations under the License.
 
 """
-In charge of OpenFlow 1.0 switches.
+This component manages connections to OpenFlow 1.0 switches.
 
-NOTE: This module is loaded automatically on startup unless POX is run
-      with --no-openflow .
+Because many POX applications use OpenFlow, this component gets some
+special treatment, and an attempt is made to load it automatically if
+any other component references it during initialization.
 """
+
 from pox.core import core
 import pox
 import pox.lib.util
@@ -56,7 +58,6 @@ import pox.openflow.libopenflow_01 as of
 import threading
 import os
 import sys
-import exceptions
 from errno import EAGAIN, ECONNRESET, EADDRINUSE, EADDRNOTAVAIL, EMFILE
 
 
@@ -148,13 +149,19 @@ class OpenFlowHandlers (object):
 
     # Set up handlers for incoming OpenFlow messages
     # That is, self.ofp_handlers[OFPT_FOO] = self.handle_foo
-    for of_type,name in of.ofp_type_map.iteritems():
-      assert name[:5] == "OFPT_"
-      h = getattr(self, "handle_" + name[5:], None)
-      if not h: continue
+    for fname in dir(self):
+      h = getattr(self, fname)
+      if not fname.startswith('handle_'): continue
+      fname = fname.split('_',1)[1]
+      if not fname == fname.upper(): continue
       assert callable(h)
-      assert getattr(of._message_type_to_class.get(of_type), '_from_switch',
-                     False), "%s is not switch-to-controller message" % (name,)
+      of_type = of.ofp_type_rev_map.get('OFPT_' + fname)
+      if of_type is None:
+        log.error("No OF message type for %s", fname)
+        continue
+      from_switch = getattr(of._message_type_to_class.get(of_type),
+                            '_from_switch', False)
+      assert from_switch, "%s is not switch-to-controller message" % (name,)
       self.add_handler(of_type, h)
 
 
@@ -189,7 +196,7 @@ class DefaultOpenFlowHandlers (OpenFlowHandlers):
       con.raiseEventNoErrors(PacketIn, con, msg)
 
   @staticmethod
-  def handle_ERROR_MSG (con, msg): #A
+  def handle_ERROR (con, msg): #A
     err = ErrorIn(con, msg)
     e = con.ofnexus.raiseEventNoErrors(err)
     if e is None or e.halt != True:
@@ -246,6 +253,17 @@ class DefaultOpenFlowHandlers (OpenFlowHandlers):
     if e is None or e.halt != True:
       con.raiseEventNoErrors(FeaturesReceived, con, msg)
 
+  @staticmethod
+  def handle_GET_CONFIG_REPLY (con, msg):
+    e = con.ofnexus.raiseEventNoErrors(ConfigurationReceived, con, msg)
+    if e is None or e.halt != True:
+      con.raiseEventNoErrors(ConfigurationReceived, con, msg)
+
+  @staticmethod
+  def handle_QUEUE_GET_CONFIG_REPLY (con, msg):
+    #TODO
+    pass
+
 # Default handlers for connections in connected state
 _default_handlers = DefaultOpenFlowHandlers()
 
@@ -271,7 +289,7 @@ class HandshakeOpenFlowHandlers (OpenFlowHandlers):
     else:
       self._finish_connecting(con)
 
-  def handle_ERROR_MSG (self, con, msg): #A
+  def handle_ERROR (self, con, msg): #A
     if not self._barrier: return
     if msg.xid != self._barrier.xid: return
     if msg.type != of.OFPET_BAD_REQUEST: return
@@ -680,7 +698,6 @@ class Connection (EventMixin):
     ConnectionUp,
     ConnectionDown,
     PortStatus,
-    FlowRemoved,
     PacketIn,
     ErrorIn,
     BarrierIn,
@@ -692,10 +709,14 @@ class Connection (EventMixin):
     PortStatsReceived,
     QueueStatsReceived,
     FlowRemoved,
+    FeaturesReceived,
+    ConfigurationReceived,
   ])
 
   # Globally unique identifier for the Connection instance
   ID = 0
+
+  _aborted_connections = 0
 
   def msg (self, m):
     #print str(self), m
@@ -713,7 +734,7 @@ class Connection (EventMixin):
 
     self.ofnexus = _dummyOFNexus
     self.sock = sock
-    self.buf = ''
+    self.buf = b''
     Connection.ID += 1
     self.ID = Connection.ID
 
@@ -761,6 +782,17 @@ class Connection (EventMixin):
     except:
       pass
 
+  def _do_abort_message (self):
+    """
+    Log a message about aborted (no DPID) disconnects
+    """
+    assert Connection._aborted_connections > 0
+    msg = str(Connection._aborted_connections) + " connection"
+    if Connection._aborted_connections != 1: msg += "s"
+    msg += " aborted"
+    log.debug(msg)
+    Connection._aborted_connections = 0
+
   def disconnect (self, msg = 'disconnected', defer_event = False):
     """
     disconnect this Connection (usually not invoked manually).
@@ -768,8 +800,10 @@ class Connection (EventMixin):
     if self.disconnected:
       self.msg("already disconnected")
     if self.dpid is None:
-      # If we never got a DPID, log at DEBUG level
-      self.msg(msg)
+      # If we never got a DPID, log later (coalesce the messages)
+      Connection._aborted_connections += 1
+      if Connection._aborted_connections == 1:
+        core.callDelayed(20, self._do_abort_message)
     else:
       self.info(msg)
     self.disconnected = True
@@ -1009,6 +1043,7 @@ class OpenFlow_01_Task (Task):
       return
 
     listener.listen(16)
+    listener.setblocking(0)
     sockets.append(listener)
 
     log.debug("Listening on %s:%s" %
@@ -1078,7 +1113,7 @@ class OpenFlow_01_Task (Task):
               if con.read() is False:
                 con.close()
                 sockets.remove(con)
-      except exceptions.KeyboardInterrupt:
+      except KeyboardInterrupt:
         break
       except:
         def log_tb ():

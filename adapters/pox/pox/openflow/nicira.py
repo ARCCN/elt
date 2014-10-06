@@ -564,6 +564,9 @@ class nx_output_reg (of.ofp_action_vendor_base):
     return True
 
   def _pack_body (self):
+    if self.nbits is None:
+      self.nbits = self.reg._get_size_hint() - self.offset
+
     nbits = self.nbits - 1
     assert nbits >= 0 and nbits <= 63
     assert self.offset >= 0 and self.offset < (1 << 10)
@@ -670,7 +673,7 @@ class nx_reg_load (of.ofp_action_vendor_base):
     self.offset = 0
     self.nbits = None
     self.dst = None # an nxm_entry class
-    self.value = 0
+    self.value = None # Integer or an nxm_entry instance
 
   def _eq (self, other):
     if self.subtype != other.subtype: return False
@@ -681,6 +684,20 @@ class nx_reg_load (of.ofp_action_vendor_base):
     return True
 
   def _pack_body (self):
+    value = self.value
+    dst = self.dst
+    if isinstance(self.dst, nxm_entry):
+      assert self.dst.mask is None
+      assert self.value is None
+      value = dst.pack(omittable=False)[4:]
+      while len(value) < 8:
+        value = '\x00' + value
+      dst = type(dst)
+    else:
+      value = struct.pack('!Q', value)
+
+    assert value is not None
+
     if self.nbits is None:
       self.nbits = self.dst._get_size_hint() - self.offset
     nbits = self.nbits - 1
@@ -688,11 +705,11 @@ class nx_reg_load (of.ofp_action_vendor_base):
     assert self.offset >= 0 and self.offset < (1 << 10)
     ofs_nbits = self.offset << 6 | nbits
 
-    o = self.dst()
+    o = dst()
     o._force_mask = False
     dst = o.pack(omittable=False, header_only=True)
 
-    p = struct.pack('!HH4sQ', self.subtype, ofs_nbits, dst, self.value)
+    p = struct.pack('!HH4s8s', self.subtype, ofs_nbits, dst, value)
     return p
 
   def _unpack_body (self, raw, offset, avail):
@@ -703,6 +720,7 @@ class nx_reg_load (of.ofp_action_vendor_base):
     self.nbits = (ofs_nbits & 0x3f) + 1
 
     self.dst = _class_for_nxm_header(dst)
+    #TODO: Unpack into an actual nxm_entry class?
 
     return offset
 
@@ -2397,11 +2415,14 @@ class nx_match (object):
 
   def find (self, t):
     """
-    Returns nxm_entry of given type
+    Returns nxm_entry of given type or None
     """
     if isinstance(t, nxm_entry) or _issubclass(t, nxm_entry):
       t = t._nxm_type
     return self._map.get(t)
+
+  def __contains__ (self, t):
+    return self.find is not None
 
   def index (self, t):
     """

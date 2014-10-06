@@ -150,6 +150,7 @@ _mptcp_opts = {} # type -> class
 def _register_mptcp_opt (type):
   def register_subtype (cls):
     _mptcp_opts[type] = cls
+    return cls
   return register_subtype
 
 
@@ -171,6 +172,7 @@ class mptcp_opt (tcp_opt):
 
   def __init__ (self):
     self.type = self.MPTCP
+    self.subtype = None
 
   @classmethod
   def unpack_new (dummy, buf, offset = 0):
@@ -200,6 +202,7 @@ class mp_unknown (mptcp_opt):
   """
   def __init__ (self):
     self.type = self.MPTCP
+    self.subtype = None
     self.data = b''
 
   def pack (self):
@@ -211,14 +214,18 @@ class mp_unknown (mptcp_opt):
     o.type = ord(buf[offset])
     length = ord(buf[offset+1])
     o.data = buf[offset+2:offset+2+length]
+    try:
+      self.subtype = (ord(buf[offset+2]) & 0xf0) >> 4
+    except:
+      pass
 
     return offset+length,o
 
   def __str__ (self):
     # Special case.  We don't parse the subtype, into an attribute, but
     # we'll display it.
-    if len(self.data):
-      subtype = (ord(self.data[0]) & 0xf0) >> 4
+    if self.subtype is not None:
+      subtype = self.subtype
     else:
       subtype = "???"
     return "mptcp_opt-%s" % (subtype,)
@@ -272,6 +279,93 @@ class mp_capable_opt (mptcp_opt):
     r = struct.pack("!BBBB", self.type, length, subver, self.flags)
     r += self.skey
     if self.rkey: r += self.rkey
+
+    return r
+
+
+@_register_mptcp_opt(mptcp_opt.MP_JOIN)
+class mp_join_opt (mptcp_opt):
+  def __init__ (self):
+    self.type = self.MPTCP
+    self.subtype = self.MP_JOIN
+    self.flags = 0
+    self.address_id = None
+
+    self.rtoken = None
+    self.srand = None
+
+    self.shmac = None
+
+    self.phase = None
+    # 1 -> SYN, 2 -> SYNACK, 3 -> ACK
+
+  @property
+  def SYN_expected (self):
+    return self.phase in (1,2)
+
+  @property
+  def ACK_expected (self):
+    return self.phase in (2,3)
+
+  @property
+  def backup (self):
+    return self.flags & (1<<0)
+
+  @property
+  def has_full_hmac (self):
+    if not self.shmac: return False
+    return len(self.shmac) == 20
+
+  @classmethod
+  def unpack_new (cls, buf, offset = 0):
+    o = cls()
+    o.type,length,subflag,o.address_id = struct.unpack_from('!BBBB', buf, offset)
+    o.subtype = (subflag & 0xf0) >> 4
+    o.flags = (subflag & 0x0f) >> 0
+
+    offset += 4
+
+    if length == 12:
+      o.phase = 1
+      o.rtoken = buf[offset:offset+4]
+      offset += 4
+      o.srand = buf[offset:offset+4]
+      offset += 4
+    elif length == 16:
+      o.phase = 2
+      o.shmac = buf[offset:offset+8] # Truncated
+      offset += 8
+      o.srand = buf[offset:offset+4]
+      offset += 4
+    elif length == 24:
+      o.phase = 3
+      o.shmac = buf[offset:offset+20]
+      offset += 20
+    else:
+      # Should this be an exception?  Do we handle it?
+      raise RuntimeError("Bad MP_JOIN option")
+
+    return offset,o
+
+  def pack (self):
+    length = {1:12,2:16,3:24}[self.phase]
+    subflag = (self.subtype << 4) | self.flags
+
+    r = struct.pack("!BBBB", self.type, length, subflag, self.address_id)
+
+    if self.phase == 1:
+      assert len(self.rtoken) == 4
+      assert len(self.srand) == 4
+      r += self.rtoken + self.srand
+
+    elif self.phase == 2:
+      assert len(self.shmac) in (8, 20)
+      assert len(self.srand) == 4
+      r += self.shmac[:8] + self.srand
+
+    elif self.phase == 3:
+      assert len(self.shmac) == 20
+      r += self.shmac
 
     return r
 

@@ -7,15 +7,13 @@ import types
 from ConfigParser import ConfigParser
 import os
 from functools import partial
-import copy
 
 from pox.boot import _do_imports
 from pox.core import core
 from pox.lib.revent.revent import EventHalt
-from ext.debugger.elt.util import app_logging
 
 
-log = app_logging.getLogger("ComponentLauncher")
+log = core.getLogger("ComponentLauncher")
 CONFIG = ["debugger/component_launcher/component_config/",
           "ext/debugger/component_launcher/component_config/",
           "pox/ext/debugger/component_launcher/component_config/",
@@ -24,23 +22,113 @@ HIGHEST_PRIORITY = 1000000
 
 
 class CaseConfigParser(ConfigParser):
-    def __init__(self):
-        ConfigParser.__init__(self)
+    def __init__(self, allow_no_value=False):
+        ConfigParser.__init__(self, allow_no_value=allow_no_value)
         self.optionxform = str
 
 
 class ComponentLauncher(object):
     def __init__(self):
-        self.argv = []
         self.config = {} # {component_name: CaseConfigParser()}
-        self.event_queue = {}
-        self.my_handlers = {}
-        self.halt_events = False
-        self.read_config()
-        self.set_listeners()
-        # core.openflow.addListeners(self)
+        self.event_queue = {} # {target: {event_name: [events]}}
+        self.tmp_queue = {}
+        self.my_handlers = {} # {target: {event_name: [(4-tuple)]}}
+        self.halt_events = False # True -> tmp_queue & halt.
+                                 # False -> event_queue
+        self.launched = [] # We do not support multiload.
+                           # Multiple launch is error.
+        self._read_config()
+        self._set_listeners()
 
-    def read_config(self):
+    def launch_single(self, argv):
+        """
+        Launch 1 module. Example: argv = ["openflow.of_01", "--port=3366"].
+        The instantiated module will get the previous events from its config.
+        """
+        argv = self._preprocess(argv)
+        components = [arg for arg in argv if not arg.startswith("-")]
+        self._check_components(components)
+        old_handlers = self._grab_handlers(components[0])
+        result = launch_all(argv)
+        self.launched.append(components[0])
+        # Subscribe on events for launched module.
+        self._set_listeners_to_source(components[0])
+        if result is False:
+            return result
+        new_handlers = self._grab_handlers(components[0])
+        # We must continue listen to events while handlers are reset.
+        # After our hack we must raise all events
+        # that were missed by removed handlers.
+        target_handlers = self._subtract_handlers(new_handlers, old_handlers)
+        # Copy queue structure.
+        self.tmp_queue = {a: {b: [] for b in self.event_queue[a]}
+                          for a in self.event_queue}
+        # Now we halt all events using our highest priority.
+        # We store them to tmp_queue.
+        self.halt_events = True
+        # We feed the previous messages to newly created components.
+        log.info(str(target_handlers))
+        self._set_handlers(target_handlers)
+        self._raise_events(target_handlers, self.event_queue)
+        # We restore handlers and stop halting events.
+        self._set_handlers(new_handlers)
+        self.halt_events = False
+        # We copy missed events to main queue.
+        for section in self.tmp_queue:
+            for event_name, events in self.tmp_queue[section].items():
+                self.event_queue[section][event_name].extend(events)
+        # Now we feed missed events to everyone.
+        self._raise_events(new_handlers, self.tmp_queue)
+
+    def launch_hierarchical(self, argv):
+        """
+        Launch component's dependency hierarchy using default params.
+        If a dependency is already launched, skip it.
+        After everything is loaded, load target component (strictly 1).
+        """
+        # TODO: Process default args.
+        argv = self._preprocess(argv)
+        components = [arg for arg in argv if not arg.startswith("-")]
+        self._check_components(components)
+        try:
+            cp = self.config[components[0]]
+            # Launch dependencies.
+            for section in cp.sections():
+                for component, cfg in self.config.items():
+                    try:
+                        if (cfg.get("self", "name") == section and
+                                component not in self.launched):
+                            # We found dependency.
+                            arg = [component]
+                            for k, v in cfg.defaults():
+                                if v is None:
+                                    arg.append(k)
+                                else:
+                                    arg.append("%s=%s" % (k, v))
+                            self.launch_hierarchical(arg)
+                            self.launched.append(component)
+                    except Exception as e:
+                        log.info(str(e))
+                        continue
+        except:
+            pass
+        # Now all known dependencies must be loaded.
+        # We can load our target.
+        log.info("Launching %s" % components[0])
+        self.launch_single(argv)
+
+    def _check_components(self, components):
+        if len(components) != 1:
+            raise ValueError("The number of component must be 1, not %d" %
+                    len(components))
+        if components[0] in self.launched:
+            raise ValueError("%s is already launched. Cancel." % components[0])
+
+    def _read_config(self):
+        """
+        Read config files from CONFIG. Files must be
+        CONFIG[i]/*.cfg.
+        """
         def _raise(x):
             raise x
 
@@ -52,15 +140,18 @@ class ComponentLauncher(object):
                     for filename in filenames:
                         if not filename.endswith(".cfg"):
                             continue
-                        cp = CaseConfigParser()
-                        log.info("Read config:",
+                        cp = CaseConfigParser(allow_no_value=True)
+                        log.info("Read config: %s" %
                                  cp.read(os.path.join(dirname, filename)))
                         self.config[filename.replace(".cfg", "")] = cp
             except Exception as e:
                 pass
 
-    def set_listeners(self):
-        for component, cp in self.config.items():
+    def _set_listeners(self):
+        """
+        Subscribe to events from all config files.
+        """
+        for cp in self.config.values():
             for section in cp.sections():
                 if section == "self":
                     continue
@@ -69,54 +160,80 @@ class ComponentLauncher(object):
                     self.event_queue[section] = {}
                     self.my_handlers[section] = {}
                     for event_name, module in cp.items(section):
-                        _temp = __import__(module, fromlist=[event_name])
-                        globals()[event_name] = _temp.__dict__[event_name]
-                        h = partial(self.enqueue_event, section, event_name)
-                        event_source.addListener(eval(event_name), h,
-                            priority=HIGHEST_PRIORITY)
-                        self.my_handlers[section][event_name] = h
-                        self.event_queue[section][event_name] = []
+                        self._import_and_listen(section, event_source,
+                                               event_name, module)
                 except Exception as e:
-                    log.info(str(e))
+                    log.debug(str(e))
 
-    def enqueue_event(self, section, event_name, event):
+    def _set_listeners_to_source(self, component):
+        """
+        Given a module, listen to instances from this module.
+        Module -> name from config.
+        """
+        # We must take the name of component instance.
+        # Then look through configs to find out
+        # who wants its messages.
+        cp = self.config.get(component)
+        section = None
+        try:
+            section = cp.get("self", "name")
+        except:
+            log.info("Unable to find instance of %s" % component)
+            # We don't know how to find component instance.
+            return
+        for cp in self.config.values():
+            try:
+                event_source = eval(section)
+                if not cp.has_section(section):
+                    continue
+                # Can these two be already set?
+                if section not in self.event_queue:
+                    self.event_queue[section] = {}
+                if section not in self.my_handlers:
+                    self.my_handlers[section] = {}
+                for event_name, module in cp.items(section):
+                    self._import_and_listen(section, event_source,
+                                           event_name, module)
+            except Exception as e:
+                log.info(str(e))
+
+    def _import_and_listen(self, section, event_source, event_name, module):
+        """
+        Import event class named "event_name" from "module".
+        Subscribe to this event of event_source object.
+        """
+        try:
+            # Maybe we are already listening?
+            h = self.my_handlers[section][event_name]
+            q = self.event_queue[section][event_name]
+            if h is not None and q is not None:
+                return
+        except:
+            pass
+        _temp = __import__(module, fromlist=[event_name])
+        globals()[event_name] = _temp.__dict__[event_name]
+        h = partial(self._enqueue_event, section, event_name)
+        self.my_handlers[section][event_name] = h
+        self.event_queue[section][event_name] = []
+        event_source.addListener(eval(event_name), h,
+            priority=HIGHEST_PRIORITY)
+
+    def _enqueue_event(self, section, event_name, event):
+        """
+        If halt -> tmp_queue and return EventHalt.
+        Otherwise -> event_queue.
+        """
         # TODO: Maximum queue size.
         if event not in self.event_queue[section][event_name]:
-            self.event_queue[section][event_name].append(event)
             if self.halt_events:
+                self.tmp_queue[section][event_name].append(event)
                 return EventHalt
+            self.event_queue[section][event_name].append(event)
 
-    def launch_single(self, argv):
-        argv = self.preprocess(argv)
-        # TODO: Subscribe on events for launched module.
-        components = [arg for arg in argv if not arg.startswith("-")]
-        if len(components) != 1:
-            raise ValueError("The number of component must be 1, not %d" %
-                    len(components))
-        old_handlers = self.grab_handlers(components[0])
-        result = launch_all(argv)
-        if result is False:
-            return result
-        new_handlers = self.grab_handlers(components[0])
-        print(old_handlers)
-        print(new_handlers)
-        # TODO: We must continue listen to events while handlers are reset.
-        # TODO: After our hack we must raise all events
-        # TODO: that were missed by removed handlers.
-        target_handlers = self.subtract_handlers(new_handlers, old_handlers)
-        # Now we halt all events using our highest priority.
-        self.halt_events = True
-        # We feed the previous messages to newly created components.
-        print(target_handlers)
-        self.set_handlers(components[0], target_handlers)
-        self.raise_events(target_handlers)
-        # We restore handlers and stop halting events.
-        self.set_handlers(components[0], new_handlers)
-        self.halt_events = False
-        # Now we feed all the missed events to everyone.
-        self.raise_events(new_handlers)
-
-    def grab_handlers(self, component):
+    def _grab_handlers(self, component):
+        """
+        Copy and return the handlers from events wanted be component.
+        """
         handlers = {}
         cp = self.config.get(component)
         if cp is None:
@@ -134,9 +251,12 @@ class ComponentLauncher(object):
                 pass
         return handlers
 
-    def subtract_handlers(self, new, old):
-        # If the subtraction result is not empty (handlers changed)
-        # we explicitly add our handlers that were removed.
+    def _subtract_handlers(self, new, old):
+        """
+        return new[i][j] \ old[i][j]. (unique handlers of new)
+        If the subtraction result is not empty (handlers changed)
+        we explicitly add our handlers that were removed.
+        """
         try:
             result = {}
             for section in new:
@@ -159,7 +279,11 @@ class ComponentLauncher(object):
             log.error(str(e))
             return {}
 
-    def set_handlers(self, component, handlers):
+    def _set_handlers(self, handlers):
+        """
+        Change the handlers to given structure.
+        handlers = {object_name: {event_name: [handler]}}
+        """
         for section in handlers:
             try:
                 event_source = eval(section)
@@ -169,29 +293,24 @@ class ComponentLauncher(object):
                 pass
         return True
 
-    def raise_events(self, handlers):
+    def _raise_events(self, handlers, event_queue):
+        """
+        Raise events for handlers using event_queue.
+        """
         for section in handlers:
             try:
                 event_source = eval(section)
                 for event_name in handlers[section]:
-                    for event in self.event_queue[section][event_name]:
+                    for event in event_queue[section][event_name]:
                         event_source.raiseEventNoErrors(event)
             except:
                 pass
         return True
 
-
-
-    '''
-    # Not compatible with message buffering.
-    def enqueue(self, argv):
-        self.argv.extend(self.preprocess(argv))
-
-    def launch_queue(self):
-        return launch_all(self.argv)
-    '''
-
-    def preprocess(self, argv):
+    def _preprocess(self, argv):
+        """
+        We allow strings w/o list.
+        """
         if isinstance(argv, basestring):
             return [argv]
         return argv
@@ -204,7 +323,6 @@ def launch_all (argv):
 
   # Looks like we don't need pox args here.
   curargs = {}
-  # pox_options = curargs
 
   for arg in argv:
     if not arg.startswith("-"):
@@ -219,30 +337,9 @@ def launch_all (argv):
       if len(arg) == 1: arg.append(True)
       curargs[arg[0]] = arg[1]
 
-  '''
-  _options.process_options(pox_options)
-  global core
-  if pox.core.core is not None:
-    core = pox.core.core
-    core.getLogger('boot').debug('Using existing POX core')
-  else:
-    core = pox.core.initialize(_options.threaded_selecthub,
-                               _options.epoll_selecthub,
-                               _options.handle_signals)
-
-  _pre_startup()
-  '''
-
   modules = _do_imports(n.split(':')[0] for n in component_order)
   if modules is False:
     return False
-
-  # TODO: Read necessery events for module from config. +
-  # TODO: Save events to queue. +
-  # TODO: Upon instantiation, save previous handlers from dependency. +
-  # TODO: Instantiate module. +
-  # TODO: Subtract handlers. +
-  # TODO: Raise enqueued events from source to newly added handlers. +
 
   inst = {}
   for name in component_order:

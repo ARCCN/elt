@@ -28,7 +28,7 @@ class CaseConfigParser(ConfigParser):
 
 
 class ComponentLauncher(object):
-    def __init__(self):
+    def __init__(self, registered=[]):
         self.config = {} # {component_name: CaseConfigParser()}
         self.event_queue = {} # {target: {event_name: [events]}}
         self.tmp_queue = {}
@@ -37,8 +37,14 @@ class ComponentLauncher(object):
                                  # False -> event_queue
         self.launched = [] # We do not support multiload.
                            # Multiple launch is error.
+
         self._read_config()
-        self._set_listeners()
+        # The only module whose launch we might miss.
+        core.call_when_ready(self._openflow_handler, ["openflow"])
+        # TODO: Maybe we should wait for other module like this?
+        self._set_listeners() # Look through configs and listen to necessary events.
+        self._set_listeners_to_registered(registered) # Some components
+        self._add_registered(registered) # are already loaded. We listened!
 
     def launch_single(self, argv):
         """
@@ -67,7 +73,7 @@ class ComponentLauncher(object):
         # We store them to tmp_queue.
         self.halt_events = True
         # We feed the previous messages to newly created components.
-        log.info(str(target_handlers))
+        log.debug(str(target_handlers))
         self._set_handlers(target_handlers)
         self._raise_events(target_handlers, self.event_queue)
         # We restore handlers and stop halting events.
@@ -157,11 +163,13 @@ class ComponentLauncher(object):
                     continue
                 try:
                     event_source = eval(section)
-                    self.event_queue[section] = {}
-                    self.my_handlers[section] = {}
+                    if section not in self.event_queue:
+                        self.event_queue[section] = {}
+                    if section not in self.my_handlers:
+                        self.my_handlers[section] = {}
                     for event_name, module in cp.items(section):
                         self._import_and_listen(section, event_source,
-                                               event_name, module)
+                                                event_name, module)
                 except Exception as e:
                     log.debug(str(e))
 
@@ -193,7 +201,45 @@ class ComponentLauncher(object):
                     self.my_handlers[section] = {}
                 for event_name, module in cp.items(section):
                     self._import_and_listen(section, event_source,
-                                           event_name, module)
+                                            event_name, module)
+            except Exception as e:
+                log.info(str(e))
+
+    def _set_listeners_to_registered(self, registered):
+        for event in registered:
+            # We have instance names and instances.
+            for cp in self.config.values():
+                try:
+                    section = "core." + event.name
+                    event_source = event.component
+                    if not cp.has_section(section):
+                        continue
+                    # Can these two be already set?
+                    if section not in self.event_queue:
+                        self.event_queue[section] = {}
+                    if section not in self.my_handlers:
+                        self.my_handlers[section] = {}
+                    for event_name, module in cp.items(section):
+                        self._import_and_listen(section, event_source,
+                                                event_name, module)
+                except Exception as e:
+                    log.info(str(e))
+
+    def _set_listeners_to_openflow(self):
+        for cp in self.config.values():
+            try:
+                section = "core.openflow"
+                event_source = eval(section)
+                if not cp.has_section(section):
+                    continue
+                # Can these two be already set?
+                if section not in self.event_queue:
+                    self.event_queue[section] = {}
+                if section not in self.my_handlers:
+                    self.my_handlers[section] = {}
+                for event_name, module in cp.items(section):
+                    self._import_and_listen(section, event_source,
+                                            event_name, module)
             except Exception as e:
                 log.info(str(e))
 
@@ -217,6 +263,38 @@ class ComponentLauncher(object):
         self.event_queue[section][event_name] = []
         event_source.addListener(eval(event_name), h,
             priority=HIGHEST_PRIORITY)
+
+    def _add_registered(self, registered):
+        for event in registered:
+            section = "core." + event.name
+            for component, cfg in self.config.items():
+                try:
+                    # TODO: Not in launched?
+                    if (cfg.get("self", "name") == section and
+                           component not in self.launched):
+                        self.launched.append(component)
+                        log.info("Component %s already registered" % component)
+                except Exception as e:
+                    log.info(str(e))
+                    continue
+
+    def _openflow_handler(self):
+        self._set_listeners_to_openflow()
+        self._add_openflow()
+
+    def _add_openflow(self):
+        section = "core.openflow"
+        for component, cfg in self.config.items():
+            try:
+                # TODO: Not in launched?
+                if (cfg.get("self", "name") == section and
+                       component not in self.launched):
+                    self.launched.append(component)
+                    log.info("Component %s already registered" % component)
+            except Exception as e:
+                log.info(str(e))
+                continue
+
 
     def _enqueue_event(self, section, event_name, event):
         """

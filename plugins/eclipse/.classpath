@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
+	<classpathentry exported="true" kind="lib" path="jetty/plugins/org.eclipse.jetty.util.ajax_9.2.3.v20140905.jar"/>
 	<classpathentry exported="true" kind="lib" path="jetty/plugins/org.eclipse.jetty.io_9.2.3.v20140905.jar"/>
 	<classpathentry exported="true" kind="lib" path="jetty/plugins/org.eclipse.jetty.websocket.common_9.2.3.v20140905.jar"/>
 	<classpathentry exported="true" kind="lib" path="jetty/plugins/org.eclipse.jetty.util_9.2.3.v20140905.jar"/>

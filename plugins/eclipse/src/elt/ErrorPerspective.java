@@ -3,6 +3,8 @@ package elt;
 import org.eclipse.ui.IFolderLayout;
 import org.eclipse.ui.IPageLayout;
 import org.eclipse.ui.IPerspectiveFactory;
+import org.eclipse.ui.IWorkbenchWindow;
+import org.eclipse.ui.PlatformUI;
 
 
 public class ErrorPerspective implements IPerspectiveFactory {
@@ -23,5 +25,7 @@ public class ErrorPerspective implements IPerspectiveFactory {
 		IFolderLayout bot =
                 layout.createFolder("bot", IPageLayout.BOTTOM, (float) 0.7, editorArea);
 		bot.addView("org.eclipse.ui.elt.CodeView");
+		IWorkbenchWindow window = PlatformUI.getWorkbench().getActiveWorkbenchWindow();
+		window.addPerspectiveListener(new ErrorPerspectiveListener());
 	}
 }

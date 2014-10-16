@@ -7,22 +7,22 @@
 	      point="org.eclipse.ui.views">
 	  <view
 	         name="%view.name"
-	         class="elt.ELTView"
+	         class="elt.EventViewer.ELTView"
 	         id="org.eclipse.ui.elt.ELTView">
 	  </view>
 	  <view
 	         name="%view.name.0"
-	         class="elt.EventView"
+	         class="elt.EventViewer.EventView"
 	         id="org.eclipse.ui.elt.EventView">
 	  </view>
 	  <view
 	         name="%view.name.1"
-	         class="elt.DataView"
+	         class="elt.EventViewer.DataView"
 	         id="org.eclipse.ui.elt.DataView">
 	  </view>
 	  <view
 	         name="%view.name.2"
-	         class="elt.CodeView"
+	         class="elt.EventViewer.CodeView"
 	         id="org.eclipse.ui.elt.CodeView">
 	  </view>
    </extension>
@@ -64,5 +64,21 @@
             id="org.eclipse.ui.elt.ErrorPerspective"
             name="%perspective.name">
       </perspective>
+   </extension>
+   <extension
+         point="org.eclipse.ui.editors">
+      <editor
+            class="elt.ControllerInteraction.ControllerEditor"
+            default="false"
+            id="org.eclipse.ui.elt.ControllerEditor"
+            name="%editor.name">
+      </editor>
+   </extension>
+   <extension
+         point="org.eclipse.ui.elementFactories">
+      <factory
+            class="elt.ControllerInteraction.ControllerElementFactory"
+            id="org.eclipse.ui.elt.ControllerElementFactory">
+      </factory>
    </extension>
 </plugin>

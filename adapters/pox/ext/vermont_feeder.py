@@ -87,11 +87,11 @@ class TopologyManager(object):
         return io.serialize(network)
 
 def _send(conn, msg):
-    print(len(msg))
+    # print(len(msg))
     # prelude message body with its length
     msg_buffer = struct.pack("!H", len(msg)) + msg
     bytes_to_send = len(msg_buffer)
-    print(len(msg_buffer))
+    # print(len(msg_buffer))
     while bytes_to_send > 0:
     	sent = conn.send(msg_buffer)
         if sent == 0:

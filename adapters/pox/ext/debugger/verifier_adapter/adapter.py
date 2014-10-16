@@ -37,6 +37,7 @@ class Adapter(object):
                     "OFPFMFC_EPERM"]):
             return
 
+        event.should_log = False
         # from openflow.of_01
 
         buf = event.ofp.data

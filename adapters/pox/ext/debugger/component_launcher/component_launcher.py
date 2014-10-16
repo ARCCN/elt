@@ -9,7 +9,7 @@ import os
 from functools import partial
 
 from pox.boot import _do_imports
-from pox.core import core
+from pox.core import core, ComponentRegistered
 from pox.lib.revent.revent import EventHalt
 
 
@@ -18,7 +18,7 @@ CONFIG = ["debugger/component_launcher/component_config/",
           "ext/debugger/component_launcher/component_config/",
           "pox/ext/debugger/component_launcher/component_config/",
           "adapters/pox/ext/debugger/component_launcher/component_config/"]
-HIGHEST_PRIORITY = 1000000
+HIGHEST_PRIORITY = 0xffffffff
 
 
 class CaseConfigParser(ConfigParser):
@@ -37,6 +37,7 @@ class ComponentLauncher(object):
                                  # False -> event_queue
         self.launched = [] # We do not support multiload.
                            # Multiple launch is error.
+        self.now_launching = None
 
         self._read_config()
         # The only module whose launch we might miss.
@@ -45,6 +46,7 @@ class ComponentLauncher(object):
         self._set_listeners() # Look through configs and listen to necessary events.
         self._set_listeners_to_registered(registered) # Some components
         self._add_registered(registered) # are already loaded. We listened!
+        core.addListener(ComponentRegistered, self._handle_ComponentRegistered)
 
     def launch_single(self, argv):
         """
@@ -55,7 +57,9 @@ class ComponentLauncher(object):
         components = [arg for arg in argv if not arg.startswith("-")]
         self._check_components(components)
         old_handlers = self._grab_handlers(components[0])
+        self.now_launching = components[0]
         result = launch_all(argv)
+        self.now_launching = None
         self.launched.append(components[0])
         # Subscribe on events for launched module.
         self._set_listeners_to_source(components[0])
@@ -73,7 +77,7 @@ class ComponentLauncher(object):
         # We store them to tmp_queue.
         self.halt_events = True
         # We feed the previous messages to newly created components.
-        log.debug(str(target_handlers))
+        # log.debug(str(target_handlers))
         self._set_handlers(target_handlers)
         self._raise_events(target_handlers, self.event_queue)
         # We restore handlers and stop halting events.
@@ -121,7 +125,30 @@ class ComponentLauncher(object):
         # Now all known dependencies must be loaded.
         # We can load our target.
         log.info("Launching %s" % components[0])
+        print("Launching %s" % components[0])
+        sys.stdout.flush()
         self.launch_single(argv)
+
+    def _handle_ComponentRegistered(self, event):
+        if self._belongsToComponent(self.now_launching, "core." + event.name):
+            return
+        # TODO: Maybe more string workaround double-registration?
+        self._set_listeners_to_registered([event])
+        self._add_registered([event])
+
+    def _belongsToComponent(self, component, name):
+        """
+        Checks whether this module contains this core_name.
+        """
+        if component is None or name is None:
+            return False
+        cp = self.config.get(component)
+        try:
+            if cp.get("self", "name") == name:
+                return True
+        except Exception as e:
+            pass
+        return False
 
     def _check_components(self, components):
         if len(components) != 1:
@@ -273,7 +300,9 @@ class ComponentLauncher(object):
                     if (cfg.get("self", "name") == section and
                            component not in self.launched):
                         self.launched.append(component)
+                        print("Launched %s" % component)
                         log.info("Component %s already registered" % component)
+                        sys.stdout.flush()
                 except Exception as e:
                     log.info(str(e))
                     continue
@@ -290,7 +319,9 @@ class ComponentLauncher(object):
                 if (cfg.get("self", "name") == section and
                        component not in self.launched):
                     self.launched.append(component)
+                    print("Launched %s" % component)
                     log.info("Component %s already registered" % component)
+                    sys.stdout.flush()
             except Exception as e:
                 log.info(str(e))
                 continue
@@ -391,6 +422,7 @@ class ComponentLauncher(object):
         """
         if isinstance(argv, basestring):
             return [argv]
+        argv = [x.strip() for x in argv if len(x.strip()) > 0]
         return argv
 
 

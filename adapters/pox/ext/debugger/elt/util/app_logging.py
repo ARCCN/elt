@@ -21,6 +21,7 @@ def getLogger(name):
     """
     log = logging.getLogger(name)
     log.setLevel(logging.DEBUG)
+    log.propagate = False
     hnd2 = logging.StreamHandler(sys.stdout)
     fmt2 = logging.Formatter(fmt='%(name)-20s %(levelname)-8s %(message)s')
     hnd2.setLevel(logging.NOTSET)

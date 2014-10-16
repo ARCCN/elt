@@ -8,6 +8,7 @@ def _handle_ComponentRegistered(event):
 
 
 def launch():
+    global registered
     core.registerNew(ComponentLauncher, registered)
 
 

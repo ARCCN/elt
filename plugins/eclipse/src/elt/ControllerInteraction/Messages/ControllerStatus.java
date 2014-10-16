@@ -31,7 +31,7 @@ public class ControllerStatus extends ControllerMessage {
 	@Override
 	public Map<String, Object> dump() {
 		Map<String, Object> map = new HashMap<String, Object>();
-		map.put("_name", this._name);
+		map.put("_name", ControllerStatus._name);
 		map.put("status", status);
 		return map;
 	}

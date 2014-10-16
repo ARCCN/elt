@@ -34,7 +34,7 @@ public class ControllerMessage implements IDumpable, ILoadable {
 	@Override
 	public Map<String, Object> dump() {
 		Map<String, Object> map = new HashMap<String, Object>();
-		map.put("_name", this._name);
+		map.put("_name", ControllerMessage._name);
 		return map;
 	}
 }

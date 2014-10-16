@@ -1,6 +1,5 @@
 package elt.ControllerInteraction.Messages;
 
-import java.util.HashMap;
 import java.util.Map;
 
 public class LaunchHierarchical extends LaunchComponent {
@@ -15,7 +14,7 @@ public class LaunchHierarchical extends LaunchComponent {
 	@Override
 	public Map<String, Object> dump() {
 		Map<String, Object> map = super.dump();
-		map.put("_name", this._name);
+		map.put("_name", LaunchHierarchical._name);
 		return map;
 	}
 }

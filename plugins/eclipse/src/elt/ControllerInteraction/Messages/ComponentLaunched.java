@@ -36,7 +36,7 @@ public class ComponentLaunched extends ControllerMessage {
 	@Override
 	public Map<String, Object> dump() {
 		Map<String, Object> map = new HashMap<String, Object>();
-		map.put("_name", this._name);
+		map.put("_name", ComponentLaunched._name);
 		map.put("component", component);
 		return map;
 	}

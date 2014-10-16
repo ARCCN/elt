@@ -25,7 +25,7 @@ public class StartController extends ControllerMessage {
 	@Override
 	public Map<String, Object> dump() {
 		Map<String, Object> map = new HashMap<String, Object>();
-		map.put("_name", this._name);
+		map.put("_name", StartController._name);
 		map.put("args", args);
 		return map;
 	}

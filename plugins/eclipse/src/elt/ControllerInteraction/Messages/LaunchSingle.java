@@ -14,7 +14,7 @@ public class LaunchSingle extends LaunchComponent {
 	@Override
 	public Map<String, Object> dump() {
 		Map<String, Object> map = super.dump();
-		map.put("_name", this._name);
+		map.put("_name", LaunchSingle._name);
 		return map;
 	}
 }

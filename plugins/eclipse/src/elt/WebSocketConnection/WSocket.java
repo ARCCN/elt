@@ -16,7 +16,6 @@ public class WSocket {
 	private final CountDownLatch closeLatch;
 	private final CountDownLatch connectLatch;
 	 
-    @SuppressWarnings("unused")
     private Session session;
     protected INotified receiver;
     public boolean connected = false;

@@ -150,7 +150,7 @@ public class ControllerPage extends FormPage implements IFormPage, INotified {
 		GridLayout layout = new GridLayout();
 		layout.numColumns = 3;
 		body.setLayout(layout);
-		GridData gd;
+
 		createConnectionArea(body, toolkit);
 		createOnOffArea(body, toolkit);
 	}

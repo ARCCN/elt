@@ -8,7 +8,7 @@ public class StopController extends ControllerMessage {
 	@Override
 	public Map<String, Object> dump() {
 		Map<String, Object> map = super.dump();
-		map.put("_name", this._name);
+		map.put("_name", StopController._name);
 		return map;
 	}
 }

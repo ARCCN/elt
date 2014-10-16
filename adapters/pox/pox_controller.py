@@ -13,12 +13,19 @@ import time
 import sys
 import os
 from select import select
+from ConfigParser import ConfigParser
+
+from controller_messages import *
 
 
 pox_popen = None
 pox_lock = Lock()
 from ext.debugger.elt.util import app_logging
 log = app_logging.getLogger("PoxController")
+handlers = []
+
+
+# TODO: Get launched modules. Useful when connecting while pox is running.
 
 
 class WSHandler(tornado.websocket.WebSocketHandler):
@@ -36,6 +43,11 @@ class WSHandler(tornado.websocket.WebSocketHandler):
         log.info("HttpServer: client connected")
         if self.handlers is not None:
             self.handlers.append(self)
+        global pox_popen
+        if pox_popen is None:
+            self.write_message(ControllerStatus("stopped").dumps())
+        else:
+            self.write_message(ControllerStatus("running").dumps())
 
     def on_close(self):
         log.info("HttpServer: client disconnected")
@@ -45,27 +57,62 @@ class WSHandler(tornado.websocket.WebSocketHandler):
     def check_origin(self, origin):
         return True
 
-    def on_message(self, message):
+    def on_message(self, str_message):
+        message = load_message(str_message)
+        if not isinstance(message, ControllerMessage):
+            return
         self.process_message(message)
 
     def process_message(self, message):
         global pox_lock
-        if message.startswith("start_pox"):
+        if isinstance(message, StartController):
             pox_lock.acquire()
             stop_pox()
-            start_pox(message.replace("start_pox", "").strip())
+            start_pox(message.args.strip())
             pox_lock.release()
-        elif message.startswith("stop_pox"):
+            if pox_popen is None:
+                self.write_message(ControllerStatus("stopped").dumps())
+            else:
+                self.write_message(ControllerStatus("running").dumps())
+        elif isinstance(message, StopController):
             pox_lock.acquire()
             stop_pox()
             pox_lock.release()
-        elif (message.startswith("launch_single") or
-                message.startswith("launch_hierarchical")):
+            if pox_popen is None:
+                self.write_message(ControllerStatus("stopped").dumps())
+            else:
+                self.write_message(ControllerStatus("running").dumps())
+        elif isinstance(message, LaunchComponent):
+            output_ready(None, None)
             pox_lock.acquire()
-            send_command(message)
+            send_command(str(message))
             pox_lock.release()
+        elif isinstance(message, GetControllerComponents):
+            cc = get_controller_components()
+            self.write_message(cc.dumps())
         else:
             log.warning("Invalid message:\n%s" % message)
+
+
+def output_ready(fd, events):
+    while True:
+        try:
+            rlist, _, _ = select([pox_popen.stdout], [], [], 0)
+            if len(rlist) > 0:
+                line = pox_popen.stdout.readline()
+                line = line.replace("POX>", "").strip()
+                print(line)
+                if (line.startswith("Launching ") or
+                        line.startswith("Launched ")):
+                    line = (line.replace("Launching ", "").
+                                 replace("Launched ", ""))
+                    # We notify everyone.
+                    send_all(ComponentLaunched(line).dumps())
+            else:
+                break
+        except Exception as e:
+            log.debug(str(e))
+            break
 
 
 def start_pox(args):
@@ -85,10 +132,14 @@ def start_pox(args):
     splitted.insert(0, "python")
     log.debug("%s" % splitted)
     try:
-        pox_popen = Popen(splitted, stdin=PIPE, stdout=sys.stdout,
-                          stderr=sys.stderr)
+        pox_popen = Popen(splitted, bufsize=0, stdin=PIPE,
+                          stdout=PIPE, stderr=sys.stderr)
+        loop = tornado.ioloop.IOLoop.instance()
+        loop.add_handler(pox_popen.stdout.fileno(), output_ready, loop.READ)
+        return True
     except Exception as e:
         log.error(str(e))
+        return False
 
 
 def send_command(message):
@@ -102,8 +153,8 @@ def send_command(message):
         return
     message = ("core.ComponentLauncher." + parts[0] +
                "([\"" + "\", \"".join(parts[1:]) + "\"])\n")
-    _, rlist, _ = select([], [pox_popen.stdin], [], 0)
-    if len(rlist) > 0:
+    _, wlist, _ = select([], [pox_popen.stdin], [], 0)
+    if len(wlist) > 0:
         log.debug("Sending command: \n%s" % message)
         pox_popen.stdin.write(message)
     else:
@@ -125,7 +176,57 @@ def stop_pox():
         pox_popen = None
 
 
+class CaseConfigParser(ConfigParser):
+    def __init__(self, allow_no_value=False):
+        ConfigParser.__init__(self, allow_no_value=allow_no_value)
+        self.optionxform = str
+
+
+def get_controller_components():
+    # TODO: Maybe move to separate file (e.g. ext/debugger/component_launcher)?
+    # TODO: More intelligent lookup.
+    CONFIG = ["debugger/component_launcher/component_config/",
+          "ext/debugger/component_launcher/component_config/",
+          "pox/ext/debugger/component_launcher/component_config/",
+          "adapters/pox/ext/debugger/component_launcher/component_config/"]
+    config = {}
+    def _raise(x):
+        raise x
+
+    for directory in CONFIG:
+        try:
+            for dirname, dirnames, filenames in os.walk(
+                    directory, onerror=_raise):
+                del dirnames[:]
+                for filename in filenames:
+                    if not filename.endswith(".cfg"):
+                        continue
+                    cp = CaseConfigParser(allow_no_value=True)
+                    log.info("Read config: %s" %
+                             cp.read(os.path.join(dirname, filename)))
+                    config[filename.replace(".cfg", "")] = cp
+        except Exception as e:
+            log.debug(str(e))
+    cc = ControllerComponents()
+    for component, cfg in config.items():
+        params = []
+        for k, v in cfg.defaults().items():
+            if v is None:
+                params.append(ComponentParam(k))
+            else:
+                params.append(ComponentParam(k, True, v))
+        c = Component(component, params)
+        cc.add_component(c)
+    return cc
+
+
+def send_all(message):
+    for h in handlers:
+        h.write_message(message)
+
+
 def start_server(port):
+    global handlers
     handlers = []
     application = tornado.web.Application([
         (r'/ws', WSHandler, {"instances": handlers})

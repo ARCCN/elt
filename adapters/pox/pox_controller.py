@@ -23,6 +23,7 @@ pox_lock = Lock()
 from ext.debugger.elt.util import app_logging
 log = app_logging.getLogger("PoxController")
 handlers = []
+launched = []
 
 
 # TODO: Get launched modules. Useful when connecting while pox is running.
@@ -71,17 +72,17 @@ class WSHandler(tornado.websocket.WebSocketHandler):
             start_pox(message.args.strip())
             pox_lock.release()
             if pox_popen is None:
-                self.write_message(ControllerStatus("stopped").dumps())
+                send_all(ControllerStatus("stopped").dumps())
             else:
-                self.write_message(ControllerStatus("running").dumps())
+                send_all(ControllerStatus("running").dumps())
         elif isinstance(message, StopController):
             pox_lock.acquire()
             stop_pox()
             pox_lock.release()
             if pox_popen is None:
-                self.write_message(ControllerStatus("stopped").dumps())
+                send_all(ControllerStatus("stopped").dumps())
             else:
-                self.write_message(ControllerStatus("running").dumps())
+                send_all(ControllerStatus("running").dumps())
         elif isinstance(message, LaunchComponent):
             output_ready(None, None)
             pox_lock.acquire()
@@ -90,6 +91,9 @@ class WSHandler(tornado.websocket.WebSocketHandler):
         elif isinstance(message, GetControllerComponents):
             cc = get_controller_components()
             self.write_message(cc.dumps())
+            # TODO: Maybe send launched by request-response?
+            for c in launched:
+                self.write_message(ComponentLaunched(c).dumps())
         else:
             log.warning("Invalid message:\n%s" % message)
 
@@ -106,6 +110,7 @@ def output_ready(fd, events):
                         line.startswith("Launched ")):
                     line = (line.replace("Launching ", "").
                                  replace("Launched ", ""))
+                    launched.append(line)
                     # We notify everyone.
                     send_all(ComponentLaunched(line).dumps())
             else:
@@ -116,7 +121,7 @@ def output_ready(fd, events):
 
 
 def start_pox(args):
-    global pox_popen
+    global pox_popen, launched
     splitted = [x for x in args.split(' ') if x != ""]
     if ("debugger.component_launcher" not in splitted and
             "ext.debugger.component_launcher" not in splitted):
@@ -132,6 +137,7 @@ def start_pox(args):
     splitted.insert(0, "python")
     log.debug("%s" % splitted)
     try:
+        launched = []
         pox_popen = Popen(splitted, bufsize=0, stdin=PIPE,
                           stdout=PIPE, stderr=sys.stderr)
         loop = tornado.ioloop.IOLoop.instance()
@@ -162,7 +168,7 @@ def send_command(message):
 
 
 def stop_pox():
-    global pox_popen
+    global pox_popen, launched
     if pox_popen is not None:
         pox_popen.stdin.close()
         for i in xrange(5):
@@ -174,6 +180,7 @@ def stop_pox():
         if pox_popen.poll() is None:
             pox_popen.kill()
         pox_popen = None
+        launched = []
 
 
 class CaseConfigParser(ConfigParser):

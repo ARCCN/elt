@@ -89,6 +89,7 @@ class ComponentLauncher(object):
                 self.event_queue[section][event_name].extend(events)
         # Now we feed missed events to everyone.
         self._raise_events(new_handlers, self.tmp_queue)
+        return True
 
     def launch_hierarchical(self, argv):
         """
@@ -125,9 +126,10 @@ class ComponentLauncher(object):
         # Now all known dependencies must be loaded.
         # We can load our target.
         log.info("Launching %s" % components[0])
-        print("Launching %s" % components[0])
+        if self.launch_single(argv) == True:
+            print("Launched %s" % components[0])
         sys.stdout.flush()
-        self.launch_single(argv)
+
 
     def _handle_ComponentRegistered(self, event):
         if self._belongsToComponent(self.now_launching, "core." + event.name):

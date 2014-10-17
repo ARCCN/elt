@@ -50,7 +50,7 @@ public class ControllerInput implements IEditorInput {
 	@Override
 	public String getToolTipText() {
 		// TODO Auto-generated method stub
-		return "Not implemented";
+		return "Controller interaction";
 	}
 
 }

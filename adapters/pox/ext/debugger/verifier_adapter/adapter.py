@@ -28,6 +28,8 @@ class PolicyViolation(NetworkError):
 
 
 class Adapter(object):
+    _core_name = "verifier_adapter"
+
     def __init__(self):
         self.log = LogClient("verifier_adapter")
 

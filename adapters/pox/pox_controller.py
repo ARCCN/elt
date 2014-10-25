@@ -131,8 +131,8 @@ def start_pox(args):
     if "log.level" not in splitted:
         splitted.insert(0, "log.level")
         splitted.insert(1, "--WARNING")
-    #if "--no-openflow" not in splitted:
-    #    splitted.insert(0, "--no-openflow")
+    if "--no-openflow" not in splitted:
+        splitted.insert(0, "--no-openflow")
     splitted.insert(0, os.path.join(os.getcwd(), "pox.py"))
     splitted.insert(0, "python")
     log.debug("%s" % splitted)

@@ -4,6 +4,7 @@ import tornado.ioloop
 import tornado.web
 from multiprocessing import Process, Pipe
 import functools
+import os
 
 from .loggers import BaseLogger
 from .xml_report import *
@@ -45,18 +46,31 @@ class WSHandler(tornado.websocket.WebSocketHandler):
 
 
 def connection_ready(handlers, conn, fd, events):
+    loop = tornado.ioloop.IOLoop.instance()
+    if loop.ERROR & events != 0:
+        loop.close()
+        return
     messages = []
     try:
         while conn.poll() is True:
             messages.append(conn.recv())
     except:
-        tornado.ioloop.IOLoop.instance().close()
+        loop.close()
     for s in messages:
         for h in handlers:
             h.write_message(s)
 
 
-def start_server(port, conn):
+def check_parent(parent):
+    loop = tornado.ioloop.IOLoop.instance()
+    try:
+        os.kill(parent, 0)
+    except:
+        loop.close()
+        log.debug("Parent dead. Terminating.")
+
+
+def start_server(port, conn, parent):
     handlers = []
     application = tornado.web.Application([
         (r'/ws', WSHandler, {"instances": handlers})
@@ -65,16 +79,23 @@ def start_server(port, conn):
     server.listen(port)
     loop = tornado.ioloop.IOLoop.instance()
     callback = functools.partial(connection_ready, handlers, conn)
-    loop.add_handler(conn.fileno(), callback, loop.READ)
-    loop.start()
+    loop.add_handler(conn.fileno(), callback, loop.READ | loop.ERROR)
+    tornado.ioloop.PeriodicCallback(functools.partial(check_parent, parent),
+                                    1000, loop).start()
+    try:
+        loop.start()
+    except:
+        pass
 
 
 class HttpLogger(BaseLogger):
     def __init__(self, port=8080):
         self.conn, child_conn = Pipe()
-        self.child = Process(target=start_server, args=(port, child_conn))
+        self.child = Process(target=start_server, args=(port, child_conn, os.getpid()))
         self.port = port
+        self.child.daemon = True
         self.child.start()
+        child_conn.close()
 
     def __del__(self):
         self.child.terminate()

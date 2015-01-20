@@ -322,7 +322,7 @@ class TaggedFlowTable(FlowTable):
                 undefined[current].add(entry)
             else:
                 # overlapping with higher eff. priority -> current is masked
-                masked[entry] = {current}
+                masked[entry] = set([current])
 
         # Two classes with equal priority
         if (check_overlap and
@@ -389,14 +389,14 @@ class TaggedFlowTable(FlowTable):
         for f in self.dict_field_names:
             attr = getattr(current.match, f)
             if attr not in self.fields[f]:
-                self.fields[f][attr] = {current}
+                self.fields[f][attr] = set([current])
             else:
                 self.fields[f][attr].add(current)
 
         for f in self.trie_field_names:
             attr = ip_to_key(get_ip(current.match, f))
             if attr not in self.fields[f]:
-                self.fields[f][attr] = {current}
+                self.fields[f][attr] = set([current])
             else:
                 self.fields[f][attr].add(current)
 
@@ -404,8 +404,8 @@ class TaggedFlowTable(FlowTable):
 
     def select_matching_entries(self, entries, match, priority=0,
                                 strict=False, out_port=None):
-        return {entry for entry in entries
-                if entry.is_matched_by(match, priority, strict, out_port)}
+        return set([entry for entry in entries
+                if entry.is_matched_by(match, priority, strict, out_port)])
 
     def remove_entries_simple(self, removed):
         """ Remove entries and clear indexes."""

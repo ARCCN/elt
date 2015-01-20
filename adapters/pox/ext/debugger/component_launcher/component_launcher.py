@@ -48,6 +48,7 @@ class ComponentLauncher(object):
         self._add_registered(registered) # are already loaded. We listened!
         core.addListener(ComponentRegistered, self._handle_ComponentRegistered)
 
+
     def launch_single(self, argv):
         """
         Launch 1 module. Example: argv = ["openflow.of_01", "--port=3366"].
@@ -327,7 +328,6 @@ class ComponentLauncher(object):
             except Exception as e:
                 log.info(str(e))
                 continue
-
 
     def _enqueue_event(self, section, event_name, event):
         """

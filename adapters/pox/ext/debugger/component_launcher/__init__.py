@@ -14,6 +14,3 @@ def launch():
 
 registered = []
 core.addListener(ComponentRegistered, _handle_ComponentRegistered)
-
-
-

@@ -162,9 +162,8 @@ class TaggedFlowTable(FlowTable):
         'nw_dst'
     ]
 
-    def __init__(self, dpid=None, nexus=None):
+    def __init__(self, dpid=None):
         FlowTable.__init__(self)
-        self.nexus = nexus
         self._table = set()
         self.dpid = dpid
         self.fields = {}
@@ -330,12 +329,13 @@ class TaggedFlowTable(FlowTable):
                 len(undefined[current]) + len(modified[current]) > 0):
             return ("added", [])
 
-        self.raise_competition(masked, None, modified, undefined)
+        events = self.raise_competition(masked, None, modified, undefined)
         # 0.15ms
         if len(exact) > 0:
             entry.tag.add_history(current.tag.apps)
             current.tag = entry.tag
-        return self.add_entry_simple(current)
+        self.add_entry_simple(current)
+        return events
 
     def modify_error_checking(self, current, is_strict=False,
                               check_overlap=False):
@@ -357,10 +357,11 @@ class TaggedFlowTable(FlowTable):
 
         if(len(modified) == 0):
             # if no matching entry is found, modify acts as add
-            return self.add_entry_error_checking(current, check_overlap)
+            self.add_entry_error_checking(current, check_overlap)
+            return []
         else:
-            self.raise_competition(modified=flow_modified)
-            return ("modified", modified)
+            events = self.raise_competition(modified=flow_modified)
+            return events
 
     def delete_error_checking(self, current, is_strict=False,
                               raise_error=True):
@@ -377,9 +378,11 @@ class TaggedFlowTable(FlowTable):
                 removed.append(entry)
                 if self.is_app_error(current.tag, entry.tag):
                     deleted.add(entry)
+        events = []
         if raise_error:
-            self.raise_competition(deleted={current: deleted})
-        return self.remove_entries_simple(removed)
+            events = self.raise_competition(deleted={current: deleted})
+        self.remove_entries_simple(removed)
+        return events
 
     def add_entry_simple(self, current):
         """ Add entry and set indexes."""
@@ -484,12 +487,10 @@ class TaggedFlowTable(FlowTable):
 
     def raise_competition(self, masked=None, deleted=None,
                           modified=None, undefined=None):
-        """ Raise CompetitionError events. """
+        """ Create and return CompetitionError events. """
         # TODO: Work aroung targeted events.
         # Now not really raising events
         events = []
-        if self.nexus is None:
-            return
         if masked is not None:
             for k in masked.keys():
                 if len(masked[k]) > 0:
@@ -510,5 +511,4 @@ class TaggedFlowTable(FlowTable):
                 if len(undefined[k]) > 0:
                     e = FlowUndefined(self.dpid, k, undefined[k])
                     events.append(e)
-        for e in events:
-            self.nexus.handle_CompetitionError(e)
+        return events

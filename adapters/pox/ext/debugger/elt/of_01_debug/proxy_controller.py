@@ -52,11 +52,17 @@ class ProxyController(object):
             self.db.reconnect()
 
         for d in self.debuggers.keys():
-            d.process_flow_mod(dpid, flow_mod, code_entries[0][0])
+            events = d.process_flow_mod(dpid, flow_mod, code_entries[0][0])
+            if isinstance(events, list):
+                for e in events:
+                    self.log_event(d, e)
 
     def process_flow_removed(self, dpid, flow_rem):
         for d in self.debuggers:
-            d.process_flow_removed(dpid, flow_rem)
+            events = d.process_flow_removed(dpid, flow_rem)
+            if isinstance(events, list):
+                for e in events:
+                    self.log_event(d, e)
 
     def log_event(self, debugger, event):
         self.debuggers[debugger].log_event(event)

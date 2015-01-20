@@ -83,15 +83,12 @@ class FlowTableController(object):
         flow_mod.flags |= of.OFPFF_SEND_FLOW_REM
 
         if dpid not in self.flow_tables:
-            self.flow_tables[dpid] = TaggedFlowTable(dpid, nexus=self)
+            self.flow_tables[dpid] = TaggedFlowTable(dpid)
 
-        self.flow_tables[dpid].process_flow_mod(
+        return self.flow_tables[dpid].process_flow_mod(
             flow_mod, self.get_apps(module))
 
     def process_flow_removed(self, dpid, flow_rem):
         if dpid not in self.flow_tables:
-            return
-        self.flow_tables[dpid].process_flow_removed(flow_rem)
-
-    def handle_CompetitionError(self, event):
-        self.proxy.log_event(self, event)
+            return []
+        return self.flow_tables[dpid].process_flow_removed(flow_rem)

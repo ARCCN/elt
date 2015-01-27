@@ -1,0 +1,34 @@
+package org.elt.hazelcast_adapter.of01;
+
+import java.util.Map;
+
+import org.elt.hazelcast_adapter.of.InstructionPart;
+
+public class InstructionPart01 extends InstructionPart {
+	OFPAction01[] actions;
+	
+	public InstructionPart01() {
+	}
+	
+	public InstructionPart01(OFPAction01 actions[]) {
+		this.actions = actions;
+	}
+	
+	public int getActionLength() {
+		return this.actions.length;
+	}
+	
+	public OFPAction01 getAction(int i) {
+		return this.actions[i];
+	}
+	
+	public OFPAction01[] getActions() {
+		return this.actions;
+	}
+
+	@Override
+	public void fromJSON(Map map) {
+		// TODO Auto-generated method stub
+		
+	}
+}

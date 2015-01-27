@@ -24,7 +24,7 @@ public class JsonParser {
 		return msg;
 	}
 	
-	public String encodeMessage(ControllerMessage message) {
+	public String encodeMessage(IDumpable message) {
 		String json = JSON.toString(message.dump());
 		return json;
 	}

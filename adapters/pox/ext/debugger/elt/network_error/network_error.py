@@ -1,4 +1,4 @@
-from pox.lib.revent.revent import Event
+from pox.lib.revent.revent import Event # TODO: Needed?
 import time
 from .entries import Entry, EntryGroup
 
@@ -14,13 +14,32 @@ data: ofp_flow_mod | ofp_rule
 """
 
 
-class NetworkError(Event):
+class BaseError(Event): # Maybe inherit message_server.Message?
     """
     Common ancestor for all errors processed by our system.
     Provides unpacking by name.
     """
     def __init__(self):
         self._name = str(self.__class__).rsplit('.', 1)[1][:-2]
+
+    @property
+    def name(self):
+        return self._name
+
+    def __setstate__(self, d):
+        self._name = d.get("_name", self._name)
+
+    def __getstate__(self):
+        return {"_name": self._name}
+
+
+class NetworkError(BaseError):
+    """
+    Common ancestor for all errors processed by our system.
+    Provides unpacking by name.
+    """
+    def __init__(self):
+        BaseError.__init__(self)
         t = time.time()
         self.time = time.strftime("%d.%m.%Y %H:%M:%S", time.localtime(t))
         self.time += "." + "%03d" % (int((t - int(t)) * 1000))
@@ -32,7 +51,7 @@ class NetworkError(Event):
         return self._name
 
     def __setstate__(self, d):
-        self._name = d.get("_name", self._name)
+        BaseError.__setstate__(self, d)
         self.desc = d.get("desc", "")
         if "time" in d:
             self.time = d["time"]
@@ -44,8 +63,7 @@ class NetworkError(Event):
                 self.entry_groups.append(g)
 
     def __getstate__(self):
-        d = {}
-        d["_name"] = self._name
+        d = BaseError.__getstate__(self)
         d["desc"] = self.desc
         d["time"] = self.time
         d["entry_groups"] = self.entry_groups

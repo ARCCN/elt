@@ -17,6 +17,9 @@ public class TableEntryTag implements Serializable, ILoadable, IDumpable {
 	public int apps_length;
 	
 	public TableEntryTag() {
+		this.apps = new HashSet<String>();
+		this.apps_length = this.apps.size();
+		this.nodes = new HashSet<Long>();
 	}
 	
 	public TableEntryTag(String[] apps, long node) {
@@ -45,12 +48,18 @@ public class TableEntryTag implements Serializable, ILoadable, IDumpable {
 	@Override
 	public void fromJSON(Map map) throws Exception {
 		// TODO: May fall cause we don't have node in map.
-		this.apps = new HashSet<String>(Arrays.asList((String [])map.get("apps")));
+		this.apps = new HashSet<String>();
+		try {
+			Object[] objs = (Object [])map.get("apps");
+			for (int i=0; i < objs.length; ++i)
+				this.apps.add((String)objs[i]);
+		}
+		catch (Throwable e) {}
 		this.apps_length = this.apps.size();
 	}
 
 	@Override
-	public Map<String, Object> dump() throws Exception {
+	public Map<String, Object> dump() {
 		Map<String, Object> map = new HashMap<String, Object>();
 		map.put("apps", this.apps.toArray(new String[this.apps.size()]));
 		ArrayList<String> nds = new ArrayList<String>();

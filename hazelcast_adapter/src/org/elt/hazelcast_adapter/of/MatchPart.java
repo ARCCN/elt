@@ -1,10 +1,13 @@
 package org.elt.hazelcast_adapter.of;
 
-public class MatchPart implements Comparable {
-	protected short priority;
+import java.io.Serializable;
+
+public class MatchPart implements Comparable, Serializable {
+	protected short priority = 0;
 	protected OFPMatch match;
-	protected String dpid;
+	protected String dpid = "";
 	protected byte version = -1;
+	private final static long serialVersionUID = 0x2000000;
 	
 	public MatchPart() {
 	}
@@ -43,7 +46,7 @@ public class MatchPart implements Comparable {
 			return -1;
 		if (mp.version != this.version)
 			return -1;
-		if (mp.dpid != this.dpid)
+		if (!(mp.dpid.equalsIgnoreCase(this.dpid)))
 			return -1;
 		return this.match.compareTo(mp.match);
 	}

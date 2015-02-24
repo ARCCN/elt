@@ -22,9 +22,10 @@ public abstract class OFPFlowMod implements ILoadable, IDumpable{
 	protected byte command;
 	protected OFPMatch match;
 	protected InstructionPart inst;
-	protected byte version = -1;
+	protected byte version;
 	
 	public OFPFlowMod() {
+		this.version = -1;
 	}
 	
 	public OFPFlowMod(short priority, byte command, OFPMatch match, InstructionPart inst) {
@@ -32,6 +33,7 @@ public abstract class OFPFlowMod implements ILoadable, IDumpable{
 		this.command = command;
 		this.match = match;
 		this.inst = inst;
+		this.version = -1;
 	}
 	/*
 	public OFPRule toRule() {
@@ -56,9 +58,12 @@ public abstract class OFPFlowMod implements ILoadable, IDumpable{
 	public OFPMatch getMatch() { return this.match; }
 	
 	public MatchPart toMatchPart() {
+		// TODO WTF?
+		/*
 		if (!this.isAdd()) {
 			return null;
 		}
+		*/
 		return new MatchPart(this.priority, this.match, this.version);
 	}
 }

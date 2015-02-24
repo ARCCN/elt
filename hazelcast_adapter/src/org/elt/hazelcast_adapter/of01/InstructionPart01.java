@@ -18,6 +18,10 @@ public class InstructionPart01 extends InstructionPart {
 		return this.actions.length;
 	}
 	
+	public void setAction(int i, OFPAction01 act) {
+		this.actions[i] = act;
+	}
+	
 	public OFPAction01 getAction(int i) {
 		return this.actions[i];
 	}

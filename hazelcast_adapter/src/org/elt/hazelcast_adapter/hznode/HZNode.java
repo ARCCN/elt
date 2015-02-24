@@ -76,6 +76,7 @@ public class HZNode {
 		Predicate pred = PredicateCreator.createPredicate(msg);
 		tableLock.lock();
 		Set<Entry<MatchPart, TableValue>> matches = table.entrySet(pred);
+		//int size = matches.size();
 		updateTable(msg, matches);
 		// TODO: Switch by msg.command. Check for errors. Update map. Everything in locks =)
 		tableLock.unlock();

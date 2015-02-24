@@ -24,8 +24,9 @@ public class CompetitionErrorMessage implements IDumpable {
 	}
 	
 	@Override
-	public Map<String, Object> dump() throws Exception {
+	public Map<String, Object> dump() {
 		Map<String, Object> map = new HashMap<String, Object>();
+		map.put("_name", "CompetitionErrorMessage");
 		map.put("msg", this.msg.dump());
 		ArrayList<Map<String, Object>> ms = new ArrayList<Map<String, Object>>();
 		for (FlowModMessage m: this.masked)

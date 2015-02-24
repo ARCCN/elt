@@ -7,7 +7,7 @@ import org.elt.hazelcast_adapter.of01.OFPFlowMod01;
 
 public class FlowModFactory {
 	public static OFPFlowMod create(Map map) {
-		int version = Integer.parseInt((String)map.get("version"));
+		int version = (int)((long)map.get("version")); //Integer.parseInt((String)map.get("version"));
 		Class<? extends OFPFlowMod> c;
 		
 		switch(version) {

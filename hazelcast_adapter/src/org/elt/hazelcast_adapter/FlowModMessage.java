@@ -44,7 +44,7 @@ public class FlowModMessage implements ILoadable, IDumpable {
 		if (!_name.equals("FlowModMessage"))
 			throw new Exception();
 		this.flow_mod = FlowModFactory.create((Map)map.get("flow_mod"));
-		this.dpid = (String)map.get("dpid");
+		this.dpid = map.get("dpid").toString();
 		this.tag = new TableEntryTag();
 		this.tag.fromJSON((Map)map.get("tag"));
 	}
@@ -59,14 +59,14 @@ public class FlowModMessage implements ILoadable, IDumpable {
 			InstructionPart ip, TableEntryTag tag) {
 		try {
 			Class<? extends OFPFlowMod> c = FlowModFactory.getClass(mp.getVersion());
-			Constructor cons = c.getConstructor(short.class, byte.class, 
+			Constructor<? extends OFPFlowMod> cons = c.getConstructor(short.class, byte.class, 
 					OFPMatch.class, InstructionPart.class);
 			OFPFlowMod ofm = (OFPFlowMod)cons.newInstance(mp.getPriority(), 
-					OFPFC.OFPFC_ADD.getValue(), mp.getMatch(), ip);
+					(byte)OFPFC.OFPFC_ADD.getValue(), mp.getMatch(), ip);
 			FlowModMessage fm = new FlowModMessage(ofm, mp.getDpid(), tag);
 			return fm;
 		}
-		catch (Exception e) { return null; }
+		catch (Exception e) { e.printStackTrace(); return null; }
 	}
 	
 	public TableValue getTableValue() {
@@ -85,8 +85,9 @@ public class FlowModMessage implements ILoadable, IDumpable {
 	public TableEntryTag getTag() { return this.tag; }
 
 	@Override
-	public Map<String, Object> dump() throws Exception {
+	public Map<String, Object> dump() {
 		Map<String, Object> map = new HashMap<String, Object>();
+		map.put("_name", "FlowModMessage");
 		map.put("flow_mod", this.flow_mod.dump());
 		map.put("dpid", this.dpid);
 		map.put("tag", this.tag.dump());

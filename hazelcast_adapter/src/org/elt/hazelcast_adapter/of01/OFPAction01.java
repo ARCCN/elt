@@ -11,13 +11,13 @@ public class OFPAction01 extends OFPAction {
 	@Override
 	public void fromJSON(Map map) {
 		// TODO: Different action types.
-		this.type = (short) Integer.parseInt((String)map.get("type"));
+		this.type = (short)(long)map.get("type");// Integer.parseInt((String)map.get("type"));
 	}
 
 	@Override
 	public Map<String, Object> dump() {
 		Map<String, Object> map = new HashMap<String, Object>();
-		map.put("type", Integer.toString((((int)this.type) & 0xFFFF)));
+		map.put("type", (((int)this.type) & 0xFFFF));
 		return map;
 	}
 

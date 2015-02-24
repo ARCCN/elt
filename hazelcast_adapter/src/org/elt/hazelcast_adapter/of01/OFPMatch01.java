@@ -12,19 +12,34 @@ public class OFPMatch01 extends OFPMatch {
 	final static String[] names = {"wildcards", "in_port", "dl_src", "dl_dst", 
 			  "dl_vlan", "dl_vlan_pcp", "dl_type", "nw_tos", 
 			  "nw_proto", "nw_src", "nw_dst", "tp_src", "tp_dst"};
+//	int wildcards; /* Wildcard fields. */
+//	short in_port; /* Input switch port. */
+//	String dl_src; /* Ethernet source address. */
+//	String dl_dst; /* Ethernet destination address. */
+//	short dl_vlan; /* Input VLAN id. */
+//	byte dl_vlan_pcp; /* Input VLAN priority. */
+//	short dl_type; /* Ethernet frame type. */
+//	byte nw_tos; /* IP ToS (actually DSCP field, 6 bits). */
+//	byte nw_proto; /* IP protocol or lower 8 bits of ARP opcode. */
+//	int nw_src; /* IP source address. */
+//	int nw_dst; /* IP destination address. */
+//	short tp_src; /* TCP/UDP source port. */
+//	short tp_dst; /* TCP/UDP destination port. */
+	private final static long serialVersionUID = 0x1000000;
+	
 	int wildcards; /* Wildcard fields. */
-	short in_port; /* Input switch port. */
+	int in_port; /* Input switch port. */
 	String dl_src; /* Ethernet source address. */
 	String dl_dst; /* Ethernet destination address. */
-	short dl_vlan; /* Input VLAN id. */
-	byte dl_vlan_pcp; /* Input VLAN priority. */
-	short dl_type; /* Ethernet frame type. */
-	byte nw_tos; /* IP ToS (actually DSCP field, 6 bits). */
-	byte nw_proto; /* IP protocol or lower 8 bits of ARP opcode. */
+	int dl_vlan; /* Input VLAN id. */
+	int dl_vlan_pcp; /* Input VLAN priority. */
+	int dl_type; /* Ethernet frame type. */
+	int nw_tos; /* IP ToS (actually DSCP field, 6 bits). */
+	int nw_proto; /* IP protocol or lower 8 bits of ARP opcode. */
 	int nw_src; /* IP source address. */
 	int nw_dst; /* IP destination address. */
-	short tp_src; /* TCP/UDP source port. */
-	short tp_dst; /* TCP/UDP destination port. */
+	int tp_src; /* TCP/UDP source port. */
+	int tp_dst; /* TCP/UDP destination port. */
 	
 	public OFPMatch01() {	
 	}
@@ -78,13 +93,14 @@ public class OFPMatch01 extends OFPMatch {
 		Class <?> c = OFPMatch01.class;
 		for (int i = 0; i < names.length; ++i) {
 			Field f = c.getDeclaredField(names[i]);
-			String value = (String)map.get(names[i]);
-			if (value == null)
+			Object o = (Object)map.get(names[i]);
+			if (o == null)
 				continue;
+			String value = o.toString();
 			if (f.getType() == String.class)
 				f.set(this, value);
 			else {
-				f.set(this, f.getType().cast( Integer.parseInt( value ) ) );
+				f.set(this, Integer.parseInt( value ) );
 			}
 		}
 		/*
@@ -189,22 +205,25 @@ public class OFPMatch01 extends OFPMatch {
 	}
 	*/
 	@Override
-	public Map<String, Object> dump() throws Exception {
+	public Map<String, Object> dump() {
 		Map<String, Object> map = new HashMap<String, Object>();
 		Class <?> c = OFPMatch01.class;
-		for (int i = 0; i < names.length; ++i) {
-			Field f = c.getDeclaredField(names[i]);
-			if (f.getType() == String.class)
-				map.put(names[i], f.get(this));
-			else {
-				int mask = 0xFFFFFFFF;
-				if (f.getType() == byte.class)
-					mask = 0xFF;
-				else if (f.getType() == short.class)
-					mask = 0xFFFF;
-				map.put(names[i], Integer.toString(((int)f.get(this)) & mask));
+		try {
+			for (int i = 0; i < names.length; ++i) {
+				Field f = c.getDeclaredField(names[i]);
+				if (f.getType() == String.class)
+					map.put(names[i], f.get(this));
+				else {
+					int mask = 0xFFFFFFFF;
+					if (f.getType() == byte.class)
+						mask = 0xFF;
+					else if (f.getType() == short.class)
+						mask = 0xFFFF;
+					map.put(names[i], ((int)f.get(this)) & mask);
+				}
 			}
 		}
+		catch (NoSuchFieldException | IllegalAccessException e) {} 
 		return map;
 	}
 }

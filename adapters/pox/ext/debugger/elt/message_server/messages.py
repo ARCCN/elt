@@ -10,6 +10,10 @@ class Message(object):
     def name(self):
         return self._name
 
+    @name.setter
+    def name(self, value):
+        self._name = value
+
     def __setstate__(self, d):
         self._name = d.get("_name", self._name)
 

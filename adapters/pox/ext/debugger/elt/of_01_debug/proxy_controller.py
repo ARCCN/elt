@@ -1,5 +1,5 @@
 from ..database import DatabaseClient
-from ..debuggers import FlowTableController, FakeDebugger
+from ..debuggers import FlowTableController, FakeDebugger, DistFlowTableController
 from ..logger import LogClient
 from ..util import app_logging
 
@@ -19,6 +19,12 @@ class ProxyController(object):
         self.db = DatabaseClient(mode='w')
         #self.log = LogClient(name="ProxyController")
         self.debuggers = {}
+        if "dist_flow_table_controller" in kw:
+            self.debuggers[DistFlowTableController(
+                self, kw["dist_flow_table_controller"]
+                )] = LogClient(name="Proxy.DistFT")
+            log.info("Dist Flow Table Controller is up! %s" % (
+                kw["dist_flow_table_controller"]))
         if "flow_table_controller" in kw:
             self.debuggers[FlowTableController(
                 self, kw["flow_table_controller"]

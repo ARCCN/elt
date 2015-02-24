@@ -1,5 +1,5 @@
 from subprocess import Popen
-import socket
+import socket, sys
 
 from .flowmod_message import *
 from ..interaction import ofp_flow_mod, Instantiator, ConnectionFactory
@@ -7,25 +7,36 @@ from ..interaction import ofp_flow_mod, Instantiator, ConnectionFactory
 
 class DistFlowTable(object):
     def __init__(self):
-        self.skt = socket.socketpair(socket.AF_UNIX)
-        self.popen = Popen(["java", "-jar", "org.elt.hazelcast_adapter"],
-                           stdin=skt[0], stdout=skt[1])
+        self.skt = list(socket.socketpair(socket.AF_UNIX))
+        self.popen = Popen(["java", "-jar", "/home/lantame/SDN/ELT/hazelcast_adapter/hazelcast_adapter.jar"],
+                           stdin=self.skt[1], stdout=self.skt[1], stderr=open("dist.log", "w"))
         self.factory = ConnectionFactory(instantiator=Instantiator(
-            module=(__name__.rsplit('.', 1)[1] + ".flowmod_message")))
-        for i in range(2):
-            self.skt[i] = self.factory.create_connection(self.skt[i])
+            module=(__name__.rsplit('.', 1)[0] + ".flowmod_message")))
+        self.skt[0] = self.factory.create_connection(self.skt[0])
 
-
-    def process_flow_mod(self, flow_mod, dpid, apps):
+    def process_flow_mod(self, dpid, flow_mod, apps):
+        print '--------\n', apps, '\n-------\n'
         msg = FlowModMessage(ofp_flow_mod.from_flow_mod(flow_mod),
                              dpid, TableEntryTag(apps))
+        print "NEW MESSAGE"
+        print self.skt[0].dumps(msg)
         self.skt[0].send(msg)
-        result = self.skt[1].recv()
+        result = self.skt[0].recv()
         # TODO: Normal processing.
         # TODO: Do we need apps in error messages?
         # TODO: Multiple error messages.
         # Guess CompetitionErrorMessage is a bad option.
-        print self.skt[0].dumps(result)
+        print "RESULT"
+        if not isinstance(result, basestring):
+            print self.skt[0].dumps(result)
+
+    def process_flow_removed(self, dpid, flow_rem):
+        pass
+
+    def __del__(self):
+        print "Closing sockets."
+        self.skt[0].close()
+        self.skt[1].close()
 
 
 

@@ -14,6 +14,7 @@ class TableEntryTag(object):
             d["apps"] = list(self.apps)
         if len(self.nodes) > 0:
             d["nodes"] = list(self.nodes)
+        return d
 
     def __setstate__(self, d):
         if "apps" in d:
@@ -37,8 +38,10 @@ class FlowModMessage(Message):
             d["dpid"] = self.dpid
         if self.tag:
             d["tag"] = self.tag
+        return d
 
     def __setstate__(self, d):
+        print "Setstate FM", d
         Message.__setstate__(self, d)
         if "flow_mod" in d:
             self.flow_mod = ofp_flow_mod()
@@ -48,11 +51,13 @@ class FlowModMessage(Message):
         if "tag" in d:
             self.tag = TableEntryTag()
             self.tag.__setstate__(d["tag"])
+        print "Setstate FM success"
 
 
 class CompetitionErrorMessage(Message):
     def __init__(self, msg=None, masked=None, modified=None,
                  undefined=None, deleted=None):
+        Message.__init__(self)
         self.msg = msg
         self.masked = set(masked) if masked is not None else set()
         self.modified = set(modified) if modified is not None else set()
@@ -65,18 +70,27 @@ class CompetitionErrorMessage(Message):
             d["msg"] = self.msg
         for field in ["masked", "modified", "undefined", "deleted"]:
             if len(getattr(self, field)) > 0:
-            d[field] = list(getattr(self, field))
+                d[field] = list(getattr(self, field))
+        return d
 
     def __setstate__(self, d):
+        print "Setstate CEM", d
         Message.__setstate__(self, d)
         if "msg" in d:
-            self.msg = FlowModMessage()
-            self.msg.__setstate__(self, d["msg"])
+            if isinstance(d["msg"], FlowModMessage):
+                self.msg = d["msg"]
+            else:
+                self.msg = FlowModMessage()
+                self.msg.__setstate__(d["msg"])
         for field in ["masked", "modified", "undefined", "deleted"]:
             if field in d:
                 setattr(self, field, set())
                 for m in d[field]:
-                    fmm = FlowModMessage()
-                    fmm.__setstate__(m)
-                    getattr(self, field).add(fmm)
+                    if isinstance(m, FlowModMessage):
+                        getattr(self, field).add(m)
+                    else:
+                        fmm = FlowModMessage()
+                        fmm.__setstate__(m)
+                        getattr(self, field).add(fmm)
+        print "Setstate CEM success"
 

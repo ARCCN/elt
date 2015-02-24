@@ -242,6 +242,7 @@ class SimpleConnection(object):
             self.buffer.savestate()
             obj = None
             try:
+                # print "BUFFER", self.buffer.getvalue()
                 obj = self.load(self.buffer)
             except:
                 self.buffer.loadstate()

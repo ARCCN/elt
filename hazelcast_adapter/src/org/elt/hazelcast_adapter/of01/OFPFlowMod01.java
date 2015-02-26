@@ -24,18 +24,18 @@ public class OFPFlowMod01 extends OFPFlowMod {
 	}
 	
 	@Override
-	public void fromJSON(Map map) throws Exception {
+	public void fromJSON(Map<String, Object> map) throws Exception {
 		if ((int)((long)map.get("version")) != this.version)
 			throw new Exception();
 		this.priority = (short)(long)map.get("priority"); //Integer.parseInt((String)map.get("priority"));
 		this.command = (byte)(long)map.get("command");//Integer.parseInt((String)map.get("command"));
 		this.match = new OFPMatch01();
-		this.match.fromJSON((Map)map.get("match"));
+		this.match.fromJSON((Map<String, Object>)map.get("match"));
 		Object[] actions = (Object[])map.get("actions");
 		InstructionPart01 ipart = new InstructionPart01(new OFPAction01[actions.length]);
 		for (int i = 0; i < actions.length; ++i) {
 			OFPAction01 act = new OFPAction01();
-			act.fromJSON((Map)actions[i]);
+			act.fromJSON((Map<String, Object>)actions[i]);
 			ipart.setAction(i, act);
 		}	
 		this.inst = ipart;
@@ -45,7 +45,7 @@ public class OFPFlowMod01 extends OFPFlowMod {
 	public Map<String, Object> dump() {
 		Map<String, Object> map = new HashMap<String, Object>();
 		map.put("priority", (((int)this.priority) & 0xFFFF));
-		map.put("command", (((int)this.command) & 0xFF));
+		map.put("command", ((int)this.command));
 		map.put("match", this.match.dump());
 		map.put("version", ((int)this.version) & 0xFF);
 		List<Map<String, Object>> actions = new LinkedList<Map<String, Object>>();

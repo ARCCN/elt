@@ -3,14 +3,13 @@ package org.elt.hazelcast_adapter;
 import java.lang.reflect.Constructor;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Map.Entry;
 
-import org.elt.hazelcast_adapter.hznode.TableEntry;
 import org.elt.hazelcast_adapter.hznode.TableValue;
 import org.elt.hazelcast_adapter.of.InstructionPart;
 import org.elt.hazelcast_adapter.of.MatchPart;
 import org.elt.hazelcast_adapter.of.OFPFlowMod;
 import org.elt.hazelcast_adapter.of.OFPMatch;
-import org.elt.hazelcast_adapter.of.OFPRule;
 import org.elt.hazelcast_adapter.of.OFPFlowMod.OFPFC;
 import org.elt.hazelcast_adapter.unpack.FlowModFactory;
 import org.elt.hazelcast_adapter.unpack.IDumpable;
@@ -39,14 +38,14 @@ public class FlowModMessage implements ILoadable, IDumpable {
 	}
 
 	@Override
-	public void fromJSON(Map map) throws Exception {
+	public void fromJSON(Map<String, Object> map) throws Exception {
 		String _name = (String)map.get("_name");
 		if (!_name.equals("FlowModMessage"))
 			throw new Exception();
-		this.flow_mod = FlowModFactory.create((Map)map.get("flow_mod"));
+		this.flow_mod = FlowModFactory.create((Map<String, Object>)map.get("flow_mod"));
 		this.dpid = map.get("dpid").toString();
 		this.tag = new TableEntryTag();
-		this.tag.fromJSON((Map)map.get("tag"));
+		this.tag.fromJSON((Map<String, Object>)map.get("tag"));
 	}
 	
 	public MatchPart getMatchPart() { 
@@ -62,11 +61,17 @@ public class FlowModMessage implements ILoadable, IDumpable {
 			Constructor<? extends OFPFlowMod> cons = c.getConstructor(short.class, byte.class, 
 					OFPMatch.class, InstructionPart.class);
 			OFPFlowMod ofm = (OFPFlowMod)cons.newInstance(mp.getPriority(), 
-					(byte)OFPFC.OFPFC_ADD.getValue(), mp.getMatch(), ip);
+					(byte)OFPFC.OFPFC_UNDEFINED.getValue(), mp.getMatch(), ip);
 			FlowModMessage fm = new FlowModMessage(ofm, mp.getDpid(), tag);
 			return fm;
 		}
 		catch (Exception e) { e.printStackTrace(); return null; }
+	}
+	
+	public static FlowModMessage fromMatch(Entry<MatchPart, TableValue> match) {
+		return FlowModMessage.fromTable(match.getKey(), 
+				match.getValue().getInstructionPart(), 
+				match.getValue().getTag());
 	}
 	
 	public TableValue getTableValue() {

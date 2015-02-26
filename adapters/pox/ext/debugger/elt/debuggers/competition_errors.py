@@ -13,7 +13,7 @@ class FlowMasked(CompetitionError):
     """
     Old flows are masked by a new one.
     """
-    def __init__(self, dpid, masking_entry, masked_entries):
+    def __init__(self, masking_entry, masked_entries):
         CompetitionError.__init__(self)
         self.masking_entry = masking_entry
         self.masked_entries = masked_entries
@@ -49,7 +49,7 @@ class FlowDeleted(CompetitionError):
     """
     Old flows are deleted.
     """
-    def __init__(self, dpid, match_entry, deleted_entries):
+    def __init__(self, match_entry, deleted_entries):
         CompetitionError.__init__(self)
         self.match_entry = match_entry
         self.deleted_entries = deleted_entries
@@ -85,7 +85,7 @@ class FlowModified(CompetitionError):
     """
     Old flows' actions are replaced by those from a new one.
     """
-    def __init__(self, dpid, match_entry, old_entries):
+    def __init__(self, match_entry, old_entries):
         CompetitionError.__init__(self)
         self.match_entry = match_entry
         self.old_entries = old_entries
@@ -119,7 +119,7 @@ class FlowUndefined(CompetitionError):
     """
     New flow is inserted that overlaps with existing ones.
     """
-    def __init__(self, dpid, new_entry, old_entries):
+    def __init__(self, new_entry, old_entries):
         CompetitionError.__init__(self)
         self.new_entry = new_entry
         self.old_entries = old_entries

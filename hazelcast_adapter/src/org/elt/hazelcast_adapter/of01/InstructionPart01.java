@@ -5,6 +5,8 @@ import java.util.Map;
 import org.elt.hazelcast_adapter.of.InstructionPart;
 
 public class InstructionPart01 extends InstructionPart {
+
+	private static final long serialVersionUID = 324548937211022434L;
 	OFPAction01[] actions;
 	
 	public InstructionPart01() {
@@ -31,7 +33,7 @@ public class InstructionPart01 extends InstructionPart {
 	}
 
 	@Override
-	public void fromJSON(Map map) {
+	public void fromJSON(Map<String, Object> map) {
 		// TODO Auto-generated method stub
 		
 	}

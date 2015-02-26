@@ -1,6 +1,7 @@
 package org.elt.hazelcast_adapter.hznode;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map.Entry;
@@ -38,6 +39,10 @@ public class HZNode {
 		this.gen = this.instance.getIdGenerator("gen");
 		this.id = this.gen.newId();
 		this.nodeMap.put(this.id, this.name);
+	}
+	
+	public void shutdown() {
+		this.instance.shutdown();
 	}
 
 	protected void updateTable(FlowModMessage msg, 
@@ -90,43 +95,43 @@ public class HZNode {
 		ArrayList<FlowModMessage> undefined = new ArrayList<FlowModMessage>();
 		ArrayList<FlowModMessage> deleted = new ArrayList<FlowModMessage>();
 		
+		CompetitionErrorMessage cmsg = new CompetitionErrorMessage();
+		
 		OFPMatch msgMatch = msg.getFlowMod().getMatch();
 		for (Entry<MatchPart, TableValue> match: matches) {
 			
 			if (msg.getFlowMod().isDelete()) {
-				deleted.add(FlowModMessage.fromTable(match.getKey(), 
-						match.getValue().getInstructionPart(), 
-						match.getValue().getTag()));
+				deleted.add(FlowModMessage.fromMatch(match));
 			} else if (msg.getFlowMod().isModify()) {
-				modified.add(FlowModMessage.fromTable(match.getKey(), 
-						match.getValue().getInstructionPart(), 
-						match.getValue().getTag()));
+				modified.add(FlowModMessage.fromMatch(match));
 			} else if (msg.getFlowMod().isAdd()) {
 				if (match.getKey().getMatch().compareTo(msgMatch) == 0) {
-					modified.add(FlowModMessage.fromTable(match.getKey(), 
-							match.getValue().getInstructionPart(), 
-							match.getValue().getTag()));
+					modified.add(FlowModMessage.fromMatch(match));
 				} else if (match.getKey().getPriority() == msg.getFlowMod().getPriority()){
-					undefined.add(FlowModMessage.fromTable(match.getKey(), 
-							match.getValue().getInstructionPart(), 
-							match.getValue().getTag()));
+					undefined.add(FlowModMessage.fromMatch(match));
 				} else if (match.getKey().getPriority() < msg.getFlowMod().getPriority()) {
-					masked.add(FlowModMessage.fromTable(match.getKey(), 
-							match.getValue().getInstructionPart(), 
-							match.getValue().getTag()));
+					masked.add(FlowModMessage.fromMatch(match));
 				} else if (match.getKey().getPriority() > msg.getFlowMod().getPriority()) {
 					// TODO: Newly installed rule is masked.
+					cmsg.addError("FlowMasked", FlowModMessage.fromMatch(match), 
+							Arrays.asList(msg).toArray(new FlowModMessage[1]));
 				} else assert false;
 			} else {
 				assert false;
 			}
 		}
-		
-		CompetitionErrorMessage cmsg = new CompetitionErrorMessage(msg, 
-				masked.toArray(new FlowModMessage[masked.size()]),
-				modified.toArray(new FlowModMessage[modified.size()]),
-				undefined.toArray(new FlowModMessage[undefined.size()]),
-				deleted.toArray(new FlowModMessage[deleted.size()]));
+		if (masked.size() > 0) {
+			cmsg.addError("FlowMasked", msg, masked.toArray(new FlowModMessage[masked.size()]));
+		}
+		if (modified.size() > 0) {
+			cmsg.addError("FlowModified", msg, modified.toArray(new FlowModMessage[modified.size()]));
+		}
+		if (undefined.size() > 0) {
+			cmsg.addError("FlowUndefined", msg, undefined.toArray(new FlowModMessage[undefined.size()]));
+		}
+		if (deleted.size() > 0) {
+			cmsg.addError("FlowDeleted", msg, deleted.toArray(new FlowModMessage[deleted.size()]));
+		}
 		
 		return cmsg;
 	}

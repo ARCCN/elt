@@ -1,5 +1,7 @@
 from subprocess import Popen
 import socket, sys
+import json
+from pprint import pprint
 
 from .flowmod_message import *
 from ..interaction import ofp_flow_mod, Instantiator, ConnectionFactory
@@ -21,14 +23,17 @@ class DistFlowTable(object):
         print "NEW MESSAGE"
         print self.skt[0].dumps(msg)
         self.skt[0].send(msg)
-        result = self.skt[0].recv()
+        result = None
+        while not result:
+            result = self.skt[0].recv()
         # TODO: Normal processing.
         # TODO: Do we need apps in error messages?
         # TODO: Multiple error messages.
         # Guess CompetitionErrorMessage is a bad option.
         print "RESULT"
         if not isinstance(result, basestring):
-            print self.skt[0].dumps(result)
+            pprint(json.loads(self.skt[0].dumps(result)))
+        return result.errors
 
     def process_flow_removed(self, dpid, flow_rem):
         pass

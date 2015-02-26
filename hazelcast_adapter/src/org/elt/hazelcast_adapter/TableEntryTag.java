@@ -12,19 +12,21 @@ import org.elt.hazelcast_adapter.unpack.IDumpable;
 import org.elt.hazelcast_adapter.unpack.ILoadable;
 
 public class TableEntryTag implements Serializable, ILoadable, IDumpable {
+
+	private static final long serialVersionUID = 2308556032230029851L;
 	Set<String> apps;
 	Set<Long> nodes;
-	public int apps_length;
+	int appsLength;
 	
 	public TableEntryTag() {
 		this.apps = new HashSet<String>();
-		this.apps_length = this.apps.size();
+		this.appsLength = this.apps.size();
 		this.nodes = new HashSet<Long>();
 	}
 	
 	public TableEntryTag(String[] apps, long node) {
 		this.apps = new HashSet<String>(Arrays.asList(apps));
-		this.apps_length = this.apps.size();
+		this.appsLength = this.apps.size();
 		this.nodes = new HashSet<Long>();
 		this.nodes.add(node);
 	}
@@ -33,20 +35,21 @@ public class TableEntryTag implements Serializable, ILoadable, IDumpable {
 	
 	public void addApps(String[] apps) {
 		this.apps.addAll(Arrays.asList(apps));
-		this.apps_length = this.apps.size();
+		this.appsLength = this.apps.size();
 	}
 	
 	public Set<String> getApps() { return this.apps; }
 	public Set<Long> getNodes() { return this.nodes; }
+	public int getAppsLength() { return this.appsLength; }
 	
 	public void update(TableEntryTag other) { 
 		this.apps.addAll(other.apps);
-		this.apps_length = this.apps.size();
+		this.appsLength = this.apps.size();
 		this.nodes.addAll(other.nodes);
 	}
 
 	@Override
-	public void fromJSON(Map map) throws Exception {
+	public void fromJSON(Map<String, Object> map) throws Exception {
 		// TODO: May fall cause we don't have node in map.
 		this.apps = new HashSet<String>();
 		try {
@@ -55,7 +58,7 @@ public class TableEntryTag implements Serializable, ILoadable, IDumpable {
 				this.apps.add((String)objs[i]);
 		}
 		catch (Throwable e) {}
-		this.apps_length = this.apps.size();
+		this.appsLength = this.apps.size();
 	}
 
 	@Override

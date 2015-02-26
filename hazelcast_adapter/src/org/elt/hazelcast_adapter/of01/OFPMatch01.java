@@ -82,7 +82,7 @@ public class OFPMatch01 extends OFPMatch {
 	}
 
 	@Override
-	public void fromJSON(Map map) throws Exception {
+	public void fromJSON(Map<String, Object> map) throws Exception {
 		//String[] names = {"wildcards", "in_port", "dl_src", "dl_dst", 
 		//				  "dl_vlan", "dl_vlan_pcp", "dl_type", "nw_tos", 
 		//				  "nw_proto", "nw_src", "nw_dst", "tp_src", "tp_dst"};
@@ -209,6 +209,7 @@ public class OFPMatch01 extends OFPMatch {
 		Map<String, Object> map = new HashMap<String, Object>();
 		Class <?> c = OFPMatch01.class;
 		try {
+			Set<String> umsk = getUnmasked();
 			for (int i = 0; i < names.length; ++i) {
 				Field f = c.getDeclaredField(names[i]);
 				if (f.getType() == String.class)
@@ -219,7 +220,11 @@ public class OFPMatch01 extends OFPMatch {
 						mask = 0xFF;
 					else if (f.getType() == short.class)
 						mask = 0xFFFF;
-					map.put(names[i], ((int)f.get(this)) & mask);
+					if (names[i].equals("wildcards") || umsk.contains(names[i])) {
+						map.put(names[i], ((int)f.get(this)) & mask);
+					} else {
+						map.put(names[i], null);
+					}
 				}
 			}
 		}

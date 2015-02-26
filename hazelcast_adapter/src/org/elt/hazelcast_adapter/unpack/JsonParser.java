@@ -10,7 +10,7 @@ import org.elt.hazelcast_adapter.FlowModMessage;
 
 public class JsonParser {
 	
-	public static FlowModMessage decodeMessage(Map map) {
+	public static FlowModMessage decodeMessage(Map<String, Object> map) {
 		String _name = (String)map.get("_name");
 		// System.err.println(_name);
 		if (!_name.equals("FlowModMessage"))
@@ -26,7 +26,7 @@ public class JsonParser {
 	public static FlowModMessage parseMessage(String data) 
 			throws InstantiationException, IllegalAccessException {
 		Object obj = JSON.parse(data);
-		Map map = (Map)obj;
+		Map<String, Object> map = (Map<String, Object>)obj;
 		return decodeMessage(map);
 	}
 	
@@ -36,7 +36,7 @@ public class JsonParser {
 		if (obj == null) {
 			return null;
 		}
-		Map map = (Map)obj;
+		Map<String, Object> map = (Map<String, Object>)obj;
 		FlowModMessage msg = decodeMessage(map);
 		return msg;
 	}

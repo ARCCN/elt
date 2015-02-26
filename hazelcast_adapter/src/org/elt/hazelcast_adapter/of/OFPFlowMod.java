@@ -1,12 +1,12 @@
 package org.elt.hazelcast_adapter.of;
 
-import org.elt.hazelcast_adapter.FlowModMessage;
 import org.elt.hazelcast_adapter.unpack.IDumpable;
 import org.elt.hazelcast_adapter.unpack.ILoadable;
 
 public abstract class OFPFlowMod implements ILoadable, IDumpable{
 	
 	public enum OFPFC {
+		OFPFC_UNDEFINED		(-1),
 		OFPFC_ADD			 (0), /* New flow. */
 		OFPFC_MODIFY 		 (1), /* Modify all matching flows. */
 		OFPFC_MODIFY_STRICT  (2), /* Modify entry strictly matching wildcards and priority. */

@@ -22,6 +22,8 @@ import com.hazelcast.query.impl.QueryableEntry;
 public class PredicateCreator {
 	
 	public static class CompareTagAppsFirst extends AbstractPredicate {
+
+		private static final long serialVersionUID = 5940462640977853145L;
 		protected Comparable value;
 		
 		CompareTagAppsFirst() {}
@@ -35,7 +37,7 @@ public class PredicateCreator {
 		public boolean apply(Entry mapEntry) {
 			//Comparable entryValue = readAttribute(mapEntry);
 			Iterator<String> it = ((TableValue)mapEntry.getValue()).getTag().getApps().iterator();
-			if (!it.hasNext() || it.next() == value)
+			if (!it.hasNext() || it.next().equalsIgnoreCase((String)value))
 				return false;
 			return true;
 		}
@@ -66,22 +68,23 @@ public class PredicateCreator {
 		
 		TableValue v = msg.getTableValue();
 		EntryObject e = new PredicateBuilder().getEntryObject();
+		EntryObject e1 = new PredicateBuilder().getEntryObject();
 		Predicate p, p1;
 		//p = e.key().greaterEqual(mp);
 	
 		if (msg.getFlowMod().isStrict()) {
 			p = e.key().equal(mp);
-			if (v.getTag().apps_length == 1) {
-				Predicate my_p = new CompareTagAppsFirst(v.getTag().getApps().iterator().next());
-				p1 = e.get("tag").get("apps_length").greaterThan(1);
+			if (v.getTag().getAppsLength() == 1) {
+				Predicate my_p = new CompareTagAppsFirst("", v.getTag().getApps().iterator().next());
+				p1 = e1.get("tag").get("appsLength").greaterThan(1);
 				p1 = new OrPredicate(p1, my_p);
 				p = new AndPredicate(p1, p);
 			}
 		} else {
 			p = e.key().greaterEqual(mp);
-			if (v.getTag().apps_length == 1) {
-				Predicate my_p = new CompareTagAppsFirst(v.getTag().getApps().iterator().next());
-				p1 = e.get("tag").get("apps_length").greaterThan(1);
+			if (v.getTag().getAppsLength() == 1) {
+				Predicate my_p = new CompareTagAppsFirst("", v.getTag().getApps().iterator().next());
+				p1 = e1.get("tag").get("appsLength").greaterThan(1);
 				p1 = new OrPredicate(p1, my_p);
 				p = new AndPredicate(p1, p);
 			}

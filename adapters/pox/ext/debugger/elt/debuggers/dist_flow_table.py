@@ -38,10 +38,12 @@ class DistFlowTable(object):
     def process_flow_removed(self, dpid, flow_rem):
         pass
 
-    def __del__(self):
+    def close(self):
         print "Closing sockets."
-        self.skt[0].close()
-        self.skt[1].close()
-
-
+        try:
+            self.skt[0].shutdown(socket.SHUT_RDWR)
+            self.skt[1].shutdown(socket.SHUT_RDWR)
+        except:
+            import traceback
+            traceback.print_exc()
 

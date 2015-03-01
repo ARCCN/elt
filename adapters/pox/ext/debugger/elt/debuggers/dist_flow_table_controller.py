@@ -89,3 +89,6 @@ class DistFlowTableController(object):
 
     def process_flow_removed(self, dpid, flow_rem):
         return self.flow_table.process_flow_removed(dpid, flow_rem)
+
+    def close(self):
+        self.flow_table.close()

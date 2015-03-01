@@ -42,6 +42,11 @@ class ProxyController(object):
         f = open('ProxyController.stats', 'w')
         f.write("FlowMods: %d\n" % self.flowmods)
         f.close()
+        for debugger, logger in self.debuggers.items():
+            try:
+                debugger.close()
+            except:
+                pass
 
     def add_flow_mod(self, dpid, flow_mod, code_entries):
         """

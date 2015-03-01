@@ -5,7 +5,7 @@ class Message(object):
 
     def __init__(self):
         self._name = str(self.__class__).rsplit('.', 1)[1][:-2]
-
+    '''
     @property
     def name(self):
         return self._name
@@ -13,12 +13,12 @@ class Message(object):
     @name.setter
     def name(self, value):
         self._name = value
-
+    '''
     def __setstate__(self, d):
         self._name = d.get("_name", self._name)
 
     def __getstate__(self):
-        return {"_name": self._name}
+        return self.__dict__
 
 
 class ClosingMessage(Message):

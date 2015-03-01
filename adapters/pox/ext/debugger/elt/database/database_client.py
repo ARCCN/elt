@@ -160,6 +160,9 @@ class DatabaseClient(object):
         if not self.writing:
             return
         try:
+            print "FLOWMOD"
+            print self.connection.dumps(msg)
+            print 
             self.connection.send(msg)
             if self.reading and not async:
                 obj = self.connection.recv()

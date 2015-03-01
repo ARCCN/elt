@@ -64,6 +64,8 @@ class LogClient(object):
         if not self.connection:
             raise EOFError('LogClient: Connection closed')
         try:
+            print "LOG"
+            print self.connection.dumps(LogMessage(event))
             self.connection.send(LogMessage(event))
         except Exception as e:
             log.info('LogClient: Connection closed.' +

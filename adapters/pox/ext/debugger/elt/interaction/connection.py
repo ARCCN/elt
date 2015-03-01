@@ -329,3 +329,6 @@ class SimpleConnection(object):
         Underlying socket.
         """
         return self.socket.fileno()
+
+    def shutdown(self, mode):
+        return self.socket.shutdown(mode)

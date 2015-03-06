@@ -17,11 +17,11 @@ class DistFlowTable(object):
         self.skt[0] = self.factory.create_connection(self.skt[0])
 
     def process_flow_mod(self, dpid, flow_mod, apps):
-        print '--------\n', apps, '\n-------\n'
+        # print '--------\n', apps, '\n-------\n'
         msg = FlowModMessage(ofp_flow_mod.from_flow_mod(flow_mod),
                              dpid, TableEntryTag(apps))
-        print "NEW MESSAGE"
-        print self.skt[0].dumps(msg)
+        # print "NEW MESSAGE"
+        # print self.skt[0].dumps(msg)
         self.skt[0].send(msg)
         result = None
         while not result:
@@ -30,9 +30,9 @@ class DistFlowTable(object):
         # TODO: Do we need apps in error messages?
         # TODO: Multiple error messages.
         # Guess CompetitionErrorMessage is a bad option.
-        print "RESULT"
-        if not isinstance(result, basestring):
-            pprint(json.loads(self.skt[0].dumps(result)))
+        # print "RESULT"
+        # if not isinstance(result, basestring):
+        #     pprint(json.loads(self.skt[0].dumps(result)))
         return result.errors
 
     def process_flow_removed(self, dpid, flow_rem):

@@ -4,9 +4,9 @@ function run_term {
     then
         if [[ $3 != "" ]];
         then
-            $2 >> $3 &
+            bash -c "$2" >> $3 &
         else
-            $2 &
+            bash -c "$2" &
         fi
     else
         if [[ $3 != "" ]];
@@ -22,6 +22,7 @@ terminal='no'
 deb='ext.debugger.elt.of_01_debug'
 log='stress_test.log'
 mn_log='multiping.log'
+mkfifo stress_test.fifo
 
 for iter in "";
 do
@@ -45,22 +46,29 @@ do
                 log_pid=$!
                 if [[ $i == "no" ]] ;
                 then
-                    run_term $terminal "adapters/pox/pox.py log.level --WARNING forwarding.l2_learning"
+                    run_term $terminal "./wrap.sh tail -f stress_test.fifo | adapters/pox/pox.py py log.level --WARNING forwarding.l2_learning"
                     echo 'no proxy'
                 elif [[ $i == "proxy" ]];
                 then
-                    run_term $terminal "adapters/pox/pox.py log.level --WARNING $deb forwarding.l2_learning ext.debugger.controllers.interrupter --rate=0.0"
+                    run_term $terminal "./wrap.sh tail -f stress_test.fifo | adapters/pox/pox.py py log.level --WARNING $deb forwarding.l2_learning ext.debugger.controllers.interrupter --rate=0.0"
                     echo 'just proxy'
                 else
-                    run_term $terminal "adapters/pox/pox.py log.level --WARNING $deb --flow_table_controller=adapters/pox/config/flow_table_config.cfg forwarding.l2_learning ext.debugger.controllers.interrupter --rate=$i"
+                    run_term $terminal "./wrap.sh tail -f stress_test.fifo | adapters/pox/pox.py py log.level --WARNING $deb --dist_flow_table_controller=adapters/pox/config/flow_table_config.cfg forwarding.l2_learning ext.debugger.controllers.interrupter --rate=$i"
                     #" --flow_table_controller=config/flow_table_config.cfg forwarding.l2_learning ext.debugger.controllers.interrupter"
                     echo 'debug'
                 fi
-                pox_pid=$!
+                #pox_pid=`cat pid`
+                #echo "Read $pox_pid"
+                #rm pid
                 echo $i >> $log
+                sleep 2
                 run_term $terminal "python scripts/elt_scripts/multiping.py --topo=line,$len,$size" "$log"
                 mn_pid=$!
                 while ps -p $mn_pid > /dev/null; do sleep 0.5; done;
+                pox_pid=`cat pid`
+                echo "Read $pox_pid"
+                echo "Killing $pox_pid"
+                rm pid
                 kill -TERM $pox_pid
                 python -m server.utility.stop_log_server
                 while ps -p $log_pid > /dev/null; do sleep 0.5; done;
@@ -70,3 +78,5 @@ do
         done;
     done;
 done
+
+rm stress_test.fifo

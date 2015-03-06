@@ -1,5 +1,6 @@
 package org.elt.hazelcast_adapter.of01;
 
+import java.io.IOException;
 import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -97,6 +98,14 @@ public class OFPMatch01 extends OFPMatch {
 			if (o == null)
 				continue;
 			String value = o.toString();
+			if (names[i].equals("nw_src") || names[i].equals("nw_dst")) {
+				// Parse ip address.
+				try {
+					f.set(this, ipStringToInt(value));
+				}
+				catch (IOException e) {}
+				continue;
+			}
 			if (f.getType() == String.class)
 				f.set(this, value);
 			else {
@@ -120,6 +129,23 @@ public class OFPMatch01 extends OFPMatch {
 		*/
 	}
 
+	public int ipStringToInt(String ip) throws IOException {
+		String[] arr = ip.split("\\.");
+		if (arr.length != 4)
+			throw new IOException();
+		return ((Integer.parseInt(arr[0]) & 0xFF) << 24) |
+			   ((Integer.parseInt(arr[1]) & 0xFF) << 16) |
+			   ((Integer.parseInt(arr[2]) & 0xFF) << 8)  |
+			   ((Integer.parseInt(arr[3]) & 0xFF) << 0);
+	}
+	
+	public String intToIpString(int ip) {
+		return  Integer.toString((ip >> 24) & 0xFF) + "." +
+			    Integer.toString((ip >> 16) & 0xFF) + "." +
+			    Integer.toString((ip >> 8) & 0xFF) + "." +
+				Integer.toString((ip >> 0) & 0xFF);
+	}
+	
 	@Override
 	public int compareTo(Object o) {
 		if (!(o instanceof OFPMatch01)) {
@@ -221,7 +247,11 @@ public class OFPMatch01 extends OFPMatch {
 					else if (f.getType() == short.class)
 						mask = 0xFFFF;
 					if (names[i].equals("wildcards") || umsk.contains(names[i])) {
-						map.put(names[i], ((int)f.get(this)) & mask);
+						if (names[i].equals("nw_src") || names[i].equals("nw_dst")) {
+							map.put(names[i], intToIpString(((int)f.get(this)) & mask));
+						} else {
+							map.put(names[i], ((int)f.get(this)) & mask);
+						}
 					} else {
 						map.put(names[i], null);
 					}

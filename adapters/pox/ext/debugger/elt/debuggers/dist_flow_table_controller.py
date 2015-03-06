@@ -20,8 +20,8 @@ class DistFlowTableController(object):
         self.apps = {}
         self.apps_rev = {}
         self.read_config()
-        from pprint import pprint
-        pprint(self.apps)
+        # from pprint import pprint
+        # pprint(self.apps)
 
     def read_config(self):
         """
@@ -82,7 +82,7 @@ class DistFlowTableController(object):
         Check for errors on FlowTable model.
         """
         # TODO: Deal with exact matches in OF 1.0.
-        print "Process FM", module
+        # print "Process FM", module
         flow_mod.flags |= of.OFPFF_SEND_FLOW_REM
         return self.flow_table.process_flow_mod(
             dpid, flow_mod, self.get_apps(module))

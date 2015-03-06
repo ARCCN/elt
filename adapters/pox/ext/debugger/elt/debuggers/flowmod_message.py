@@ -42,7 +42,6 @@ class FlowModMessage(Message):
         return d
 
     def __setstate__(self, d):
-        print "Setstate FM", d
         Message.__setstate__(self, d)
         if "flow_mod" in d:
             self.flow_mod = ofp_flow_mod()
@@ -52,7 +51,6 @@ class FlowModMessage(Message):
         if "tag" in d:
             self.tag = TableEntryTag()
             self.tag.__setstate__(d["tag"])
-        print "Setstate FM success"
 
 
 class CompetitionErrorMessage(Message):
@@ -72,7 +70,6 @@ class CompetitionErrorMessage(Message):
             return Entry(fmm.flow_mod, int(fmm.dpid))
 
     def __setstate__(self, d):
-        print "Setstate CEM", d
         Message.__setstate__(self, d)
         self.errors = []
         try:
@@ -101,5 +98,4 @@ class CompetitionErrorMessage(Message):
         except:
             import traceback
             traceback.print_exc()
-        print "Setstate CEM success"
 

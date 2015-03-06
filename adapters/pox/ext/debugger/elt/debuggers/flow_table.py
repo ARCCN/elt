@@ -494,21 +494,21 @@ class TaggedFlowTable(FlowTable):
         if masked is not None:
             for k in masked.keys():
                 if len(masked[k]) > 0:
-                    e = FlowMasked(self.dpid, k, masked[k])
+                    e = FlowMasked(k, masked[k])
                     events.append(e)
         if deleted is not None:
             for k in deleted.keys():
                 if len(deleted[k]) > 0:
-                    e = FlowDeleted(self.dpid, k, deleted[k])
+                    e = FlowDeleted(k, deleted[k])
                     events.append(e)
         if modified is not None:
             for k in modified.keys():
                 if len(modified[k]) > 0:
-                    e = FlowModified(self.dpid, k, modified[k])
+                    e = FlowModified(k, modified[k])
                     events.append(e)
         if undefined is not None:
             for k in undefined.keys():
                 if len(undefined[k]) > 0:
-                    e = FlowUndefined(self.dpid, k, undefined[k])
+                    e = FlowUndefined(k, undefined[k])
                     events.append(e)
         return events

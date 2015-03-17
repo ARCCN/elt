@@ -1,10 +1,14 @@
 package org.elt.hazelcast_adapter.of;
 
+import java.io.Serializable;
+
 import org.elt.hazelcast_adapter.unpack.IDumpable;
 import org.elt.hazelcast_adapter.unpack.ILoadable;
 
-public abstract class OFPFlowMod implements ILoadable, IDumpable{
-	
+public abstract class OFPFlowMod implements ILoadable, IDumpable, Serializable {
+
+	private static final long serialVersionUID = -5475196109678878646L;
+
 	public enum OFPFC {
 		OFPFC_UNDEFINED		(-1),
 		OFPFC_ADD			 (0), /* New flow. */

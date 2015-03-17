@@ -1,5 +1,6 @@
 package org.elt.hazelcast_adapter;
 
+import java.io.Serializable;
 import java.lang.reflect.Constructor;
 import java.util.HashMap;
 import java.util.Map;
@@ -15,7 +16,9 @@ import org.elt.hazelcast_adapter.unpack.FlowModFactory;
 import org.elt.hazelcast_adapter.unpack.IDumpable;
 import org.elt.hazelcast_adapter.unpack.ILoadable;
 
-public class FlowModMessage implements ILoadable, IDumpable {
+public class FlowModMessage implements ILoadable, IDumpable, Serializable {
+
+	private static final long serialVersionUID = -4453944662457757201L;
 	OFPFlowMod flow_mod;
 	String dpid;
 	TableEntryTag tag;
@@ -37,6 +40,7 @@ public class FlowModMessage implements ILoadable, IDumpable {
 		this.tag.addNode(node);
 	}
 
+	@SuppressWarnings("unchecked")
 	@Override
 	public void fromJSON(Map<String, Object> map) throws Exception {
 		String _name = (String)map.get("_name");
@@ -88,6 +92,7 @@ public class FlowModMessage implements ILoadable, IDumpable {
 	*/
 	public OFPFlowMod getFlowMod() { return this.flow_mod; }
 	public TableEntryTag getTag() { return this.tag; }
+	public String getDpid() { return this.dpid; }
 
 	@Override
 	public Map<String, Object> dump() {

@@ -27,7 +27,7 @@ run_term $terminal 'python -m server.utility.start_db_server'
 db_pid=$!
 run_term $terminal 'python -m server.utility.start_log_server'
 log_pid=$!
-run_term $terminal "adapters/pox/pox.py $deb --flow_table_controller=adapters/pox/config/flow_table_config.cfg ext.debugger.controllers.router ext.debugger.controllers.server ext.debugger.controllers.monitor py log.level --WARNING"
+run_term $terminal "adapters/pox/pox.py $deb --dist_flow_table_controller=adapters/pox/config/flow_table_config.cfg ext.debugger.controllers.router ext.debugger.controllers.server ext.debugger.controllers.monitor py log.level --WARNING"
 #" --flow_table_controller=config/flow_table_config.cfg forwarding.l2_learning ext.debugger.controllers.interrupter"
 pox_pid=$!
 run_term $terminal "mn --topo=elt_test --custom `pwd`/adapters/pox/ext/debugger/topology/elt_test_topo.py --controller=remote"

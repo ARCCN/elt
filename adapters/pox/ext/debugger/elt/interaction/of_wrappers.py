@@ -35,6 +35,8 @@ class ofp_flow_mod(of.ofp_flow_mod):
 
     @staticmethod
     def from_flow_mod(fm):
+        if isinstance(fm, ofp_flow_mod):
+            return fm
         if not isinstance(fm, of.ofp_flow_mod):
             return
         flow_mod = ofp_flow_mod(match=fm.match, actions=fm.actions,

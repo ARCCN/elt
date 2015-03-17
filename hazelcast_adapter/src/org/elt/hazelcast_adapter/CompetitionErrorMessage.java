@@ -1,14 +1,19 @@
 package org.elt.hazelcast_adapter;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
 import org.elt.hazelcast_adapter.unpack.IDumpable;
 
-public class CompetitionErrorMessage implements IDumpable {
-	
-	public class CompetitionError implements IDumpable {
+public class CompetitionErrorMessage implements IDumpable, Serializable {
+
+	private static final long serialVersionUID = -867923976542465647L;
+
+	public class CompetitionError implements IDumpable, Serializable {
+
+		private static final long serialVersionUID = -6074451502156055654L;
 		String name;
 		FlowModMessage key;
 		FlowModMessage[] value;

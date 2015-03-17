@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
 	<classpathentry kind="src" path="src"/>
+	<classpathentry kind="src" path="patricia-trie/src/main/java"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
 	<classpathentry kind="lib" path="/home/lantame/SDN/ELT/hazelcast_adapter/hazelcast-3.3.2.jar"/>
 	<classpathentry kind="lib" path="/home/lantame/SDN/ELT/hazelcast_adapter/jetty/plugins/org.eclipse.jetty.util.ajax_9.2.3.v20140905.jar"/>

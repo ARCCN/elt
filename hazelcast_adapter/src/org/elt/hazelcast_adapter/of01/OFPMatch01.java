@@ -7,6 +7,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import org.elt.hazelcast_adapter.hznode.IP;
 import org.elt.hazelcast_adapter.of.OFPMatch;
 
 public class OFPMatch01 extends OFPMatch {
@@ -42,10 +43,12 @@ public class OFPMatch01 extends OFPMatch {
 	int tp_src; /* TCP/UDP source port. */
 	int tp_dst; /* TCP/UDP destination port. */
 	
+	private Set<String> unmasked;
+	
 	public OFPMatch01() {	
 	}
 	
-	public Set<String> getUnmasked() {
+	protected void computeUnmasked() {
 		Set<String> result = new HashSet<String>();
 		// Mask shifts. -1 if not applicable or not 1 bit in mask.
 		int[] shifts = {-1, 0, 2, 3, 1, 20, 4, 21, 5, -1, -1, 6, 7};
@@ -61,7 +64,7 @@ public class OFPMatch01 extends OFPMatch {
 		if (nw_dst_mask < 32)
 			result.add("nw_dst");
 		
-		return result;
+		unmasked = result;
 	}
 	
 	public OFPMatch01(int wildcards, short in_port, String dl_src, String dl_dst, 
@@ -80,7 +83,11 @@ public class OFPMatch01 extends OFPMatch {
 		this.nw_dst = nw_dst;
 		this.tp_src = tp_src;
 		this.tp_dst = tp_dst;
+		
+		computeUnmasked();
 	}
+	
+	public Set<String> getUnmasked() { return unmasked; }
 
 	@Override
 	public void fromJSON(Map<String, Object> map) throws Exception {
@@ -112,6 +119,7 @@ public class OFPMatch01 extends OFPMatch {
 				f.set(this, Integer.parseInt( value ) );
 			}
 		}
+		computeUnmasked();
 		/*
 		this.wildcards = Integer.parseInt((String)map.get("wildcards"));
 		this.in_port = (short)Integer.parseInt((String)map.get("in_port"));
@@ -148,8 +156,10 @@ public class OFPMatch01 extends OFPMatch {
 	
 	@Override
 	public int compareTo(Object o) {
+		// We implement "greedy" comparison. 
+		// We ignore IP since they are already compared by trie.
 		if (!(o instanceof OFPMatch01)) {
-			assert false;
+			// assert false;
 			return -1;
 		}
 		OFPMatch01 m = (OFPMatch01)o;
@@ -162,6 +172,7 @@ public class OFPMatch01 extends OFPMatch {
 				continue;
 			try {
 				f = c.getDeclaredField(name);
+				/*
 				if (name.equals("nw_src")) {
 					int nw_src_mask_1 = (this.wildcards >> 8) & ((1 << 6) - 1);
 					int nw_src_mask_2 = (m.wildcards >> 8) & ((1 << 6) - 1);
@@ -174,12 +185,17 @@ public class OFPMatch01 extends OFPMatch {
 					int mask = Math.max(nw_dst_mask_1, nw_dst_mask_2);
 					if ((this.nw_dst & ~((1 << mask) - 1)) != (m.nw_dst & ~((1 << mask) - 1)))
 						return -1;
-				} else {
-					if (f.get(umsk) != f.get(mUmsk)) {
-						return -1;
-					}
+				} else if (!f.get(this).equals(f.get(m))) {
+					return -1;
 				}
+				*/
 				
+				if (name.equals("nw_src") || name.equals("nw_dst")) {
+					continue;
+				}
+				if (!f.get(this).equals(f.get(m))) {
+					return -1;
+				}
 			} catch (Exception e) {
 				continue;
 			}
@@ -189,6 +205,29 @@ public class OFPMatch01 extends OFPMatch {
 		else
 			return 1;
 	}
+	
+	public boolean equals(Object o) {
+		if (!(o instanceof OFPMatch01)) {
+			return false;
+		}
+		OFPMatch01 m = (OFPMatch01)o;
+		Class <?> c = OFPMatch01.class;
+		Field f;
+		if (this.wildcards != m.wildcards) {
+			return false;
+		}
+		for (String name: getUnmasked()) {
+			try {
+				f = c.getDeclaredField(name);
+				if (!f.get(this).equals(f.get(m))) {
+					return false;
+				}
+			}
+			catch (Exception e) {}
+		}
+		return true;
+	}
+	
 	/*
 	@Override
 	public int widerThan(OFPMatch o) {
@@ -260,5 +299,17 @@ public class OFPMatch01 extends OFPMatch {
 		}
 		catch (NoSuchFieldException | IllegalAccessException e) {} 
 		return map;
+	}
+
+	@Override
+	public IP getSrcIp() {
+		int nw_src_mask = (this.wildcards >> 8) & ((1 << 6) - 1);
+		return new IP(nw_src, nw_src_mask);
+	}
+
+	@Override
+	public IP getDstIp() {
+		int nw_dst_mask = (this.wildcards >> 14) & ((1 << 6) - 1);
+		return new IP(nw_dst, nw_dst_mask);
 	}
 }

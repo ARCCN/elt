@@ -10,7 +10,9 @@ import org.elt.hazelcast_adapter.of.OFPFlowMod;
 import org.elt.hazelcast_adapter.of.OFPMatch;
 
 public class OFPFlowMod01 extends OFPFlowMod {
-	
+
+	private static final long serialVersionUID = -4045930402273908679L;
+
 	public OFPFlowMod01() {
 		this.version = 1;
 	}
@@ -23,6 +25,7 @@ public class OFPFlowMod01 extends OFPFlowMod {
 		this.version = 1;
 	}
 	
+	@SuppressWarnings("unchecked")
 	@Override
 	public void fromJSON(Map<String, Object> map) throws Exception {
 		if ((int)((long)map.get("version")) != this.version)

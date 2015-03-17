@@ -1,20 +1,18 @@
 package org.elt.hazelcast_adapter.hznode;
 
-import java.io.IOException;
 import java.util.Iterator;
-import java.util.Set;
 import java.util.Map.Entry;
+import java.util.Set;
 
 import org.elt.hazelcast_adapter.FlowModMessage;
-import org.elt.hazelcast_adapter.SerDeser;
 import org.elt.hazelcast_adapter.of.MatchPart;
 
 import com.hazelcast.query.EntryObject;
 import com.hazelcast.query.Predicate;
 import com.hazelcast.query.PredicateBuilder;
 import com.hazelcast.query.Predicates.AbstractPredicate;
-import com.hazelcast.query.Predicates.OrPredicate;
 import com.hazelcast.query.Predicates.AndPredicate;
+import com.hazelcast.query.Predicates.OrPredicate;
 import com.hazelcast.query.impl.Index;
 import com.hazelcast.query.impl.QueryContext;
 import com.hazelcast.query.impl.QueryableEntry;
@@ -55,22 +53,10 @@ public class PredicateCreator {
 		// TODO: Create predicate.
 		MatchPart mp = msg.getMatchPart();
 		
-		try {
-			byte[] bytes = SerDeser.serialize(mp);
-			mp = (MatchPart) SerDeser.deserialize(bytes);
-		} catch (IOException e1) {
-			// TODO Auto-generated catch block
-			e1.printStackTrace();
-		} catch (ClassNotFoundException e1) {
-			// TODO Auto-generated catch block
-			e1.printStackTrace();
-		}
-		
 		TableValue v = msg.getTableValue();
 		EntryObject e = new PredicateBuilder().getEntryObject();
 		EntryObject e1 = new PredicateBuilder().getEntryObject();
 		Predicate p, p1;
-		//p = e.key().greaterEqual(mp);
 	
 		if (msg.getFlowMod().isStrict()) {
 			p = e.key().equal(mp);

@@ -50,7 +50,6 @@ public class TableEntryTag implements Serializable, ILoadable, IDumpable {
 
 	@Override
 	public void fromJSON(Map<String, Object> map) throws Exception {
-		// TODO: May fall cause we don't have node in map.
 		this.apps = new HashSet<String>();
 		try {
 			Object[] objs = (Object [])map.get("apps");

@@ -62,12 +62,14 @@ do
                 #rm pid
                 echo $i >> $log
                 sleep 2
+                #read
                 run_term $terminal "python scripts/elt_scripts/multiping.py --topo=line,$len,$size" "$log"
                 mn_pid=$!
                 while ps -p $mn_pid > /dev/null; do sleep 0.5; done;
                 pox_pid=`cat pid`
                 echo "Read $pox_pid"
                 echo "Killing $pox_pid"
+
                 rm pid
                 kill -TERM $pox_pid
                 python -m server.utility.stop_log_server

@@ -89,6 +89,10 @@ public class HZNode implements IFlowTable {
 		return createMessage(msg, matches);
 	}
 
+	protected int shortCompareUnsigned(short arg0, short arg1) {
+		return Integer.compare(arg0 & 0xFFFF, arg1 & 0xFFFF);
+	}
+	
 	protected CompetitionErrorMessage createMessage(FlowModMessage msg,
 			Set<Entry<MatchPart, TableValue>> matches) {
 		ArrayList<FlowModMessage> masked = new ArrayList<FlowModMessage>();
@@ -110,9 +114,11 @@ public class HZNode implements IFlowTable {
 					modified.add(FlowModMessage.fromMatch(match));
 				} else if (match.getKey().getPriority() == msg.getFlowMod().getPriority()){
 					undefined.add(FlowModMessage.fromMatch(match));
-				} else if (match.getKey().getPriority() < msg.getFlowMod().getPriority()) {
+				} else if (shortCompareUnsigned(
+						match.getKey().getPriority(), msg.getFlowMod().getPriority()) > 0) {
 					masked.add(FlowModMessage.fromMatch(match));
-				} else if (match.getKey().getPriority() > msg.getFlowMod().getPriority()) {
+				} else if (shortCompareUnsigned(
+						match.getKey().getPriority(), msg.getFlowMod().getPriority()) < 0) {
 					// TODO: Newly installed rule is masked.
 					cmsg.addError("FlowMasked", FlowModMessage.fromMatch(match), 
 							Arrays.asList(msg).toArray(new FlowModMessage[1]));

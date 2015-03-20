@@ -13,6 +13,7 @@ import org.elt.hazelcast_adapter.FlowModMessage;
 import org.elt.hazelcast_adapter.IFlowTable;
 import org.elt.hazelcast_adapter.TableEntryTag;
 import org.elt.hazelcast_adapter.of.MatchPart;
+import org.elt.hazelcast_adapter.of.OFPFlowMod.OFPFC;
 import org.elt.hazelcast_adapter.of.OFPMatch;
 
 import com.hazelcast.query.Predicate;
@@ -40,6 +41,12 @@ public class SimpleMapNode implements IFlowTable {
 		if (msg.getFlowMod().isAdd()) {
 			table.put(msg.getMatchPart(), msg.getTableValue());
 		} else if (msg.getFlowMod().isModify()) {
+			if (matches.size() == 0) {
+				byte command = msg.getFlowMod().getCommand();
+				msg.getFlowMod().setCommand((byte)OFPFC.OFPFC_ADD.getValue());
+				updateTable(msg, matches);
+				msg.getFlowMod().setCommand(command);
+			}
 			for (Entry<MatchPart, TableValue> match: matches) {
 				TableValue v = match.getValue();
 				TableEntryTag tag = v.getTag();
@@ -73,6 +80,10 @@ public class SimpleMapNode implements IFlowTable {
 		return createMessage(msg, matches);
 	}
 
+	protected int shortCompareUnsigned(short arg0, short arg1) {
+		return Integer.compare(arg0 & 0xFFFF, arg1 & 0xFFFF);
+	}
+	
 	protected CompetitionErrorMessage createMessage(FlowModMessage msg,
 			Set<Entry<MatchPart, TableValue>> matches) {
 		ArrayList<FlowModMessage> masked = new ArrayList<FlowModMessage>();
@@ -94,9 +105,11 @@ public class SimpleMapNode implements IFlowTable {
 					modified.add(FlowModMessage.fromMatch(match));
 				} else if (match.getKey().getPriority() == msg.getFlowMod().getPriority()){
 					undefined.add(FlowModMessage.fromMatch(match));
-				} else if (match.getKey().getPriority() < msg.getFlowMod().getPriority()) {
+				} else if (shortCompareUnsigned(
+						match.getKey().getPriority(), msg.getFlowMod().getPriority()) < 0) {
 					masked.add(FlowModMessage.fromMatch(match));
-				} else if (match.getKey().getPriority() > msg.getFlowMod().getPriority()) {
+				} else if (shortCompareUnsigned(
+						match.getKey().getPriority(), msg.getFlowMod().getPriority()) > 0) {
 					// TODO: Newly installed rule is masked.
 					cmsg.addError("FlowMasked", FlowModMessage.fromMatch(match), 
 							Arrays.asList(msg).toArray(new FlowModMessage[1]));

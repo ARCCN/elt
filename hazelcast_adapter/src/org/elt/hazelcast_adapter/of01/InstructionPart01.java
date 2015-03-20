@@ -37,4 +37,12 @@ public class InstructionPart01 extends InstructionPart {
 		// TODO Auto-generated method stub
 		
 	}
+	
+	@Override
+	public InstructionPart clone() {
+		OFPAction01[] new_actions = new OFPAction01[actions.length];
+		for (int i=0; i<actions.length; ++i)
+			new_actions[i] = actions[i].clone();
+		return new InstructionPart01(new_actions);
+	}
 }

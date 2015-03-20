@@ -7,13 +7,16 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.Map.Entry;
 
 import org.ardverk.collection.PatriciaTrie;
 import org.ardverk.collection.StringKeyAnalyzer;
 import org.elt.hazelcast_adapter.CompetitionErrorMessage;
 import org.elt.hazelcast_adapter.FlowModMessage;
 import org.elt.hazelcast_adapter.TableEntryTag;
+import org.elt.hazelcast_adapter.of.MatchPart;
 import org.elt.hazelcast_adapter.of.OFPMatch;
+import org.elt.hazelcast_adapter.of.OFPFlowMod.OFPFC;
 
 import com.hazelcast.query.Predicate;
 
@@ -83,14 +86,21 @@ public class IPIndexedFlowTable implements Serializable {
 			//System.err.println("Add " + src.toString() + " " + dst.toString());
 			//System.err.println(srcTrie.get(src.toBinaryString()).size());
 		} else if (msg.getFlowMod().isModify()) {
+			if (matches.size() == 0) {
+				byte command = msg.getFlowMod().getCommand();
+				msg.getFlowMod().setCommand((byte)OFPFC.OFPFC_ADD.getValue());
+				updateTable(msg, matches);
+				msg.getFlowMod().setCommand(command);
+			}
 			for (TableEntry match: matches) {
 				// TODO: How will we respond with original actions?
-				TableValue v = match.getValue();
+				TableEntry new_match = new TableEntry(match.getId(), match.getKey(), match.getValue().clone());
+				TableValue v = new_match.getValue();
 				TableEntryTag tag = v.getTag();
 				tag.update(msg.getTag());
 				v.setInstructionPart(msg.getFlowMod().getInstructionPart());
 				// TODO: For non-distributed map, we do not need "put".
-				table.put(match.getId(), match);
+				table.put(new_match.getId(), new_match);
 			}
 		} else if (msg.getFlowMod().isDelete()) {
 			for (TableEntry match: matches) {
@@ -196,6 +206,10 @@ public class IPIndexedFlowTable implements Serializable {
 		System.err.println("Src and dst empty: " + String.valueOf(cases[3]));
 	}
 	
+	protected int shortCompareUnsigned(short arg0, short arg1) {
+		return Integer.compare(arg0 & 0xFFFF, arg1 & 0xFFFF);
+	}
+	
 	protected CompetitionErrorMessage createMessage(FlowModMessage msg,
 			Set<TableEntry> matches) {
 		ArrayList<FlowModMessage> masked = new ArrayList<FlowModMessage>();
@@ -206,7 +220,7 @@ public class IPIndexedFlowTable implements Serializable {
 		CompetitionErrorMessage cmsg = new CompetitionErrorMessage();
 		
 		OFPMatch msgMatch = msg.getFlowMod().getMatch();
-		for (TableEntry match: matches) {
+		for (Entry<MatchPart, TableValue> match: matches) {
 			
 			if (msg.getFlowMod().isDelete()) {
 				deleted.add(FlowModMessage.fromMatch(match));
@@ -217,9 +231,11 @@ public class IPIndexedFlowTable implements Serializable {
 					modified.add(FlowModMessage.fromMatch(match));
 				} else if (match.getKey().getPriority() == msg.getFlowMod().getPriority()){
 					undefined.add(FlowModMessage.fromMatch(match));
-				} else if (match.getKey().getPriority() < msg.getFlowMod().getPriority()) {
+				} else if (shortCompareUnsigned(
+						match.getKey().getPriority(), msg.getFlowMod().getPriority()) < 0) {
 					masked.add(FlowModMessage.fromMatch(match));
-				} else if (match.getKey().getPriority() > msg.getFlowMod().getPriority()) {
+				} else if (shortCompareUnsigned(
+						match.getKey().getPriority(), msg.getFlowMod().getPriority()) > 0) {
 					// TODO: Newly installed rule is masked.
 					cmsg.addError("FlowMasked", FlowModMessage.fromMatch(match), 
 							Arrays.asList(msg).toArray(new FlowModMessage[1]));

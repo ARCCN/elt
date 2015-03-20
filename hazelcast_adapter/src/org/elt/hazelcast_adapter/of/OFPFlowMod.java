@@ -56,6 +56,7 @@ public abstract class OFPFlowMod implements ILoadable, IDumpable, Serializable {
 			  this.command == OFPFC.OFPFC_DELETE_STRICT.getValue(); }
 	
 	public byte getCommand() { return this.command; }
+	public void setCommand(byte command) { this.command = command; } 
 	public short getPriority() { return this.priority; }
 	public byte getVersion() { return this.version; }
 	public InstructionPart getInstructionPart() { return this.inst; }

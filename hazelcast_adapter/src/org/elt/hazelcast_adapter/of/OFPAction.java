@@ -5,7 +5,7 @@ import java.io.Serializable;
 import org.elt.hazelcast_adapter.unpack.IDumpable;
 import org.elt.hazelcast_adapter.unpack.ILoadable;
 
-public abstract class OFPAction implements ILoadable, IDumpable, Serializable {
+public abstract class OFPAction implements ILoadable, IDumpable, Serializable, Cloneable {
 
 	private static final long serialVersionUID = -1890488068102575435L;
 	

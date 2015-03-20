@@ -5,7 +5,7 @@ import java.io.Serializable;
 import org.elt.hazelcast_adapter.TableEntryTag;
 import org.elt.hazelcast_adapter.of.InstructionPart;
 
-public class TableValue implements Serializable {
+public class TableValue implements Serializable, Cloneable {
 
 	private static final long serialVersionUID = 6366619143151462230L;
 	InstructionPart inst;
@@ -23,4 +23,9 @@ public class TableValue implements Serializable {
 	
 	public TableEntryTag getTag() { return this.tag; }
 	public int getAppsLength() { return this.tag.getAppsLength(); }
+	
+	@Override
+	public TableValue clone() {
+		return new TableValue(inst.clone(), tag.clone());
+	}
 }

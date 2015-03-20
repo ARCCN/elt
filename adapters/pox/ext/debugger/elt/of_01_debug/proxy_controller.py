@@ -37,6 +37,10 @@ class ProxyController(object):
                 )] = LogClient(name="Proxy.FakeDeb")
             log.info("Fake Debugger is up! %s" % kw["fake_debugger"])
         self.flowmods = 0
+        # Dump events.
+        # self.dump_files = {}
+        # for l in self.debuggers.values():
+        #     self.dump_files[l.name] = open(l.name + ".dmp", "w")
 
     def close(self):
         f = open('ProxyController.stats', 'w')
@@ -47,6 +51,7 @@ class ProxyController(object):
                 debugger.close()
             except:
                 pass
+            # self.dump_files[logger.name].close()
 
     def add_flow_mod(self, dpid, flow_mod, code_entries):
         """
@@ -67,6 +72,8 @@ class ProxyController(object):
             if isinstance(events, list):
                 for e in events:
                     self.log_event(d, e)
+                    # self.dump_files[self.debuggers[d].name].write(
+                    #         self.db.connection.dumps(e)+"\n")
 
     def process_flow_removed(self, dpid, flow_rem):
         for d in self.debuggers:
@@ -74,6 +81,8 @@ class ProxyController(object):
             if isinstance(events, list):
                 for e in events:
                     self.log_event(d, e)
+                    # self.dump_files[self.debuggers[d].name].write(
+                    #         self.db.connection.dumps(e)+"\n")
 
     def log_event(self, debugger, event):
         self.debuggers[debugger].log_event(event)

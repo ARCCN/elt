@@ -26,17 +26,11 @@ class Entry(object):
 
     @staticmethod
     def create_flow_mod(dpid, match, actions, command, priority):
-        e = Entry()
-        e.data = ofp_flow_mod(match, actions, command, priority)
-        e.dpid = dpid
-        return e
+        return Entry(ofp_flow_mod(match, actions, command, priority), dpid)
 
     @staticmethod
     def create_rule(dpid, match, actions, priority):
-        e = Entry()
-        e.data = ofp_rule(match, actions, priority)
-        e.dpid = dpid
-        return e
+        return Entry(ofp_rule(match, actions, priority), dpid)
 
 
 class EntryGroup(object):

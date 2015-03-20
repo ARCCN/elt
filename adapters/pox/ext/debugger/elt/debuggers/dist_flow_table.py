@@ -59,4 +59,5 @@ class DistFlowTable(object):
             import traceback
             traceback.print_exc()
         self.log.close()
+        # self.msg_log.close()
 

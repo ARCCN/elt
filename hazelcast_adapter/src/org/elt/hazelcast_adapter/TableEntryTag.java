@@ -11,7 +11,7 @@ import java.util.Set;
 import org.elt.hazelcast_adapter.unpack.IDumpable;
 import org.elt.hazelcast_adapter.unpack.ILoadable;
 
-public class TableEntryTag implements Serializable, ILoadable, IDumpable {
+public class TableEntryTag implements Serializable, ILoadable, IDumpable, Cloneable {
 
 	private static final long serialVersionUID = 2308556032230029851L;
 	Set<String> apps;
@@ -29,6 +29,11 @@ public class TableEntryTag implements Serializable, ILoadable, IDumpable {
 		this.appsLength = this.apps.size();
 		this.nodes = new HashSet<Long>();
 		this.nodes.add(node);
+	}
+	
+	public TableEntryTag(Set<String> apps, Set<Long> nodes) {
+		this.apps = apps;
+		this.nodes = nodes;
 	}
 	
 	public void addNode(long node) { this.nodes.add(node); }
@@ -69,5 +74,14 @@ public class TableEntryTag implements Serializable, ILoadable, IDumpable {
 			nds.add(Long.toString(nd));
 		map.put("nodes", nds.toArray(new String[nds.size()]));
 		return map;
+	}
+	
+	@Override
+	public TableEntryTag clone() {
+		Set<String> new_apps = new HashSet<String>();
+		Set<Long> new_nodes = new HashSet<Long>();
+		new_apps.addAll(apps);
+		new_nodes.addAll(nodes);
+		return new TableEntryTag(new_apps, new_nodes);
 	}
 }

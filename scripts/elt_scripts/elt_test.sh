@@ -4,14 +4,14 @@ function run_term {
     then
         if [[ $3 != "" ]];
         then
-            $2 > $3 &
+            bash -c "$2" >> $3 &
         else
-            $2 &
+            bash -c "$2" &
         fi
     else
         if [[ $3 != "" ]];
         then
-            $1 -e "$2 > $3" &
+            $1 -e "$2 >> $3" &
         else
             $1 -e "$2" &
         fi

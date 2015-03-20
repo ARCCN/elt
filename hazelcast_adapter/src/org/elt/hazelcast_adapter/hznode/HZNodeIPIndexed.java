@@ -2,7 +2,6 @@ package org.elt.hazelcast_adapter.hznode;
 
 import java.io.Serializable;
 import java.util.concurrent.Callable;
-import java.util.concurrent.Future;
 import java.util.concurrent.locks.Lock;
 
 import org.elt.hazelcast_adapter.CompetitionErrorMessage;
@@ -10,12 +9,10 @@ import org.elt.hazelcast_adapter.FlowModMessage;
 import org.elt.hazelcast_adapter.IFlowTable;
 
 import com.hazelcast.config.Config;
-import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.MapConfig;
 import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.HazelcastInstanceAware;
-import com.hazelcast.core.IExecutorService;
 import com.hazelcast.core.IMap;
 import com.hazelcast.core.IdGenerator;
 

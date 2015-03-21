@@ -48,7 +48,7 @@ class DistFlowTable(object):
             actions=[],
             command=of.OFPFC_DELETE_STRICT,
             priority=flow_rem.priority), [])
-        print "Flow removed:", len(errors), "errors"
+        # print "Flow removed:", len(errors), "errors"
 
     def close(self):
         print "Closing sockets."

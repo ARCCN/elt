@@ -20,6 +20,11 @@ from time import sleep
 import re
 import sys
 import getopt
+import random
+
+
+CONTROLLERS = 2
+CONTROLLER_COUNT = 2
 
 
 def chunks(l, n):
@@ -55,9 +60,21 @@ def multiping(topo, chunksize, seconds):
 
     # Create network and identify subnets
     net = Mininet(topo=create_topo(topo),
-                  controller=RemoteController, autoStaticArp=False)
-                  #,autoSetMacs=True)
-    net.start()
+                  # controller=RemoteController,
+                  autoStaticArp=False,
+                  build=False)
+                  # ,autoSetMacs=True)
+
+    if CONTROLLERS > 1:
+        controllers = [net.addController("c%d" % i, controller=RemoteController,
+                                         ip="127.0.0.1", port=6640+i)
+                       for i in range(CONTROLLERS)]
+        net.build()
+        for sw in net.switches:
+            sw.start(random.sample(controllers, CONTROLLER_COUNT))
+    else:
+        net.start()
+
     hosts = net.hosts
     #subnets = chunks( hosts, chunksize )
     subnets = [

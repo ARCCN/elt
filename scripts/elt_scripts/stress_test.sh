@@ -22,7 +22,19 @@ terminal='no'
 deb='ext.debugger.elt.of_01_debug'
 log='stress_test.log'
 mn_log='multiping.log'
+CONTROLLERS=2
+ports=""
+
+function get_ports {
+    case $CONTROLLERS in
+        "0" )   ports="" ;;
+        "1" )   ports="6633" ;;
+        *   )   for (( i=0; i<$CONTROLLERS; ++i )); do ports=$ports" "$((6640+$i)); done ;;
+    esac
+}
+
 mkfifo stress_test.fifo
+rm -f pid
 
 for iter in "";
 do
@@ -44,19 +56,23 @@ do
                 db_pid=$!
                 run_term $terminal 'python -m server.utility.start_log_server'
                 log_pid=$!
-                if [[ $i == "no" ]] ;
-                then
-                    run_term $terminal "./wrap.sh tail -f stress_test.fifo | adapters/pox/pox.py py log.level --WARNING forwarding.l2_learning"
-                    echo 'no proxy'
-                elif [[ $i == "proxy" ]];
-                then
-                    run_term $terminal "./wrap.sh tail -f stress_test.fifo | adapters/pox/pox.py py log.level --WARNING $deb forwarding.l2_learning ext.debugger.controllers.interrupter --rate=0.0"
-                    echo 'just proxy'
-                else
-                    run_term $terminal "./wrap.sh tail -f stress_test.fifo | adapters/pox/pox.py py log.level --WARNING $deb --dist_flow_table_controller=adapters/pox/config/flow_table_config.cfg forwarding.l2_learning ext.debugger.controllers.interrupter --rate=$i"
-                    #" --flow_table_controller=config/flow_table_config.cfg forwarding.l2_learning ext.debugger.controllers.interrupter"
-                    echo 'debug'
-                fi
+                get_ports
+                echo PORTS: $ports
+                for port in $ports ; do
+                    if [[ $i == "no" ]] ;
+                    then
+                        run_term $terminal "./wrap.sh tail -f stress_test.fifo | adapters/pox/pox.py openflow.of_01 --address=127.0.0.1 --port=$port py log.level --WARNING forwarding.l2_learning"
+                        echo 'no proxy'
+                    elif [[ $i == "proxy" ]];
+                    then
+                        run_term $terminal "./wrap.sh tail -f stress_test.fifo | adapters/pox/pox.py py log.level --WARNING $deb --address=127.0.0.1 --port=$port forwarding.l2_learning ext.debugger.controllers.interrupter --rate=0.0"
+                        echo 'just proxy'
+                    else
+                        run_term $terminal "./wrap.sh tail -f stress_test.fifo | adapters/pox/pox.py py log.level --WARNING $deb --address=127.0.0.1 --port=$port --dist_flow_table_controller=adapters/pox/config/flow_table_config.cfg forwarding.l2_learning ext.debugger.controllers.interrupter --rate=$i"
+                        #" --flow_table_controller=config/flow_table_config.cfg forwarding.l2_learning ext.debugger.controllers.interrupter"
+                        echo 'debug'
+                    fi
+                done;
                 #pox_pid=`cat pid`
                 #echo "Read $pox_pid"
                 #rm pid

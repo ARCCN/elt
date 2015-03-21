@@ -73,10 +73,11 @@ class LearningSwitch (object):
      flow goes out the appopriate port
      6a) Send the packet out appropriate port
   """
-  def __init__ (self, connection, transparent):
+  def __init__ (self, connection, transparent, retransmit):
     # Switch we'll be adding L2 learning switch capabilities to
     self.connection = connection
     self.transparent = transparent
+    self.retransmit = retransmit
 
     # Our table
     self.macToPort = {}
@@ -118,7 +119,11 @@ class LearningSwitch (object):
       else:
         pass
         #log.info("Holding down flood for %s", dpid_to_str(event.dpid))
-      msg.data = event.ofp
+
+      if not self.retransmit:
+        msg.buffer_id = None
+      else:
+        msg.data = event.ofp
       msg.in_port = event.port
       self.connection.send(msg)
 
@@ -127,6 +132,8 @@ class LearningSwitch (object):
       Drops this packet and optionally installs a flow to continue
       dropping similar ones for a while
       """
+      if not self.retransmit:
+          event.ofp.buffer_id = None
       if duration is not None:
         if not isinstance(duration, tuple):
           duration = (duration,duration)
@@ -170,7 +177,10 @@ class LearningSwitch (object):
         msg.idle_timeout = 10
         msg.hard_timeout = 30
         msg.actions.append(of.ofp_action_output(port = port))
-        msg.data = event.ofp # 6a
+        if not self.retransmit:
+            msg.buffer_id = None
+        else:
+            msg.data = event.ofp # 6a
         self.connection.send(msg)
 
 
@@ -178,7 +188,7 @@ class l2_learning (object):
   """
   Waits for OpenFlow switches to connect and makes them learning switches.
   """
-  def __init__ (self, transparent, ignore = None):
+  def __init__ (self, transparent, ignore=None, retransmit=True):
     """
     Initialize
 
@@ -188,16 +198,18 @@ class l2_learning (object):
     core.openflow.addListeners(self)
     self.transparent = transparent
     self.ignore = set(ignore) if ignore else ()
+    self.retransmit = retransmit
+    print "l2_learning. retransmit:", retransmit
 
   def _handle_ConnectionUp (self, event):
     if event.dpid in self.ignore:
       log.debug("Ignoring connection %s" % (event.connection,))
       return
     log.debug("Connection %s" % (event.connection,))
-    LearningSwitch(event.connection, self.transparent)
+    LearningSwitch(event.connection, self.transparent, self.retransmit)
 
 
-def launch (transparent=False, hold_down=_flood_delay, ignore = None):
+def launch (transparent=False, hold_down=_flood_delay, ignore = None, retransmit=True):
   """
   Starts an L2 learning switch.
   """
@@ -212,4 +224,4 @@ def launch (transparent=False, hold_down=_flood_delay, ignore = None):
     ignore = ignore.replace(',', ' ').split()
     ignore = set(str_to_dpid(dpid) for dpid in ignore)
 
-  core.registerNew(l2_learning, str_to_bool(transparent), ignore)
+  core.registerNew(l2_learning, str_to_bool(transparent), ignore, retransmit)

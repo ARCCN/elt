@@ -58,20 +58,22 @@ do
                 log_pid=$!
                 get_ports
                 echo PORTS: $ports
+                retransmit=""
                 for port in $ports ; do
                     if [[ $i == "no" ]] ;
                     then
-                        run_term $terminal "./wrap.sh tail -f stress_test.fifo | adapters/pox/pox.py openflow.of_01 --address=127.0.0.1 --port=$port py log.level --WARNING forwarding.l2_learning"
+                        run_term $terminal "./wrap.sh tail -f stress_test.fifo | adapters/pox/pox.py openflow.of_01 --address=127.0.0.1 --port=$port py log.level --WARNING forwarding.l2_learning $retransmit"
                         echo 'no proxy'
                     elif [[ $i == "proxy" ]];
                     then
-                        run_term $terminal "./wrap.sh tail -f stress_test.fifo | adapters/pox/pox.py py log.level --WARNING $deb --address=127.0.0.1 --port=$port forwarding.l2_learning ext.debugger.controllers.interrupter --rate=0.0"
+                        run_term $terminal "./wrap.sh tail -f stress_test.fifo | adapters/pox/pox.py py log.level --WARNING $deb --address=127.0.0.1 --port=$port forwarding.l2_learning $retransmit ext.debugger.controllers.interrupter --rate=0.0"
                         echo 'just proxy'
                     else
-                        run_term $terminal "./wrap.sh tail -f stress_test.fifo | adapters/pox/pox.py py log.level --WARNING $deb --address=127.0.0.1 --port=$port --dist_flow_table_controller=adapters/pox/config/flow_table_config.cfg forwarding.l2_learning ext.debugger.controllers.interrupter --rate=$i"
+                        run_term $terminal "./wrap.sh tail -f stress_test.fifo | adapters/pox/pox.py py log.level --WARNING $deb --address=127.0.0.1 --port=$port --dist_flow_table_controller=adapters/pox/config/flow_table_config.cfg forwarding.l2_learning $retransmit ext.debugger.controllers.interrupter --rate=$i"
                         #" --flow_table_controller=config/flow_table_config.cfg forwarding.l2_learning ext.debugger.controllers.interrupter"
                         echo 'debug'
                     fi
+                    retransmit="--retransmit=False"
                 done;
                 #pox_pid=`cat pid`
                 #echo "Read $pox_pid"

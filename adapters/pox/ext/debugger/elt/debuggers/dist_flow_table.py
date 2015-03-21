@@ -19,10 +19,13 @@ class DistFlowTable(object):
         self.factory = ConnectionFactory(instantiator=Instantiator(
             module=(__name__.rsplit('.', 1)[0] + ".flowmod_message")))
         self.skt[0] = self.factory.create_connection(self.skt[0])
+        self.ignore = False
         # self.msg_log = open("messages_log.in", "w")
 
     #@profile
     def process_flow_mod(self, dpid, flow_mod, apps):
+        if self.ignore:
+            return []
         # print '--------\n', apps, '\n-------\n'
         msg = FlowModMessage(ofp_flow_mod.from_flow_mod(flow_mod),
                              dpid, TableEntryTag(apps))
@@ -43,14 +46,18 @@ class DistFlowTable(object):
         return result.errors
 
     def process_flow_removed(self, dpid, flow_rem):
+        if self.ignore:
+            return []
         errors = self.process_flow_mod(dpid, ofp_flow_mod(
             match=flow_rem.match,
             actions=[],
             command=of.OFPFC_DELETE_STRICT,
             priority=flow_rem.priority), [])
         # print "Flow removed:", len(errors), "errors"
+        return []
 
     def close(self):
+        self.ignore = True
         print "Closing sockets."
         try:
             self.skt[0].shutdown(socket.SHUT_RDWR)

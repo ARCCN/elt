@@ -37,8 +37,9 @@ class XmlCode(ET.Element):
     """
     def __init__(self, code):
         ET.Element.__init__(self, 'code')
-        for t, call_stack in code:
+        for t, call_stack, cid in code:
             e = ET.Element(t)
+            e.set("cid", str(cid))
             if isinstance(call_stack, basestring):
                 elem = ET.Element('call')
                 elem.text = call_stack

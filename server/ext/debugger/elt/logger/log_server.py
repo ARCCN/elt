@@ -279,7 +279,7 @@ class LogServer(PythonMessageServer):
         mid = self.qid_mid.get(qid, None)
         if mid is not None and mid in self.pending:
             found = False if len(
-                [value for type, value in code
+                [value for type, value, cid in code
                  if value == 'Not found']
                 ) > 0 else True
             if not found:

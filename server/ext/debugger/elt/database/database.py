@@ -454,11 +454,12 @@ class Database(object):
                 "FlowMods.params_ID = FlowModParams.ID AND ",
                 "match_ID <=> %d AND ",
                 "dpid <=> %d AND ",
-                "cid <=> %d AND ",
+                "cid <=> %s AND " if cid is not None else "%s ",
                 "actionpat_ID <=> %s AND ",
                 "command = %d AND priority = %d",
                 ]) % (
-                match_ID, dpid, cid, actionpat_id, command, priority)
+                match_ID, dpid, str(cid) if cid is not None else "",
+                actionpat_id, command, priority)
         else:
             tmp = select_flow_match(match, fields='ID', args=None)
             tmp = tmp[(tmp.find('WHERE') + 6):tmp.find('LIMIT')]
@@ -466,11 +467,14 @@ class Database(object):
                 "SELECT max(FlowMods.ID), cid FROM FlowMods",
                 " JOIN FlowMatch ON FlowMods.match_ID=FlowMatch.ID"
                 " AND ", tmp,
-                " AND dpid <=> %d AND cid <=> %d AND actionpat_ID <=> %s ",
+                " AND dpid <=> %d AND ",
+                "cid <=> %s AND " if cid is not None else "%s ",
+                "actionpat_ID <=> %s ",
                 "JOIN FlowModParams ON ",
                 "FlowMods.params_ID = FlowModParams.ID AND ",
                 "command = %d AND priority = %d"]) % (
-                dpid, cid, actionpat_id, command, priority)
+                dpid, str(cid) if cid is not None else "",
+                actionpat_id, command, priority)
 
         query = query.replace('None', 'NULL')
         cur = self._get_cursor()

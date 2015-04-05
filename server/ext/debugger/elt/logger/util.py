@@ -28,7 +28,7 @@ class FlowModInfo(object):
 
 class RuleInfo(object):
     def __init__(self, entry):
-        dpid, rule = entry
+        dpid, rule, cid = entry
         self.dpid = dpid
         self.match = rule.match
         self.actions = rule.actions
@@ -114,6 +114,7 @@ class MessageInfo(object):
                     c += '  ' + str(entry[1]) + '\n'
                 elif isinstance(entry[1], tuple) or isinstance(entry[1], list):
                     c += '\n'.join(['  ' + str(r) for r in entry[1]]) + '\n'
+                c += str(entry[2])
             text += part + c
         text += self.parts[-1]
         return text

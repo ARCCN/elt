@@ -1,6 +1,8 @@
 package elt.EventViewer;
 
 import org.eclipse.jface.viewers.LabelProvider;
+import org.w3c.dom.Attr;
+import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
@@ -25,7 +27,15 @@ public class XMLLabelProvider extends LabelProvider {
 			if (children.getLength() == 1 && children.item(0).getNodeName() == "#text") {
 				return node.getNodeName() + ": " + children.item(0).getTextContent();
 			}
-			return node.getNodeName();
+			NamedNodeMap attr = node.getAttributes();
+			String label = "";
+			for (int i = 0; i < attr.getLength(); ++i) {
+				Attr item = (Attr)attr.item(i);
+				if (item != null) {
+					label += " " + item.getName() + ": " + item.getValue();
+				}
+			}
+			return node.getNodeName() + label;
 		}
 		return "Unknown";
 	}

@@ -18,9 +18,10 @@ class ProxyController(object):
     def __init__(self, **kw):
         self.db = DatabaseClient(mode='w')
         if "cid" in kw:
-            self.cid = kw["cid"]
+            self.cid = int(kw["cid"])
         else:
             self.cid = 0
+        log.info("We are controller #%d" % self.cid)
         #self.log = LogClient(name="ProxyController")
         self.debuggers = {}
         if "dist_flow_table_controller" in kw:

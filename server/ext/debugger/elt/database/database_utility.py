@@ -85,6 +85,7 @@ FlowMods.append(
 FlowMods.append(TableColumn("match_ID", "INT UNSIGNED", "NOT NULL"))
 FlowMods.append(TableColumn("params_ID", "INT UNSIGNED", "NOT NULL"))
 FlowMods.append(TableColumn("dpid", "BIGINT", "NOT NULL"))
+FlowMods.append(TableColumn("cid", "INT UNSIGNED", ""))
 FlowMods.append(TableColumn("actionpat_ID", "INT UNSIGNED", ""))
 FlowMods.append(TableColumn("codepat_ID", "INT UNSIGNED", ""))
 FlowMods.append(TableColumn("time", "DATETIME", ""))
@@ -594,43 +595,44 @@ def convert_insert_code_patterns_to_code_entries(codepat_ID,
 def create_flow_mods():
     cr = create_table("FlowMods")
     cr = cr[:-2] + (", INDEX (dpid, actionpat_ID, params_ID)"
-                    ", INDEX (match_ID, dpid, actionpat_ID, params_ID, ID))"
+                    ", INDEX (match_ID, dpid, actionpat_ID, params_ID, ID)"
+                    ", INDEX (match_ID, dpid, actionpat_ID, params_ID, cid, ID))"
                     " ENGINE = InnoDB;")
     return cr
 
 
-def add_flow_mods(match_ID, params_ID, dpid, actionpat_ID,
+def add_flow_mods(match_ID, params_ID, dpid, cid, actionpat_ID,
                   codepat_ID, out_var=None):
-    return insert_flow_mods(match_ID, params_ID, dpid, actionpat_ID,
+    return insert_flow_mods(match_ID, params_ID, dpid, cid, actionpat_ID,
                             codepat_ID, True)
 
 
-def insert_flow_mods(match_ID, params_ID, dpid, actionpat_ID, codepat_ID,
+def insert_flow_mods(match_ID, params_ID, dpid, cid, actionpat_ID, codepat_ID,
                      return_last_id=False, ignore=False, id_var=None,
                      out_var=None, args=None):
     return insert_table("FlowMods", return_last_id, ignore,
                         id_var, out_var, args, match_ID, params_ID,
-                        dpid, actionpat_ID, codepat_ID)
+                        dpid, cid, actionpat_ID, codepat_ID)
 
 
-def select_flow_mods(match_ID, params_ID, dpid, actionpat_ID,
+def select_flow_mods(match_ID, params_ID, dpid, cid, actionpat_ID,
                      codepat_ID=None, fields='*'):
     query = "SELECT " + fields + " FROM FlowMods WHERE "
     for column in tables["FlowMods"]:
         if (column.name != 'time' and column.name != "ID" and
                 column.name != 'codepat_ID'):
             query += column.name + " = %s AND "
-    query = query[:-5] % (match_ID, params_ID, dpid, actionpat_ID)
+    query = query[:-5] % (match_ID, params_ID, dpid, cid, actionpat_ID)
     if codepat_ID is not None:
         query += ' AND codepat_ID = %s' % (codepat_ID)
     query = query.replace("= None", " IS NULL")
     return query
 
 
-def convert_insert_flow_mods(match_ID, params_ID, dpid, actionpat_ID,
+def convert_insert_flow_mods(match_ID, params_ID, dpid, cid, actionpat_ID,
                              codepat_ID, args=None):
-    q = "%s, %s, %s, %s, %s,\"%s\""
-    l = (match_ID, params_ID, dpid, actionpat_ID,
+    q = "%s, %s, %s, %s, %s, %s,\"%s\""
+    l = (match_ID, params_ID, dpid, cid, actionpat_ID,
          codepat_ID, time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime()))
 
     if args is not None:

@@ -13,12 +13,13 @@ class FlowModInfo(object):
     All we need to retrieve FlowMod from Database.
     """
     def __init__(self, entry):
-        dpid, flow_mod = entry
+        dpid, flow_mod, cid = entry
         self.dpid = dpid
         self.match = flow_mod.match
         self.actions = flow_mod.actions
         self.command = flow_mod.command
         self.priority = flow_mod.priority
+        self.cid = cid
 
     def __str__(self):
         return (str(self.dpid) + '\n' + str(self.match) +

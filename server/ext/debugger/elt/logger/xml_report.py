@@ -93,7 +93,7 @@ class XmlFlowMod(ET.Element):
         self.set_fields(flow_mod)
 
     def set_fields(self, flow_mod):
-        for field in ['dpid', 'command', 'priority']:
+        for field in ['dpid', 'command', 'priority', 'cid']:
             try:
                 elem = ET.Element(field)
                 elem.text = str(getattr(flow_mod, field))

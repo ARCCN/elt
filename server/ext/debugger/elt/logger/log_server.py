@@ -172,7 +172,7 @@ class LogServer(PythonMessageServer):
         #prepare everything for receiving reply
         for e, i in zip(args, msg.event.indices()):
             type = e.name
-            entry = (e.dpid, e.data)
+            entry = (e.dpid, e.data, e.cid)
             info = None
             if type in ["FlowMod", "ofp_flow_mod"]:
                 info = FlowModInfo(entry)
@@ -248,7 +248,8 @@ class LogServer(PythonMessageServer):
                 if isinstance(req.info, FlowModInfo):
                     self.db_client.find_flow_mod_async(
                         req.info.dpid, req.info.match, req.info.actions,
-                        req.info.command, req.info.priority, req.qid)
+                        req.info.command, req.info.priority, req.info.cid,
+                        req.qid)
                 elif isinstance(req.info, RuleInfo):
                     self.db_client.find_rule_async(
                         req.info.dpid, req.info.match, req.info.actions,

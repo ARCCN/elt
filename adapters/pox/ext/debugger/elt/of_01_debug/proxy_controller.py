@@ -20,7 +20,7 @@ class ProxyController(object):
         if "cid" in kw:
             self.cid = kw["cid"]
         else:
-            self.cid = None
+            self.cid = 0
         #self.log = LogClient(name="ProxyController")
         self.debuggers = {}
         if "dist_flow_table_controller" in kw:

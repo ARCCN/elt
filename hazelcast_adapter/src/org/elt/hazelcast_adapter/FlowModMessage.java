@@ -39,6 +39,10 @@ public class FlowModMessage implements ILoadable, IDumpable, Serializable {
 	public void setNode(long node) {
 		this.tag.addNode(node);
 	}
+	
+	public boolean hasNode() {
+		return this.tag.getNodes().size() > 0;
+	}
 
 	@SuppressWarnings("unchecked")
 	@Override

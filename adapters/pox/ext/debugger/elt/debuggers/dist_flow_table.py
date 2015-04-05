@@ -23,12 +23,14 @@ class DistFlowTable(object):
         # self.msg_log = open("messages_log.in", "w")
 
     #@profile
-    def process_flow_mod(self, dpid, flow_mod, apps):
+    def process_flow_mod(self, dpid, flow_mod, apps, cid=None):
         if self.ignore:
             return []
         # print '--------\n', apps, '\n-------\n'
+        if cid is not None:
+            cid = [cid]
         msg = FlowModMessage(ofp_flow_mod.from_flow_mod(flow_mod),
-                             dpid, TableEntryTag(apps))
+                             dpid, TableEntryTag(apps, cid))
         # print "NEW MESSAGE"
         # m = self.skt[0].dumps(msg)
         # self.msg_log.write(m)

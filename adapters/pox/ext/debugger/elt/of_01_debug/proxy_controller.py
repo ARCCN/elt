@@ -47,6 +47,9 @@ class ProxyController(object):
         # for l in self.debuggers.values():
         #     self.dump_files[l.name] = open(l.name + ".dmp", "w")
 
+    def get_cid(self):
+        return self.cid
+
     def close(self):
         f = open('ProxyController.stats', 'w')
         f.write("FlowMods: %d\n" % self.flowmods)

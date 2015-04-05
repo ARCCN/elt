@@ -85,7 +85,7 @@ class DistFlowTableController(object):
         # print "Process FM", module
         flow_mod.flags |= of.OFPFF_SEND_FLOW_REM
         return self.flow_table.process_flow_mod(
-            dpid, flow_mod, self.get_apps(module))
+            dpid, flow_mod, self.get_apps(module), self.proxy.get_cid())
 
     def process_flow_removed(self, dpid, flow_rem):
         return self.flow_table.process_flow_removed(dpid, flow_rem)

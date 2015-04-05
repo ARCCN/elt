@@ -65,9 +65,17 @@ class CompetitionErrorMessage(Message):
 
     def fmm_to_entry(self, fmm):
         if fmm.flow_mod.command == -1:
+            # rule
             return Entry(ofp_rule.from_rule(fmm.flow_mod), int(fmm.dpid))
         else:
-            return Entry(fmm.flow_mod, int(fmm.dpid))
+            # flow_mod message
+            cid = None
+            try:
+                cid = fmm.tag.nodes.pop() if len(fmm.tag.nodes) == 1 else None
+                fmm.tag.nodes.add(cid)
+            except:
+                pass
+            return Entry(fmm.flow_mod, int(fmm.dpid), cid)
 
     def __setstate__(self, d):
         Message.__setstate__(self, d)

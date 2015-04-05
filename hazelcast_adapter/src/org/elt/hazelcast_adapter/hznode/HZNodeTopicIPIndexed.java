@@ -133,9 +133,9 @@ public class HZNodeTopicIPIndexed implements IFlowTable,
 	@Override
 	public CompetitionErrorMessage updateErrorChecking(FlowModMessage msg) {
 		// TODO: Maybe use Executor?
-		// TODO: MODIFY can act like ADD.
-		// TODO: We may need several response messages,
-		msg.setNode(this.id);
+		if (!msg.hasNode()) {
+			msg.setNode(this.id);
+		}
 				
 		String dpid = msg.getDpid();
 		/*

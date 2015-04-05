@@ -63,6 +63,13 @@ public class TableEntryTag implements Serializable, ILoadable, IDumpable, Clonea
 		}
 		catch (Throwable e) {}
 		this.appsLength = this.apps.size();
+		this.nodes = new HashSet<Long>();
+		try {
+			Object[] objs = (Object [])map.get("nodes");
+			for (int i=0; i < objs.length; ++i)
+				this.nodes.add((Long)objs[i]);
+		}
+		catch (Throwable e) {}
 	}
 
 	@Override

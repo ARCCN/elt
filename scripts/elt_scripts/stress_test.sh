@@ -59,6 +59,7 @@ do
                 get_ports
                 echo PORTS: $ports
                 retransmit=""
+                cid=0
                 for port in $ports ; do
                     if [[ $i == "no" ]] ;
                     then
@@ -66,20 +67,21 @@ do
                         echo 'no proxy'
                     elif [[ $i == "proxy" ]];
                     then
-                        run_term $terminal "./wrap.sh tail -f stress_test.fifo | adapters/pox/pox.py py log.level --WARNING $deb --address=127.0.0.1 --port=$port forwarding.l2_learning $retransmit ext.debugger.controllers.interrupter --rate=0.0"
+                        run_term $terminal "./wrap.sh tail -f stress_test.fifo | adapters/pox/pox.py py log.level --WARNING $deb --cid=$cid --address=127.0.0.1 --port=$port forwarding.l2_learning $retransmit ext.debugger.controllers.interrupter --rate=0.0"
                         echo 'just proxy'
                     else
-                        run_term $terminal "./wrap.sh tail -f stress_test.fifo | adapters/pox/pox.py py log.level --WARNING $deb --address=127.0.0.1 --port=$port --dist_flow_table_controller=adapters/pox/config/flow_table_config.cfg forwarding.l2_learning $retransmit ext.debugger.controllers.interrupter --rate=$i"
+                        run_term $terminal "./wrap.sh tail -f stress_test.fifo | adapters/pox/pox.py py log.level --WARNING $deb --cid=$cid --address=127.0.0.1 --port=$port --dist_flow_table_controller=adapters/pox/config/flow_table_config.cfg forwarding.l2_learning $retransmit ext.debugger.controllers.interrupter --rate=$i flamer"
                         #" --flow_table_controller=config/flow_table_config.cfg forwarding.l2_learning ext.debugger.controllers.interrupter"
                         echo 'debug'
                     fi
                     retransmit="--retransmit=False"
+                    cid=$(($cid+1))
                 done;
                 #pox_pid=`cat pid`
                 #echo "Read $pox_pid"
                 #rm pid
                 echo $i >> $log
-                sleep 2
+                sleep 15
                 #read
                 run_term $terminal "python scripts/elt_scripts/multiping.py --topo=line,$len,$size" "$log"
                 mn_pid=$!

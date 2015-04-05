@@ -115,3 +115,4 @@ class LogClient(object):
             raise Exception("Unexpected report reply")
 
         return msg
+

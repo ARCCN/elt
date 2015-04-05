@@ -149,7 +149,6 @@ class ofp_match(of.ofp_match):
                 d[k] = getattr(self, k)
 
         def get_str(x):
-            # TODO: FIX in other places.
             t = None if x is None else x.toStr()
             return t
         d["nw_src"] = get_str(d["nw_src"])

@@ -12,31 +12,27 @@ class Entry(object):
     """
     FlowMod/Rule + dpid of target switch.
     """
-    def __init__(self, data=None, dpid=None):
+    def __init__(self, data=None, dpid=None, cid=None):
         self.data = data
         self.dpid = dpid
+        self.cid = cid
         if hasattr(data, "name"):
             self.name = data.name
 
     def __setstate__(self, d):
         self.dpid = d.get("dpid")
+        self.cid = d.get("cid")
         self.data = instantiate_fm_or_rule(d.get("data"))
         if hasattr(self.data, "name"):
             self.name = self.data.name
 
     @staticmethod
-    def create_flow_mod(dpid, match, actions, command, priority):
-        e = Entry()
-        e.data = ofp_flow_mod(match, actions, command, priority)
-        e.dpid = dpid
-        return e
+    def create_flow_mod(dpid, match, actions, command, priority, cid=None):
+        return Entry(ofp_flow_mod(match, actions, command, priority), dpid, cid)
 
     @staticmethod
     def create_rule(dpid, match, actions, priority):
-        e = Entry()
-        e.data = ofp_rule(match, actions, priority)
-        e.dpid = dpid
-        return e
+        return Entry(ofp_rule(match, actions, priority), dpid)
 
 
 class EntryGroup(object):

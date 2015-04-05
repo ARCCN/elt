@@ -10,9 +10,10 @@ class FlowModMessage(Message):
     """
     FlowMod info to be stored to Database.
     """
-    def __init__(self, dpid=None, data=None, code_entries=None):
+    def __init__(self, dpid=None, data=None, code_entries=None, cid=None):
         Message.__init__(self)
         self.dpid = dpid
+        self.cid = cid
         if isinstance(data, ofp_flow_mod):
             self.data = data
         else:
@@ -20,8 +21,8 @@ class FlowModMessage(Message):
         self.code_entries = code_entries
 
     def __setstate__(self, d):
-        if "dpid" in d:
-            self.dpid = d['dpid']
+        self.dpid = d.get('dpid')
+        self.cid = d.get("cid")
         if "data" in d:
             self.data = ofp_flow_mod()
             self.data.__setstate__(d['data'])
@@ -34,9 +35,10 @@ class FlowModQuery(Message):
     Request call stack for FlowMod.
     Reply's qid must be identical.
     """
-    def __init__(self, dpid=None, data=None, qid=-1):
+    def __init__(self, dpid=None, data=None, cid=None, qid=-1):
         Message.__init__(self)
         self.dpid = dpid
+        self.cid = cid
         if isinstance(data, ofp_flow_mod):
             self.data = data
         else:
@@ -44,8 +46,8 @@ class FlowModQuery(Message):
         self.qid = qid
 
     def __setstate__(self, d):
-        if "dpid" in d:
-            self.dpid = d['dpid']
+        self.dpid = d.get('dpid')
+        self.cid = d.get("cid")
         if "data" in d:
             self.data = ofp_flow_mod()
             self.data.__setstate__(d['data'])

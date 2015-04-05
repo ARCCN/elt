@@ -7,7 +7,10 @@ class Message(object):
         self._name = str(self.__class__).rsplit('.', 1)[1][:-2]
 
     def __setstate__(self, d):
-        pass
+        self._name = d.get("_name", self._name)
+
+    def __getstate__(self):
+        return self.__dict__
 
 
 class ClosingMessage(Message):

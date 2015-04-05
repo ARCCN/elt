@@ -59,13 +59,13 @@ class DatabaseClient(object):
     def connected(self):
         return self.connection is not None
 
-    def add_flow_mod(self, dpid, data, code_entries):
+    def add_flow_mod(self, dpid, data, code_entries, cid=None):
         """
         Add FlowMod data to Database.
         """
         while True:
             try:
-                self.send_message(FlowModMessage(dpid, data, code_entries),
+                self.send_message(FlowModMessage(dpid, data, code_entries, cid),
                                   async=True)
                 break
             except TimeoutException:
@@ -82,14 +82,14 @@ class DatabaseClient(object):
         self.connection = None
 
     def find_flow_mod(self, dpid, match, actions,
-                      command, priority):
+                      command, priority, cid=None):
         """
         Retrieve call stack for FlowMod.
         QID does not matter here.
         """
         fm = ofp_flow_mod(match=match, actions=actions,
                           command=command, priority=priority)
-        return self.query(FlowModQuery(dpid, fm))
+        return self.query(FlowModQuery(dpid, fm, cid))
 
     def find_rule(self, dpid, match, actions, priority):
         """
@@ -116,7 +116,7 @@ class DatabaseClient(object):
             raise
 
     def find_flow_mod_async(self, dpid, match, actions,
-                            command, priority, qid):
+                            command, priority, cid, qid):
         """
         Retrieve call stack for FlowMod.
         QID will be used to match request and response.
@@ -124,7 +124,7 @@ class DatabaseClient(object):
         #Hack! We save on __init__ calls.
         fm = ofp_flow_mod(match=match, actions=actions,
                           command=command, priority=priority)
-        return self.query(FlowModQuery(dpid, fm, qid), async=True)
+        return self.query(FlowModQuery(dpid, fm, cid, qid), async=True)
 
     def find_rule_async(self, dpid, match, actions,
                         priority, qid):

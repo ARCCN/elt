@@ -174,6 +174,9 @@ class TimeoutException(Exception):
 
 
 class ConnectionFactory(object):
+    """
+    Creates connections with given loader/dumper.
+    """
     def __init__(self, pickler=None, instantiator=None):
         if pickler is None:
             if instantiator is None:
@@ -202,6 +205,9 @@ class SimpleConnection(object):
         self.dumps = dumps
 
     def send(self, obj):
+        """
+        Encode and send an object.
+        """
         if self.dead:
             raise EOFError('Socket is closed')
         d = None
@@ -221,6 +227,10 @@ class SimpleConnection(object):
             raise TimeoutException()
 
     def recv(self):
+        """
+        Read everything from socket.
+        Try to decode 1 object and return it.
+        """
         while True:
             r = []
             w = []
@@ -242,7 +252,6 @@ class SimpleConnection(object):
             self.buffer.savestate()
             obj = None
             try:
-                # print "BUFFER", self.buffer.getvalue()
                 obj = self.load(self.buffer)
             except:
                 self.buffer.loadstate()
@@ -254,6 +263,10 @@ class SimpleConnection(object):
                 return obj
 
     def recv_all(self):
+        """
+        Read everything from socket.
+        Try to decode all objects and return them as list.
+        """
         objs = []
         buffers = []
         while not self.dead:

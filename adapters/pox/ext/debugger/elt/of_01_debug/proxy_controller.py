@@ -17,6 +17,10 @@ class ProxyController(object):
 
     def __init__(self, **kw):
         self.db = DatabaseClient(mode='w')
+        if "cid" in kw:
+            self.cid = kw["cid"]
+        else:
+            self.cid = None
         #self.log = LogClient(name="ProxyController")
         self.debuggers = {}
         if "dist_flow_table_controller" in kw:
@@ -63,7 +67,7 @@ class ProxyController(object):
         self.flowmods += 1
         flow_mod.unpack(flow_mod.pack())
         try:
-            self.db.add_flow_mod(dpid, flow_mod, code_entries)
+            self.db.add_flow_mod(dpid, flow_mod, code_entries, self.cid)
         except EOFError:
             self.db.reconnect()
 

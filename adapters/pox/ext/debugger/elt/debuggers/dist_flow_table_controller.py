@@ -14,14 +14,12 @@ class DistFlowTableController(object):
 
     def __init__(self, proxy, config=None):
         self.proxy = proxy
-        self.flow_table = DistFlowTable()
+        self.flow_table = DistFlowTable(self.proxy.get_cid())
         self.last_local_id = 0
         self.config = config
         self.apps = {}
         self.apps_rev = {}
         self.read_config()
-        # from pprint import pprint
-        # pprint(self.apps)
 
     def read_config(self):
         """
@@ -82,7 +80,6 @@ class DistFlowTableController(object):
         Check for errors on FlowTable model.
         """
         # TODO: Deal with exact matches in OF 1.0.
-        # print "Process FM", module
         flow_mod.flags |= of.OFPFF_SEND_FLOW_REM
         return self.flow_table.process_flow_mod(
             dpid, flow_mod, self.get_apps(module), self.proxy.get_cid())

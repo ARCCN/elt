@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<classpath>
+	<classpathentry kind="src" path="src"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
+	<classpathentry kind="lib" path="/home/lantame/SDN/ELT/hazelcast_flow_table/libs/hazelcast-3.3.2.jar"/>
+	<classpathentry kind="lib" path="/home/lantame/SDN/ELT/hazelcast_flow_table/libs/jetty/plugins/org.eclipse.jetty.util.ajax_9.2.3.v20140905.jar"/>
+	<classpathentry kind="lib" path="/home/lantame/SDN/ELT/hazelcast_flow_table/libs/jetty/plugins/org.eclipse.jetty.util_9.2.3.v20140905.jar"/>
+	<classpathentry kind="lib" path="/home/lantame/SDN/ELT/hazelcast_flow_table/libs/patricia-trie.jar"/>
+	<classpathentry kind="output" path="bin"/>
+</classpath>

@@ -10,11 +10,14 @@ from ..interaction import ofp_flow_mod, Instantiator, ConnectionFactory
 from ..util import profile
 
 
+JAR_PATH = "/home/lantame/SDN/ELT/hazelcast_flow_table/hazelcast_flow_table.jar"
+
+
 class DistFlowTable(object):
-    def __init__(self):
-        self.log = open("dist.log", "w")
+    def __init__(self, cid=0):
+        self.log = open("dist_" + cid + ".log", "w")
         self.skt = list(socket.socketpair(socket.AF_UNIX))
-        self.popen = Popen(["java", "-jar", "/home/lantame/SDN/ELT/hazelcast_adapter/hazelcast_adapter.jar"],
+        self.popen = Popen(["java", "-jar", JAR_PATH],
                            stdin=self.skt[1], stdout=self.skt[1], stderr=self.log)
         self.factory = ConnectionFactory(instantiator=Instantiator(
             module=(__name__.rsplit('.', 1)[0] + ".flowmod_message")))
@@ -37,7 +40,12 @@ class DistFlowTable(object):
         self.skt[0].send(msg)
         result = None
         while not result:
-            result = self.skt[0].recv()
+            try:
+                result = self.skt[0].recv()
+            except:
+                import traceback
+                traceback.print_exc()
+                return []
         # TODO: Normal processing.
         # TODO: Do we need apps in error messages?
         # TODO: Multiple error messages.

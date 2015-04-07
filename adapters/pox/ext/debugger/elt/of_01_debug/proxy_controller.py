@@ -22,7 +22,6 @@ class ProxyController(object):
         else:
             self.cid = 0
         log.info("We are controller #%d" % self.cid)
-        #self.log = LogClient(name="ProxyController")
         self.debuggers = {}
         if "dist_flow_table_controller" in kw:
             self.debuggers[DistFlowTableController(
@@ -67,7 +66,7 @@ class ProxyController(object):
         Also check for errors on FlowTable model.
         If any, send them to LogServer.
         """
-
+        # print "FlowMod for", self.cid
         self.flowmods += 1
         flow_mod.unpack(flow_mod.pack())
         try:

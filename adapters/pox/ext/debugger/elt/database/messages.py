@@ -98,11 +98,11 @@ class QueryReply(Message):
                 return
             # [['ADD', [[module, line], ]], ]
             code = [tuple(row) for row in code]
-            #[('ADD', [[module, line], ])]
-            for type, c in code:
+            #[('ADD', [[module, line], ], cid)]
+            for type, c, cid in code:
                 if isinstance(c, basestring):
-                    self.code.append((type, c))
+                    self.code.append((type, c, cid))
                 else:
-                    self.code.append((type, [tuple(row) for row in c]))
-            # [('ADD', [(module, line), (module, line)]),
-            #  ('MODIFY', 'Not found')]
+                    self.code.append((type, [tuple(row) for row in c], cid))
+            # [('ADD', [(module, line), (module, line)], cid),
+            #  ('MODIFY', 'Not found', 0)]

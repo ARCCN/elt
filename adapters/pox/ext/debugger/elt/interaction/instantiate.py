@@ -15,7 +15,6 @@ class Instantiator(object):
         self.cls_param = cls_param
 
     def __call__(self, d):
-        # print "Instantiate for \n%s\n in module %s" % (str(d), str(self.module))
         return instantiate(d, self.module, self.cls_param)
 
 

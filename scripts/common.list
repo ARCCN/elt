@@ -5,7 +5,6 @@
 ./interaction/of_wrappers.py
 ./logger/log_client.py
 ./logger/messages.py
-./logger/util.py
 ./message_server/messages.py
 ./network_error/entries.py
 ./network_error/network_error.py

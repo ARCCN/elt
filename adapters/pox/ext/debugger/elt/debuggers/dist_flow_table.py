@@ -15,7 +15,7 @@ JAR_PATH = "/home/lantame/SDN/ELT/hazelcast_flow_table/hazelcast_flow_table.jar"
 
 class DistFlowTable(object):
     def __init__(self, cid=0):
-        self.log = open("dist_" + cid + ".log", "w")
+        self.log = open("dist_" + str(cid) + ".log", "w")
         self.skt = list(socket.socketpair(socket.AF_UNIX))
         self.popen = Popen(["java", "-jar", JAR_PATH],
                            stdin=self.skt[1], stdout=self.skt[1], stderr=self.log)

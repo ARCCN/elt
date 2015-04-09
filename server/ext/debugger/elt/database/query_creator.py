@@ -40,15 +40,15 @@ class QueryCreator(object):
         """
         args = []
         query = "SELECT " + fields
-        query += " FROM Actions INNER JOIN (SELECT %s AS num, %s AS type, \
-                  %s AS port, %s AS value "
+        query += (" FROM Actions INNER JOIN (SELECT %s AS num, %s AS type,"
+                  "%s AS port, %s AS value ")
         args.extend((1, ) + get_action_params(actions[0]))
         for i in range(1, len(actions)):
             query += " UNION ALL SELECT %s, %s, %s, %s "
             args.extend((i + 1, ) + get_action_params(actions[i]))
-        query += " ) SearchSet on Actions.port <=> SearchSet.port and \
-                  Actions.type <=> SearchSet.type and Actions.value <=> \
-                  SearchSet.value ORDER BY SearchSet.num"
+        query += (" ) SearchSet on Actions.port <=> SearchSet.port and "
+                  "Actions.type <=> SearchSet.type and Actions.value <=> "
+                  "SearchSet.value ORDER BY SearchSet.num")
         return QueryCreator.substitute(query, args, arg_list)
     '''
 
@@ -94,15 +94,15 @@ class QueryCreator(object):
         if out_var is not None:
             query += 'INTO ' + out_var
 
-        fields = " GROUP_CONCAT(Actions.ID ORDER BY SearchSet.num \
-                  SEPARATOR ',' ) AS xz "
+        fields = (" GROUP_CONCAT(Actions.ID ORDER BY SearchSet.num "
+                  "SEPARATOR ',' ) AS xz ")
         query += " FROM ("
         query += QueryCreator.select_actions_ordered(actions, fields, args)
-        query += ") a, ( SELECT actionpat_ID, \
-                 GROUP_CONCAT(action_ID ORDER BY ID SEPARATOR ',') AS xz \
-                 FROM ActionPatternsToActions GROUP BY actionpat_ID) b \
-                 WHERE CONCAT(\',\',a.xz,\',\') LIKE \
-                 CONCAT(\',\',b.xz,\',\') LIMIT 1"
+        query += (") a, ( SELECT actionpat_ID, "
+                  "GROUP_CONCAT(action_ID ORDER BY ID SEPARATOR ',') AS xz "
+                  "FROM ActionPatternsToActions GROUP BY actionpat_ID) b "
+                  "WHERE CONCAT(',',a.xz,',') LIKE "
+                  "CONCAT(',',b.xz,',') LIMIT 1")
 
         return QueryCreator.substitute(query, args, arg_list)
     '''
@@ -152,7 +152,7 @@ class QueryCreator(object):
         for i in range(1, len(ids)):
             query += " UNION ALL SELECT %s "
             args.append(ids[i])
-        query += " ) a;\n"
+        query += " ) a; "
         return QueryCreator.substitute(query, args, arg_list)
 
     @staticmethod

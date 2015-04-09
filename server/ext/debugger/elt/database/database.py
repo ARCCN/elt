@@ -111,11 +111,11 @@ class Database(object):
             cur.execute(create_code_patterns_to_code_entries())
             cur.execute(create_flow_mods())
             cur.execute("set autocommit=ON;")
-            cur.execute("show variables like \'autocommit\';")
+            cur.execute("show variables like 'autocommit';")
             log.info(str(cur.fetchall()))
-            cur.execute("show variables like \'%flush_log_at_trx%\';")
+            cur.execute("show variables like '%flush_log_at_trx%';")
             log.info(str(cur.fetchall()))
-            cur.execute("show variables like \'profiling\';")
+            cur.execute("show variables like 'profiling';")
             log.info(str(cur.fetchall()))
 
     def __del__(self):

@@ -8,6 +8,7 @@ from subprocess import Popen
 import code
 import os
 from threading import Timer
+import time
 
 
 db = []
@@ -232,6 +233,7 @@ def cli_main():
     global timer
     timer.cancel()
     stop_all()
+    time.sleep(0.5)
     kill_all()
 
 

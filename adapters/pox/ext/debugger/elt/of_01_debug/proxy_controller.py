@@ -16,6 +16,7 @@ class ProxyController(object):
     """
 
     def __init__(self, **kw):
+        self.flowmods = 0
         self.db = DatabaseClient(mode='w')
         if "cid" in kw:
             self.cid = int(kw["cid"])
@@ -40,7 +41,6 @@ class ProxyController(object):
                 self, mult=kw["fake_debugger"]
                 )] = LogClient(name="Proxy.FakeDeb")
             log.info("Fake Debugger is up! %s" % kw["fake_debugger"])
-        self.flowmods = 0
         # Dump events.
         # self.dump_files = {}
         # for l in self.debuggers.values():

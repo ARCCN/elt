@@ -31,6 +31,7 @@ from pox.lib.socketcapture import CaptureSocket
 import pox.openflow.debug
 from pox.openflow.util import make_type_to_unpacker_table
 from pox.openflow import *
+import sys
 
 log = core.getLogger()
 
@@ -1025,7 +1026,7 @@ class OpenFlow_01_Task (Task):
   def run (self):
     # List of open sockets/connections to select on
     sockets = []
-
+    sys.stderr.write("RUN\n")
     listener = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     listener.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     try:
@@ -1042,6 +1043,7 @@ class OpenFlow_01_Task (Task):
                   "another port.")
       return
 
+    sys.stderr.write("Listen\n")
     listener.listen(16)
     listener.setblocking(0)
     sockets.append(listener)

@@ -24,6 +24,7 @@ from ext.debugger.elt.util import app_logging
 log = app_logging.getLogger("PoxController")
 handlers = []
 launched = []
+cc = None
 
 
 # TODO: Get launched modules. Useful when connecting while pox is running.
@@ -153,10 +154,20 @@ def send_command(message):
     if pox_popen is None:
         log.warning("Launching modules while pox is turned off.")
         return
-    parts = [x for x in message.split(" ") if not x.isspace()]
+    parts = [x for x in message.split(" ") if not (x == '' or x.isspace())]
     if len(parts) <= 1:
-        log.debug("Command to short")
+        log.debug("Command too short")
         return
+    if len(parts) == 2:
+        # Hack. Defaults.
+        for c in cc.components:
+            if c.name == parts[1]:
+                for param in c.params:
+                    if param.has_default:
+                        parts.append("--" + param.name + "=" + param.default)
+                    else:
+                        parts.append("--" + param.name)
+                break
     message = ("core.ComponentLauncher." + parts[0] +
                "([\"" + "\", \"".join(parts[1:]) + "\"])\n")
     _, wlist, _ = select([], [pox_popen.stdin], [], 0)
@@ -217,11 +228,16 @@ def get_controller_components():
     cc = ControllerComponents()
     for component, cfg in config.items():
         params = []
-        for k, v in cfg.defaults().items():
-            if v is None:
-                params.append(ComponentParam(k))
-            else:
-                params.append(ComponentParam(k, True, v))
+        print(component)
+        try:
+            for k, v in cfg.items("DEF"):
+                if v is None:
+                    params.append(ComponentParam(k))
+                else:
+                    params.append(ComponentParam(k, True, v))
+                print('\t', k, ":", v)
+        except:
+            pass
         c = Component(component, params)
         cc.add_component(c)
     return cc
@@ -247,4 +263,5 @@ def start_server(port):
         stop_pox()
 
 if __name__ == "__main__":
+    cc = get_controller_components()
     start_server(8081)

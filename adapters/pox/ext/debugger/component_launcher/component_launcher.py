@@ -48,7 +48,6 @@ class ComponentLauncher(object):
         self._add_registered(registered) # are already loaded. We listened!
         core.addListener(ComponentRegistered, self._handle_ComponentRegistered)
 
-
     def launch_single(self, argv):
         """
         Launch 1 module. Example: argv = ["openflow.of_01", "--port=3366"].
@@ -112,11 +111,14 @@ class ComponentLauncher(object):
                                 component not in self.launched):
                             # We found dependency.
                             arg = [component]
-                            for k, v in cfg.defaults():
-                                if v is None:
-                                    arg.append(k)
-                                else:
-                                    arg.append("%s=%s" % (k, v))
+                            try:
+                                for k, v in cfg.items("DEF"):
+                                    if v is None:
+                                        arg.append("--%s" % k)
+                                    else:
+                                        arg.append("--%s=%s" % (k, v))
+                            except:
+                                pass
                             self.launch_hierarchical(arg)
                             self.launched.append(component)
                     except Exception as e:
@@ -126,11 +128,10 @@ class ComponentLauncher(object):
             pass
         # Now all known dependencies must be loaded.
         # We can load our target.
-        log.info("Launching %s" % components[0])
+        print("Launching %s %s" % (components[0], argv[1:]))
         if self.launch_single(argv) == True:
             print("Launched %s" % components[0])
         sys.stdout.flush()
-
 
     def _handle_ComponentRegistered(self, event):
         if self._belongsToComponent(self.now_launching, "core." + event.name):

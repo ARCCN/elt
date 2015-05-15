@@ -1,0 +1,362 @@
+diff --git a/adapters/pox/ext/debugger/elt/debuggers/dist_flow_table.py b/adapters/pox/ext/debugger/elt/debuggers/dist_flow_table.py
+index 46eb943..f0f891b 100644
+--- a/adapters/pox/ext/debugger/elt/debuggers/dist_flow_table.py
++++ b/adapters/pox/ext/debugger/elt/debuggers/dist_flow_table.py
+@@ -9,6 +9,7 @@ import pox.openflow.libopenflow_01 as of
+
+ from .flowmod_message import *
+ from ..interaction import ofp_flow_mod, Instantiator, ConnectionFactory
++from ..util import profile
+
+
+ JAR_PATH = "/home/lantame/SDN/ELT/hazelcast_flow_table/hazelcast_flow_table.jar"
+@@ -94,12 +95,15 @@ class DistFlowTable(object):
+         #     pprint(json.loads(self.skt[0].dumps(result)))
+         return [] # result.errors
+
++    #@profile
+     def add_entry_error_checking(self, dpid, flow_mod, apps, cid):
+         return self.process_flow_mod_real(dpid, flow_mod, apps, cid)
+
++    #@profile
+     def modify_error_checking(self, dpid, flow_mod, apps, cid):
+         return self.process_flow_mod_real(dpid, flow_mod, apps, cid)
+
++    #@profile
+     def delete_error_checking(self, dpid, flow_mod, apps, cid):
+         return self.process_flow_mod_real(dpid, flow_mod, apps, cid)
+
+diff --git a/adapters/pox/ext/debugger/elt/debuggers/dist_flow_table_controller.py b/adapters/pox/ext/debugger/elt/debuggers/dist_flow_table_controller.py
+index ce707fe..46b0a7c 100644
+--- a/adapters/pox/ext/debugger/elt/debuggers/dist_flow_table_controller.py
++++ b/adapters/pox/ext/debugger/elt/debuggers/dist_flow_table_controller.py
+@@ -4,7 +4,7 @@ from modulefinder import ModuleFinder
+ import pox.openflow.libopenflow_01 as of
+
+ from .dist_flow_table import DistFlowTable
+-from ..util import app_logging
++from ..util import app_logging, profile
+
+
+ log = app_logging.getLogger("DistFlowTableController")
+@@ -75,6 +75,7 @@ class DistFlowTableController(object):
+     def get_apps(self, module):
+         return self.apps_rev.get(module, set())
+
++    #@profile
+     def process_flow_mod(self, dpid, flow_mod, module):
+         """
+         Check for errors on FlowTable model.
+diff --git a/adapters/pox/ext/debugger/elt/debuggers/flow_table.py b/adapters/pox/ext/debugger/elt/debuggers/flow_table.py
+index e03a1a6..720992c 100644
+--- a/adapters/pox/ext/debugger/elt/debuggers/flow_table.py
++++ b/adapters/pox/ext/debugger/elt/debuggers/flow_table.py
+@@ -10,7 +10,7 @@ from pox.openflow.flow_table import (TableEntry, FlowTable,
+                                      FlowTableModification)
+ import pox.openflow.libopenflow_01 as of
+
+-from ..util import ip_to_uint
++from ..util import ip_to_uint, profile
+
+ from .competition_errors import (FlowMasked, FlowModified,
+                                  FlowUndefined, FlowDeleted)
+@@ -272,6 +272,7 @@ class TaggedFlowTable(FlowTable):
+                 len(tag2.apps) != 1 or
+                 tag1.apps != tag2.apps)
+
++    #@profile
+     def add_entry_error_checking(self, current, check_overlap):
+         """ Add entry to table raising CompetitionErrors if necessary."""
+         # Candidates for modifying/masking/undefined behavior
+@@ -337,6 +338,7 @@ class TaggedFlowTable(FlowTable):
+         self.add_entry_simple(current)
+         return events
+
++    #@profile
+     def modify_error_checking(self, current, is_strict=False,
+                               check_overlap=False):
+         modified = []
+@@ -363,6 +365,7 @@ class TaggedFlowTable(FlowTable):
+             events = self.raise_competition(modified=flow_modified)
+             return events
+
++    #@profile
+     def delete_error_checking(self, current, is_strict=False,
+                               raise_error=True):
+         removed = []
+diff --git a/adapters/pox/ext/debugger/elt/debuggers/flow_table_controller.py b/adapters/pox/ext/debugger/elt/debuggers/flow_table_controller.py
+index a55d60f..655d970 100644
+--- a/adapters/pox/ext/debugger/elt/debuggers/flow_table_controller.py
++++ b/adapters/pox/ext/debugger/elt/debuggers/flow_table_controller.py
+@@ -4,7 +4,7 @@ from modulefinder import ModuleFinder
+ import pox.openflow.libopenflow_01 as of
+
+ from .flow_table import TaggedFlowTable
+-from ..util import app_logging
++from ..util import app_logging, profile
+
+
+ log = app_logging.getLogger("FlowTableController")
+@@ -75,6 +75,7 @@ class FlowTableController(object):
+     def get_apps(self, module):
+         return self.apps_rev.get(module, set())
+
++    #@profile
+     def process_flow_mod(self, dpid, flow_mod, module):
+         """
+         Check for errors on FlowTable model.
+diff --git a/adapters/pox/ext/debugger/elt/of_01_debug/of_01_debug.py b/adapters/pox/ext/debugger/elt/of_01_debug/of_01_debug.py
+index 4331c86..f17ef64 100644
+--- a/adapters/pox/ext/debugger/elt/of_01_debug/of_01_debug.py
++++ b/adapters/pox/ext/debugger/elt/of_01_debug/of_01_debug.py
+@@ -12,10 +12,12 @@ from pox.openflow.of_01 import (Connection, of, core, deferredSender,
+                                 OpenFlow_01_Task)
+ import pox.core
+
++from ..util import profile
+ from .proxy_controller import ProxyController
+
+
+ proxy = None
++profiled = ""
+
+
+ class ProxiedConnection (Connection):
+@@ -28,6 +30,8 @@ class ProxiedConnection (Connection):
+         super(ProxiedConnection, self).__init__(sock)
+         global proxy
+         self.proxy = proxy
++        if profiled == "save_info":
++            self.save_info = profile(self.save_info)
+
+     def __setattr__(self, name, value):
+         """
+@@ -37,6 +41,9 @@ class ProxiedConnection (Connection):
+         if name == "handlers":
+             self.handlers[of.OFPT_FLOW_REMOVED] = decorate_flow_removed(
+                 self.handlers[of.OFPT_FLOW_REMOVED])
++            if profiled == "handle_PACKET_IN":
++                self.handlers[of.OFPT_PACKET_IN] = profile(
++                    self.handlers[of.OFPT_PACKET_IN])
+
+     def send(self, data):
+         if isinstance(data, of.ofp_header):
+diff --git a/adapters/pox/ext/debugger/elt/of_01_debug/proxy_controller.py b/adapters/pox/ext/debugger/elt/of_01_debug/proxy_controller.py
+index 6f50d75..1e56f14 100644
+--- a/adapters/pox/ext/debugger/elt/of_01_debug/proxy_controller.py
++++ b/adapters/pox/ext/debugger/elt/of_01_debug/proxy_controller.py
+@@ -1,7 +1,7 @@
+ from ..database import DatabaseClient
+ from ..debuggers import FlowTableController, FakeDebugger, DistFlowTableController
+ from ..logger import LogClient
+-from ..util import app_logging
++from ..util import app_logging, set_cid_prefix
+
+
+ log = app_logging.getLogger('ProxyController')
+@@ -20,6 +20,7 @@ class ProxyController(object):
+         self.db = DatabaseClient(mode='w')
+         if "cid" in kw:
+             self.cid = int(kw["cid"])
++            set_cid_prefix("_%d_" % self.cid)
+         else:
+             self.cid = 0
+         log.info("We are controller #%d" % self.cid)
+diff --git a/scripts/elt_scripts/profile_stress_test.py b/scripts/elt_scripts/profile_stress_test.py
+new file mode 100755
+index 0000000..2ba5e7b
+--- /dev/null
++++ b/scripts/elt_scripts/profile_stress_test.py
+@@ -0,0 +1,84 @@
++#!/usr/bin/python
++
++"""
++Process the profile records to readable statistics.
++"""
++
++
++from os import listdir
++from os.path import isfile, join
++import re
++import pstats
++
++mypath = "profile/"
++onlyfiles = [ f for f in listdir(mypath) if isfile(join(mypath,f)) ]
++file_keys = {}
++m = re.compile(r"([A-Za-z_]*)(_[0-9]*_)?[0-9]*.prof")
++for f in onlyfiles:
++    try:
++        key = m.match(f).group(1)
++    except:
++        print "error", f
++        continue
++    if len(key) == 0:
++        continue
++    if key not in file_keys:
++        file_keys[key] = [join(mypath, f)]
++    else:
++        file_keys[key].append(join(mypath, f))
++
++stats = {}
++for f in file_keys:
++    if len(file_keys[f]) == 0:
++        continue
++    # Need a hack because Stats.add() fails with long sequences.
++    stats[f] = pstats.Stats(file_keys[f][0])
++    for x in file_keys[f][1:]:
++        try:
++            stats[f].add(x)
++        except Exception as e:
++            print x, e
++
++sections = {"Database": [("_save_data", "Message saving"),
++                         ("_find_flow_mod", "Find message by fields"),
++                         ("_find_rule", "Find messages for rule"),
++                         ("show_code", "Find call stack for message")],
++	    "Proxy": [("handle_PACKET_IN", "Total processing"),
++                      ("save_info", "Proxy overhead"),
++                      ("process_flow_mod", "Flow table overhead")],
++	    "Flow table": [("add_entry_error_checking", "Rule addition"),
++                           ("modify_error_checking", "Rule modification"),
++                           ("delete_error_checking", "Rule deletion")]
++	   }
++
++try:
++    print "Proxy"
++    f = "handle_PACKET_IN"
++    # How many packetIns we got.
++    total_line = stats[f].stats[stats[f].eval_print_amount(f, stats[f].stats.keys(), "")[0][0]]
++    #print "\t%-30s %.6f" % ("Total processing", total_line[3] / total_line[0])
++    f = "save_info"
++    # Response. OFP_FLOW_MOD.
++    overhead_line = stats[f].stats[stats[f].eval_print_amount(f, stats[f].stats.keys(), "")[0][0]]
++    #print "\t%-30s %.6f" % ("Proxy overhead", overhead_line[3] / overhead_line[0])
++    f = "process_flow_mod"
++    # Processing by flow table.
++    table_line = stats[f].stats[stats[f].eval_print_amount(f, stats[f].stats.keys(), "")[0][0]]
++    #print "\t%-30s %.6f" % ("Flow table overhead", table_line[3] / table_line[0])
++    print "\t%-30s %.6f" % ("Total processing", (total_line[3] - table_line[3]) / total_line[0])
++    print "\t%-30s %.6f" % ("Application time", (total_line[3] - overhead_line[3]) / total_line[0])
++    print "\t%-30s %.6f" % ("Saving overhead", (overhead_line[3] - table_line[3]) / overhead_line[0])
++except:
++    pass
++
++
++for s in sections:
++    print "%s:" % s
++    for f in sections[s]:
++        try:
++    	    line = stats[f[0]].stats[stats[f[0]].eval_print_amount(f[0], stats[f[0]].stats.keys(), "")[0][0]]
++    	    print "\t%-30s %.6f" % (f[1], line[3] / line[0])
++        except:
++            pass
++
++
+diff --git a/scripts/elt_scripts/run_profiled.sh b/scripts/elt_scripts/run_profiled.sh
+new file mode 100755
+index 0000000..5feebfb
+--- /dev/null
++++ b/scripts/elt_scripts/run_profiled.sh
+@@ -0,0 +1,32 @@
++#!/bin/bash
++
++rm -f profile/*.prof
++
++#sed -i -e "s/profiled = \"\"/profiled = \"handle_PACKET_IN\"/"  adapters/pox/ext/debugger/elt/of_01_debug/of_01_debug.py
++#./scripts/elt_scripts/stress_test.sh $1
++#sed -i -e "s/profiled = \"handle_PACKET_IN\"/profiled = \"save_info\"/" adapters/pox/ext/debugger/elt/of_01_debug/of_01_debug.py
++#./scripts/elt_scripts/stress_test.sh $1
++#sed -i -e "s/profiled = \"save_info\"/profiled = \"\"/" adapters/pox/ext/debugger/elt/of_01_debug/of_01_debug.py
++
++if [[ $1 == "dist" || $1 == "" ]];
++then
++    #sed -i -e "s/#@profile/@profile/" adapters/pox/ext/debugger/elt/debuggers/dist_flow_table_controller.py
++    #./scripts/elt_scripts/stress_test.sh $1
++    #sed -i -e "s/@profile/#@profile/" adapters/pox/ext/debugger/elt/debuggers/dist_flow_table_controller.py
++
++    sed -i -e "s/#@profile/@profile/" adapters/pox/ext/debugger/elt/debuggers/dist_flow_table.py
++    ./scripts/elt_scripts/stress_test.sh $1
++    sed -i -e "s/@profile/#@profile/" adapters/pox/ext/debugger/elt/debuggers/dist_flow_table.py
++else
++    #sed -i -e "s/#@profile/@profile/" adapters/pox/ext/debugger/elt/debuggers/flow_table_controller.py
++    #./scripts/elt_scripts/stress_test.sh $1
++    #sed -i -e "s/@profile/#@profile/" adapters/pox/ext/debugger/elt/debuggers/flow_table_controller.py
++
++    sed -i -e "s/#@profile/@profile/" adapters/pox/ext/debugger/elt/debuggers/flow_table.py
++    ./scripts/elt_scripts/stress_test.sh $1
++    sed -i -e "s/@profile/#@profile/" adapters/pox/ext/debugger/elt/debuggers/flow_table.py
++fi
++
++#sed -i -e "s/#@profile/@profile/" server/ext/debugger/elt/database/database.py
++#./scripts/elt_scripts/stress_test.sh $1
++#sed -i -e "s/@profile/#@profile/" server/ext/debugger/elt/database/database.py
+diff --git a/scripts/elt_scripts/stress_test.sh b/scripts/elt_scripts/stress_test.sh
+index 0a8dd74..7dcb8fa 100755
+--- a/scripts/elt_scripts/stress_test.sh
++++ b/scripts/elt_scripts/stress_test.sh
+@@ -50,17 +50,17 @@ do
+     CONTROLLERS=$iter
+     log="stress_test$iter.log"
+     touch $log
+-    for size in 8 16 32 64;
++    for size in 64;
+     do
+         echo "*******" >> $log
+         echo $size >> $log
+         echo "*******" >> $log
+-        for len in 1 2 3 4 5;
++        for len in 1;
+         do
+             echo ------- >> $log
+             echo $len >> $log
+             echo ------- >> $log
+-            for i in no 0.0 0.01 0.1 0.5;
++            for i in 0.5;
+             do
+                 run_term $terminal 'python -m server.utility.start_db_server'
+                 db_pid=$!
+diff --git a/server/ext/debugger/elt/database/database.py b/server/ext/debugger/elt/database/database.py
+index f356757..1254de7 100644
+--- a/server/ext/debugger/elt/database/database.py
++++ b/server/ext/debugger/elt/database/database.py
+@@ -6,7 +6,7 @@ from ConfigParser import ConfigParser
+ import pox.openflow.libopenflow_01 as of
+
+ from ..message_server import Message
+-from ..util import app_logging
++from ..util import app_logging, profile
+
+ from .database_utility import *
+ from .caches import *
+@@ -190,6 +190,7 @@ class Database(object):
+             return None
+         return False
+
++    #@profile
+     def show_code(self, id):
+         """
+         Return call stack for FlowMod with ID.
+@@ -377,6 +378,7 @@ class Database(object):
+         query = query.replace('None', 'NULL')
+         self._get_cursor().execute(query)
+
++    #@profile
+     def _save_data(self, message):
+         """
+         Store FlowMod message to database.
+@@ -428,6 +430,7 @@ class Database(object):
+                 self.matches.add(match, match_ID)
+         return match_ID
+
++    #@profile
+     def _find_flow_mod(self, message):
+         """
+         Select flowmod_ID for last FlowMod with these match, dpid and actions.
+@@ -653,6 +656,7 @@ class Database(object):
+         cur.execute(query)
+         return [id for id, in cur.fetchall()]
+
++    #@profile
+     def _find_rule(self, message):
+         """
+         Rule can be installed as-is or

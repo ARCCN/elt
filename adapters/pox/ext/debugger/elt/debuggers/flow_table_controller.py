@@ -4,7 +4,7 @@ from modulefinder import ModuleFinder
 import pox.openflow.libopenflow_01 as of
 
 from .flow_table import TaggedFlowTable
-from ..util import app_logging
+from ..util import app_logging, profile
 
 
 log = app_logging.getLogger("FlowTableController")
@@ -75,6 +75,7 @@ class FlowTableController(object):
     def get_apps(self, module):
         return self.apps_rev.get(module, set())
 
+    #@profile
     def process_flow_mod(self, dpid, flow_mod, module):
         """
         Check for errors on FlowTable model.

@@ -10,7 +10,7 @@ from pox.openflow.flow_table import (TableEntry, FlowTable,
                                      FlowTableModification)
 import pox.openflow.libopenflow_01 as of
 
-from ..util import ip_to_uint
+from ..util import ip_to_uint, profile
 
 from .competition_errors import (FlowMasked, FlowModified,
                                  FlowUndefined, FlowDeleted)
@@ -272,6 +272,7 @@ class TaggedFlowTable(FlowTable):
                 len(tag2.apps) != 1 or
                 tag1.apps != tag2.apps)
 
+    #@profile
     def add_entry_error_checking(self, current, check_overlap):
         """ Add entry to table raising CompetitionErrors if necessary."""
         # Candidates for modifying/masking/undefined behavior
@@ -337,6 +338,7 @@ class TaggedFlowTable(FlowTable):
         self.add_entry_simple(current)
         return events
 
+    #@profile
     def modify_error_checking(self, current, is_strict=False,
                               check_overlap=False):
         modified = []
@@ -363,6 +365,7 @@ class TaggedFlowTable(FlowTable):
             events = self.raise_competition(modified=flow_modified)
             return events
 
+    #@profile
     def delete_error_checking(self, current, is_strict=False,
                               raise_error=True):
         removed = []

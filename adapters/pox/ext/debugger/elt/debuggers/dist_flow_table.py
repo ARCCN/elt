@@ -9,6 +9,7 @@ import pox.openflow.libopenflow_01 as of
 
 from .flowmod_message import *
 from ..interaction import ofp_flow_mod, Instantiator, ConnectionFactory
+from ..util import profile
 
 
 JAR_PATH = "/home/lantame/SDN/ELT/hazelcast_flow_table/hazelcast_flow_table.jar"
@@ -94,12 +95,15 @@ class DistFlowTable(object):
         #     pprint(json.loads(self.skt[0].dumps(result)))
         return [] # result.errors
 
+    #@profile
     def add_entry_error_checking(self, dpid, flow_mod, apps, cid):
         return self.process_flow_mod_real(dpid, flow_mod, apps, cid)
 
+    #@profile
     def modify_error_checking(self, dpid, flow_mod, apps, cid):
         return self.process_flow_mod_real(dpid, flow_mod, apps, cid)
 
+    #@profile
     def delete_error_checking(self, dpid, flow_mod, apps, cid):
         return self.process_flow_mod_real(dpid, flow_mod, apps, cid)
 

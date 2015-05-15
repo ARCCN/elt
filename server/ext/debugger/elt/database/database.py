@@ -6,7 +6,7 @@ from ConfigParser import ConfigParser
 import pox.openflow.libopenflow_01 as of
 
 from ..message_server import Message
-from ..util import app_logging
+from ..util import app_logging, profile
 
 from .database_utility import *
 from .caches import *
@@ -190,6 +190,7 @@ class Database(object):
             return None
         return False
 
+    #@profile
     def show_code(self, id):
         """
         Return call stack for FlowMod with ID.
@@ -377,6 +378,7 @@ class Database(object):
         query = query.replace('None', 'NULL')
         self._get_cursor().execute(query)
 
+    #@profile
     def _save_data(self, message):
         """
         Store FlowMod message to database.
@@ -428,6 +430,7 @@ class Database(object):
                 self.matches.add(match, match_ID)
         return match_ID
 
+    #@profile
     def _find_flow_mod(self, message):
         """
         Select flowmod_ID for last FlowMod with these match, dpid and actions.
@@ -653,6 +656,7 @@ class Database(object):
         cur.execute(query)
         return [id for id, in cur.fetchall()]
 
+    #@profile
     def _find_rule(self, message):
         """
         Rule can be installed as-is or

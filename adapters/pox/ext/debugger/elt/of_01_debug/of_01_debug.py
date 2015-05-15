@@ -12,10 +12,12 @@ from pox.openflow.of_01 import (Connection, of, core, deferredSender,
                                 OpenFlow_01_Task)
 import pox.core
 
+from ..util import profile
 from .proxy_controller import ProxyController
 
 
 proxy = None
+profiled = ""
 
 
 class ProxiedConnection (Connection):
@@ -28,6 +30,8 @@ class ProxiedConnection (Connection):
         super(ProxiedConnection, self).__init__(sock)
         global proxy
         self.proxy = proxy
+        if profiled == "save_info":
+            self.save_info = profile(self.save_info)
 
     def __setattr__(self, name, value):
         """
@@ -37,6 +41,9 @@ class ProxiedConnection (Connection):
         if name == "handlers":
             self.handlers[of.OFPT_FLOW_REMOVED] = decorate_flow_removed(
                 self.handlers[of.OFPT_FLOW_REMOVED])
+            if profiled == "handle_PACKET_IN":
+                self.handlers[of.OFPT_PACKET_IN] = profile(
+                    self.handlers[of.OFPT_PACKET_IN])
 
     def send(self, data):
         if isinstance(data, of.ofp_header):

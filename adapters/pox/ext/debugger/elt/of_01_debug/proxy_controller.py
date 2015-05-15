@@ -1,7 +1,7 @@
 from ..database import DatabaseClient
 from ..debuggers import FlowTableController, FakeDebugger, DistFlowTableController
 from ..logger import LogClient
-from ..util import app_logging
+from ..util import app_logging, set_cid_prefix
 
 
 log = app_logging.getLogger('ProxyController')
@@ -20,6 +20,7 @@ class ProxyController(object):
         self.db = DatabaseClient(mode='w')
         if "cid" in kw:
             self.cid = int(kw["cid"])
+            set_cid_prefix("_%d_" % self.cid)
         else:
             self.cid = 0
         log.info("We are controller #%d" % self.cid)

@@ -14,7 +14,7 @@ class DistFlowTableController(object):
 
     def __init__(self, proxy, config=None):
         self.proxy = proxy
-        self.flow_table = DistFlowTable(self.proxy.get_cid())
+        self.flow_table = DistFlowTable(self.proxy.get_cid(), self)
         self.last_local_id = 0
         self.config = config
         self.apps = {}
@@ -86,6 +86,10 @@ class DistFlowTableController(object):
 
     def process_flow_removed(self, dpid, flow_rem):
         return self.flow_table.process_flow_removed(dpid, flow_rem)
+
+    def log_events(self, events):
+        for e in events:
+            self.proxy.log_event(self, e)
 
     def close(self):
         self.flow_table.close()

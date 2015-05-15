@@ -49,11 +49,15 @@ class ProxiedConnection (Connection):
             return
 
         if (of.ofp_type_map[data.header_type] == 'OFPT_FLOW_MOD'):
+            data.flags |= of.OFPFF_SEND_FLOW_REM
+
             if data.match.is_exact and of.OFP_VERSION == 0x01:
                 data.priority = 65535
-            self.save_info(data)
             # HINT: Debuggers can modify the message
-        super(ProxiedConnection, self).send(data)
+            super(ProxiedConnection, self).send(data)
+            self.save_info(data)
+        else:
+            super(ProxiedConnection, self).send(data)
 
     def save_info(self, data):
         #~1 ms without querying database

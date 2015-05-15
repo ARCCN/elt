@@ -8,6 +8,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.Random;
 
 import org.elt.hazelcast_flow_table.proto.CompetitionErrorMessage;
 import org.elt.hazelcast_flow_table.proto.FlowModMessage;
@@ -23,7 +24,7 @@ import com.hazelcast.core.Message;
 import com.hazelcast.core.MessageListener;
 import com.hazelcast.core.ReplicatedMap;
 
-public class HZNodeTopicIPIndexed implements IFlowTable, 
+public class HZNodeTopicIPIndexed implements IFlowTable,
 	MessageListener<FMMEvent> {
 
 	HazelcastInstance instance;
@@ -32,7 +33,7 @@ public class HZNodeTopicIPIndexed implements IFlowTable,
 	Lock tableLock = new ReentrantLock();
 	Map<String, IPIndexedFlowTable> tables = new HashMap<String, IPIndexedFlowTable>();
 	Map<String, Lock> locks = new HashMap<String, Lock>();
-	IMap<Long, String> nodeMap;
+	ReplicatedMap<Long, String> nodeMap;
 	ReplicatedMap<String, Long> dpidToNode;
 	IdGenerator gen;
 	ITopic<CompetitionErrorMessage> replies;
@@ -85,9 +86,9 @@ public class HZNodeTopicIPIndexed implements IFlowTable,
 	public HZNodeTopicIPIndexed() {
 		this.instance = Hazelcast.newHazelcastInstance();
 		this.gen = this.instance.getIdGenerator("gen");
-		this.id = this.gen.newId();	
+		this.id = this.gen.newId();
 		this.name = this.instance.getCluster().getLocalMember().toString();
-		this.nodeMap = this.instance.getMap("nodeMap");
+		this.nodeMap = this.instance.getReplicatedMap("nodeMap");
 		this.nodeMap.put(this.id, this.name);
 		this.dpidToNode = this.instance.getReplicatedMap("dpidToNode");
 		this.replies = this.instance.getTopic(String.valueOf(this.id) + "-reply");
@@ -96,12 +97,22 @@ public class HZNodeTopicIPIndexed implements IFlowTable,
 		this.requests.addMessageListener(this);
 	}
 	
+	@SuppressWarnings("unused")
 	protected CompetitionErrorMessage runUpdateTask(String dpid, FlowModMessage msg) {
 		Long node = dpidToNode.get(dpid);
 		if (node == null) {
+			Long targetId = id;
+			// TODO: For tests. Pick random node.
+			if (false) {			
+				Random generator = new Random();
+				Object[] keys = this.nodeMap.keySet().toArray();
+				targetId = (Long)keys[generator.nextInt(keys.length)];
+			}
 			// Take responsibility for this dpid.
-			dpidToNode.put(dpid, id);
-			node = id;
+			dpidToNode.put(dpid, targetId);
+			node = targetId;
+			System.err.print(String.format("---Taken responsibility for dpid %s -> %s\n",
+								dpid, targetId.toString()));
 		}
 		ITopic<FMMEvent> topic = this.instance.getTopic(
 				String.valueOf(node) + "-request");

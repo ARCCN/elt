@@ -2,19 +2,42 @@ from subprocess import Popen
 import socket, sys
 import json
 from pprint import pprint
+from threading import Thread
+from Queue import Queue
 
 import pox.openflow.libopenflow_01 as of
 
 from .flowmod_message import *
 from ..interaction import ofp_flow_mod, Instantiator, ConnectionFactory
-from ..util import profile
 
 
 JAR_PATH = "/home/lantame/SDN/ELT/hazelcast_flow_table/hazelcast_flow_table.jar"
 
 
+class ListenThread(Thread):
+    def __init__(self, table, **kw):
+        Thread.__init__(self, **kw)
+        self.table = table
+        self.dead = False
+
+    def stop(self):
+        self.dead = True
+
+    def run(self):
+        while not self.dead:
+            result = None
+            while not result:
+                try:
+                    result = self.table.skt[0].recv()
+                except:
+                    import traceback
+                    traceback.print_exc()
+                    break
+            self.table.controller.log_events(result.errors)
+
+
 class DistFlowTable(object):
-    def __init__(self, cid=0):
+    def __init__(self, cid=0, controller=None):
         self.log = open("dist_" + str(cid) + ".log", "w")
         self.skt = list(socket.socketpair(socket.AF_UNIX))
         self.popen = Popen(["java", "-jar", JAR_PATH],
@@ -23,9 +46,12 @@ class DistFlowTable(object):
             module=(__name__.rsplit('.', 1)[0] + ".flowmod_message")))
         self.skt[0] = self.factory.create_connection(self.skt[0])
         self.ignore = False
+        self.controller = controller
+        self.thread = ListenThread(self)
+        self.thread.setDaemon(True)
+        self.thread.start()
         # self.msg_log = open("messages_log.in", "w")
 
-    #@profile
     def process_flow_mod(self, dpid, flow_mod, apps, cid=None):
         if self.ignore:
             return []
@@ -49,6 +75,7 @@ class DistFlowTable(object):
         # m = self.skt[0].dumps(msg)
         # self.msg_log.write(m)
         self.skt[0].send(msg)
+        '''
         result = None
         while not result:
             try:
@@ -57,6 +84,7 @@ class DistFlowTable(object):
                 import traceback
                 traceback.print_exc()
                 return []
+        '''
         # TODO: Normal processing.
         # TODO: Do we need apps in error messages?
         # TODO: Multiple error messages.
@@ -64,7 +92,7 @@ class DistFlowTable(object):
         # print "RESULT"
         # if not isinstance(result, basestring):
         #     pprint(json.loads(self.skt[0].dumps(result)))
-        return result.errors
+        return [] # result.errors
 
     def add_entry_error_checking(self, dpid, flow_mod, apps, cid):
         return self.process_flow_mod_real(dpid, flow_mod, apps, cid)
@@ -88,6 +116,7 @@ class DistFlowTable(object):
 
     def close(self):
         self.ignore = True
+        self.thread.stop()
         print "Closing sockets."
         try:
             self.skt[0].shutdown(socket.SHUT_RDWR)

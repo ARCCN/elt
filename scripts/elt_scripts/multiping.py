@@ -23,8 +23,8 @@ import getopt
 import random
 
 
-CONTROLLERS = 2
-CONTROLLER_COUNT = 2
+CONTROLLERS = 1
+CONTROLLER_COUNT = 1
 
 
 def chunks(l, n):
@@ -41,7 +41,7 @@ def startpings(host, targetips):
     host.cmd('ifconfig lo up')
 
     # Simple ping loop
-    cmd = ('( ping -c1 10.0.0.1 > /dev/null;'
+    cmd = ('( ping -c 1 -W 15 10.0.0.1 > /dev/null;'
            ' for ip in %s; do ' % targetips +
            '  ping -c1 $ip;'
            ' done;'
@@ -60,7 +60,7 @@ def multiping(topo, chunksize, seconds):
 
     # Create network and identify subnets
     net = Mininet(topo=create_topo(topo),
-                  # controller=RemoteController,
+                  controller=RemoteController,
                   autoStaticArp=False,
                   build=False)
                   # ,autoSetMacs=True)
@@ -70,8 +70,20 @@ def multiping(topo, chunksize, seconds):
                                          ip="127.0.0.1", port=6640+i)
                        for i in range(CONTROLLERS)]
         net.build()
-        for sw in net.switches:
-            sw.start(random.sample(controllers, CONTROLLER_COUNT))
+
+        if CONTROLLER_COUNT == 1:
+            # Fair distribution
+            for i, sw_chunk in enumerate(chunks(net.switches,
+                    (len(net.switches) + len(controllers) - 1) / len(controllers))):
+                for sw in sw_chunk:
+                    sw.start([controllers[i]])
+                    sys.stderr.write("%s -> cnt[%d]\n" % (str(sw), i))
+        else:
+            # Random distribution
+            for sw in net.switches:
+                choice = random.sample(range(len(controllers)), CONTROLLER_COUNT)
+                sys.stderr.write("%s -> cnt[%s]\n" % (str(sw), ", ".join(map(str, choice))))
+                sw.start([controllers[i] for i in choice])
     else:
         net.start()
 
@@ -210,10 +222,19 @@ def main():
     setLogLevel('info')
     topo = 'single,32'
     args = sys.argv[1:]
-    optlist, args = getopt.getopt(args, "", ["topo="])
+    optlist, args = getopt.getopt(args, "", ["topo=", "controllers="])
     for k, v in optlist:
         if k == "--topo":
             topo = v
+        elif k == "--controllers":
+            l = v.split(",")
+            global CONTROLLERS, CONTROLLER_COUNT
+            try:
+                CONTROLLERS = int(l[0])
+                CONTROLLER_COUNT = int(l[1])
+            except:
+                pass
+
     multiping(topo, chunksize=4, seconds=1200)
 
 

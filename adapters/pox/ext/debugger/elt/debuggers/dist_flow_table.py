@@ -32,6 +32,17 @@ class DistFlowTable(object):
         # print '--------\n', apps, '\n-------\n'
         if cid is not None:
             cid = [cid]
+
+        if flow_mod.command == of.OFPFC_ADD:
+            return self.add_entry_error_checking(dpid, flow_mod, apps, cid)
+        elif flow_mod.command in [of.OFPFC_MODIFY, of.OFPFC_MODIFY_STRICT]:
+            return self.modify_error_checking(dpid, flow_mod, apps, cid)
+        elif flow_mod.command in [of.OFPFC_DELETE, of.OFPFC_DELETE_STRICT]:
+            return self.delete_error_checking(dpid, flow_mod, apps, cid)
+        else:
+            raise AttributeError("Invalid command")
+
+    def process_flow_mod_real(self, dpid, flow_mod, apps, cid):
         msg = FlowModMessage(ofp_flow_mod.from_flow_mod(flow_mod),
                              dpid, TableEntryTag(apps, cid))
         # print "NEW MESSAGE"
@@ -54,6 +65,15 @@ class DistFlowTable(object):
         # if not isinstance(result, basestring):
         #     pprint(json.loads(self.skt[0].dumps(result)))
         return result.errors
+
+    def add_entry_error_checking(self, dpid, flow_mod, apps, cid):
+        return self.process_flow_mod_real(dpid, flow_mod, apps, cid)
+
+    def modify_error_checking(self, dpid, flow_mod, apps, cid):
+        return self.process_flow_mod_real(dpid, flow_mod, apps, cid)
+
+    def delete_error_checking(self, dpid, flow_mod, apps, cid):
+        return self.process_flow_mod_real(dpid, flow_mod, apps, cid)
 
     def process_flow_removed(self, dpid, flow_rem):
         if self.ignore:

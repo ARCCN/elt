@@ -22,22 +22,32 @@ terminal='no'
 deb='ext.debugger.elt.of_01_debug'
 log='stress_test.log'
 mn_log='multiping.log'
-CONTROLLERS=2
+CONTROLLERS=1
 ports=""
+
+if [[ $1 == "dist" || $1 == "" ]];
+then
+    flow_table="--dist_flow_table_controller=adapters/pox/config/flow_table_config.cfg"
+    sleep_time=15
+else
+    flow_table="--flow_table_controller=adapters/pox/config/flow_table_config.cfg"
+    sleep_time=0
+fi
 
 function get_ports {
     case $CONTROLLERS in
         "0" )   ports="" ;;
         "1" )   ports="6633" ;;
-        *   )   for (( i=0; i<$CONTROLLERS; ++i )); do ports=$ports" "$((6640+$i)); done ;;
+        *   )   ports=""; for (( j=0; j<$CONTROLLERS; ++j )); do ports=$ports" "$((6640+$j)); done ;;
     esac
 }
 
 mkfifo stress_test.fifo
 rm -f pid
 
-for iter in "";
+for iter in 2;
 do
+    CONTROLLERS=$iter
     log="stress_test$iter.log"
     touch $log
     for size in 8 16 32 64;
@@ -70,8 +80,7 @@ do
                         run_term $terminal "./wrap.sh tail -f stress_test.fifo | adapters/pox/pox.py py log.level --WARNING $deb --cid=$cid --address=127.0.0.1 --port=$port forwarding.l2_learning $retransmit ext.debugger.controllers.interrupter --rate=0.0"
                         echo 'just proxy'
                     else
-                        run_term $terminal "./wrap.sh tail -f stress_test.fifo | adapters/pox/pox.py py log.level --WARNING $deb --cid=$cid --address=127.0.0.1 --port=$port --dist_flow_table_controller=adapters/pox/config/flow_table_config.cfg forwarding.l2_learning $retransmit ext.debugger.controllers.interrupter --rate=$i flamer"
-                        #" --flow_table_controller=config/flow_table_config.cfg forwarding.l2_learning ext.debugger.controllers.interrupter"
+                        run_term $terminal "./wrap.sh tail -f stress_test.fifo | adapters/pox/pox.py py log.level --WARNING $deb --cid=$cid --address=127.0.0.1 --port=$port $flow_table forwarding.l2_learning $retransmit ext.debugger.controllers.interrupter --rate=$i"
                         echo 'debug'
                     fi
                     retransmit="--retransmit=False"
@@ -81,9 +90,9 @@ do
                 #echo "Read $pox_pid"
                 #rm pid
                 echo $i >> $log
-                sleep 15
+                sleep $sleep_time
                 #read
-                run_term $terminal "python scripts/elt_scripts/multiping.py --topo=line,$len,$size" "$log"
+                run_term $terminal "python scripts/elt_scripts/multiping.py --topo=line,$len,$size --controllers=$CONTROLLERS,1" "$log"
                 mn_pid=$!
                 while ps -p $mn_pid > /dev/null; do sleep 0.5; done;
                 pox_pid=`cat pid`
